@@ -1,0 +1,5 @@
+<table name="commerce_tag">
+	<column name="tag_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="tag_name" type="varchar" size="80" notnull="notnull" unique="unique_tag_name" />
+	<column name="regdate" type="char" size="14" />
+</table>

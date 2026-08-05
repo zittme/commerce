@@ -1,0 +1,8 @@
+<query id="deleteCategory" action="delete">
+	<tables>
+		<table name="commerce_category" />
+	</tables>
+	<conditions>
+		<condition operation="equal" column="category_srl" var="category_srl" required="true" />
+	</conditions>
+</query>

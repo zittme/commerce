@@ -1,0 +1,20 @@
+<query id="insertOrderItem" action="insert">
+	<tables>
+		<table name="commerce_order_item" />
+	</tables>
+	<columns>
+		<column name="order_item_srl" var="order_item_srl" notnull="notnull" />
+		<column name="order_seller_srl" var="order_seller_srl" notnull="notnull" />
+		<column name="order_srl" var="order_srl" notnull="notnull" />
+		<column name="item_srl" var="item_srl" default="0" />
+		<column name="option_srl" var="option_srl" default="0" />
+		<column name="item_name" var="item_name" notnull="notnull" />
+		<column name="option_name" var="option_name" />
+		<column name="thumb" var="thumb" />
+		<column name="price" var="price" default="0" />
+		<column name="qty" var="qty" default="1" />
+		<column name="subtotal" var="subtotal" default="0" />
+		<column name="claim_status" var="claim_status" default="none" />
+		<column name="regdate" var="regdate" />
+	</columns>
+</query>

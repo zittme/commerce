@@ -1,0 +1,14 @@
+<query id="insertCart" action="insert">
+	<tables>
+		<table name="commerce_cart" />
+	</tables>
+	<columns>
+		<column name="cart_srl" var="cart_srl" notnull="notnull" />
+		<column name="member_srl" var="member_srl" default="0" />
+		<column name="session_key" var="session_key" />
+		<column name="item_srl" var="item_srl" notnull="notnull" />
+		<column name="option_srl" var="option_srl" default="0" />
+		<column name="qty" var="qty" default="1" />
+		<column name="regdate" var="regdate" />
+	</columns>
+</query>

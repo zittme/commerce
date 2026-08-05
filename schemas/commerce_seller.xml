@@ -1,0 +1,24 @@
+<table name="commerce_seller">
+	<!--
+	  판매자 — 오픈마켓 대비 1일차부터 존재한다.
+	  독립몰 모드에서는 설치 시 자동 생성되는 기본 판매자(사이트 운영자) 1건만 쓴다.
+	-->
+	<column name="seller_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="member_srl" type="bigint" notnull="notnull" default="0" index="idx_member_srl" />
+	<column name="shop_name" type="varchar" size="120" notnull="notnull" />
+	<column name="biz_no" type="varchar" size="20" />
+	<column name="biz_name" type="varchar" size="120" />
+	<column name="ceo_name" type="varchar" size="80" />
+	<column name="biz_address" type="varchar" size="250" />
+	<column name="mailorder_no" type="varchar" size="40" />
+	<column name="tel" type="varchar" size="30" />
+	<column name="email" type="varchar" size="120" />
+	<!-- 수수료율(%) — 독립몰에서는 0 -->
+	<column name="commission_rate" type="int" notnull="notnull" default="0" />
+	<column name="bank_name" type="varchar" size="40" />
+	<column name="bank_account" type="varchar" size="60" />
+	<column name="bank_holder" type="varchar" size="60" />
+	<!-- pending / active / suspended -->
+	<column name="status" type="varchar" size="20" notnull="notnull" default="active" index="idx_status" />
+	<column name="regdate" type="char" size="14" />
+</table>

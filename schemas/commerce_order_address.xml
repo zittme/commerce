@@ -1,0 +1,12 @@
+<table name="commerce_order_address">
+	<!-- 배송지 스냅샷 -->
+	<column name="address_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />
+	<column name="receiver_name" type="varchar" size="80" notnull="notnull" />
+	<column name="receiver_phone" type="varchar" size="30" />
+	<column name="zipcode" type="varchar" size="10" />
+	<column name="address1" type="varchar" size="250" />
+	<column name="address2" type="varchar" size="250" />
+	<column name="delivery_memo" type="varchar" size="250" />
+	<column name="regdate" type="char" size="14" />
+</table>

@@ -1,0 +1,5 @@
+<table name="commerce_item_tag">
+	<column name="item_tag_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="item_srl" type="bigint" notnull="notnull" index="idx_item_srl" />
+	<column name="tag_srl" type="bigint" notnull="notnull" index="idx_tag_srl" />
+</table>

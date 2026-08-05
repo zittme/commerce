@@ -1,0 +1,13 @@
+<table name="commerce_shipfee">
+	<!-- 판매자별 기본 배송비 정책 -->
+	<column name="shipfee_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="seller_srl" type="bigint" notnull="notnull" default="0" index="idx_seller_srl" />
+	<column name="title" type="varchar" size="120" />
+	<!-- free / fixed / conditional(조건부 무료) -->
+	<column name="fee_type" type="varchar" size="12" notnull="notnull" default="fixed" />
+	<column name="fee" type="bigint" notnull="notnull" default="0" />
+	<!-- 이 금액 이상 무료 (conditional) -->
+	<column name="free_over" type="bigint" notnull="notnull" default="0" />
+	<column name="is_default" type="char" size="1" notnull="notnull" default="Y" />
+	<column name="regdate" type="char" size="14" />
+</table>

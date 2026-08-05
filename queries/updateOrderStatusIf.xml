@@ -1,0 +1,16 @@
+<query id="updateOrderStatusIf" action="update">
+	<!-- ★ 멱등성의 핵심 — 상태 검사와 변경이 한 문장. getAffectedRows 로 승자 판정 -->
+	<tables>
+		<table name="commerce_order" />
+	</tables>
+	<columns>
+		<column name="status" var="status" notnull="notnull" />
+		<column name="paid_date" var="paid_date" />
+		<column name="cancelled_date" var="cancelled_date" />
+		<column name="pay_order_srl" var="pay_order_srl" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="order_srl" var="order_srl" required="true" />
+		<condition operation="in" column="status" var="from_status_list" pipe="and" required="true" />
+	</conditions>
+</query>

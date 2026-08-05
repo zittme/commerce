@@ -1,0 +1,262 @@
+<?php
+
+namespace Zittme\Modules\Commerce\Controllers;
+
+use Zittme\Modules\Commerce\Models\Config as ConfigModel;
+
+/**
+ * 설치와 업데이트.
+ *
+ * 설치 시 (1) 설정 기본값, (2) 기본 판매자(seller_srl 자동, 사이트 운영자),
+ * (3) 기본 인스턴스(shop mid)를 만든다. 단일 인스턴스 모델 — 예약 모듈과 동일 규약.
+ */
+class Install extends Base
+{
+	/**
+	 * 최초 스키마 이후 추가된 칼럼. [테이블, 칼럼, 타입, 길이]
+	 * 스키마 XML 에 칼럼을 추가할 때 반드시 여기에도 적을 것.
+	 */
+	public const ADDED_COLUMNS = [
+		// POS 등 채널 확장용 — 최초 설치본에는 스키마에 포함, 기존 설치본에는 여기서 붙인다
+		['commerce_order', 'channel', 'varchar', 10],
+		// C2 확장 (판매기간·구매수량·세금·성인·갤러리)
+		['commerce_item', 'images', 'text', null],
+		['commerce_item', 'sale_start', 'char', 14],
+		['commerce_item', 'sale_end', 'char', 14],
+		['commerce_item', 'min_qty', 'int', null],
+		['commerce_item', 'max_qty', 'int', null],
+		['commerce_item', 'tax_type', 'varchar', 10],
+		['commerce_item', 'is_adult', 'char', 1],
+		// C8 적립금
+		['commerce_order', 'credit_used', 'bigint', null],
+		// 등급별 상품 할인 (정액/정률)
+		['commerce_grade', 'discount_type', 'varchar', 10],
+		['commerce_grade', 'discount_value', 'float', null],
+	];
+
+	/**
+	 * 최초 설치.
+	 */
+	public function moduleInstall()
+	{
+		$this->prepareConfig();
+		self::createDefaultSeller();
+		self::createDefaultInstance();
+		return new \BaseObject();
+	}
+
+	/**
+	 * 업데이트가 필요한가.
+	 */
+	public function checkUpdate()
+	{
+		$config = \ModuleModel::getModuleConfig('commerce');
+		if (!is_object($config) || !isset($config->enabled))
+		{
+			return true;
+		}
+		if (!self::getDefaultSeller())
+		{
+			return true;
+		}
+		if (!self::getDefaultInstance())
+		{
+			return true;
+		}
+
+		$oDB = \DB::getInstance();
+		foreach (self::ADDED_COLUMNS as [$table, $column])
+		{
+			if (!$oDB->isColumnExists($table, $column))
+			{
+				return true;
+			}
+		}
+
+		// C8 이후 추가된 테이블
+		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade'] as $table)
+		{
+			if (!$oDB->isTableExists($table))
+			{
+				return true;
+			}
+		}
+
+		// 등급 적립률이 아직 정수형이면 소수점 변환이 필요하다
+		if ($oDB->isTableExists('commerce_grade'))
+		{
+			try
+			{
+				if (self::isGradeRateInt())
+				{
+					return true;
+				}
+			}
+			catch (\Exception $e)
+			{
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * 업데이트 실행.
+	 */
+	public function moduleUpdate()
+	{
+		$this->prepareConfig();
+		self::createDefaultSeller();
+		self::createDefaultInstance();
+
+		$oDB = \DB::getInstance();
+		foreach (self::ADDED_COLUMNS as [$table, $column, $type, $size])
+		{
+			if (!$oDB->isColumnExists($table, $column))
+			{
+				$oDB->addColumn($table, $column, $type, $size);
+			}
+		}
+
+		// 등급 적립률 소수점 지원 (int → DECIMAL(6,2)) — 이미 변환됐으면 no-op
+		if ($oDB->isTableExists('commerce_grade'))
+		{
+			try
+			{
+				if (self::isGradeRateInt())
+				{
+					// SHOW/ALTER 는 프레임워크의 자동 프리픽스 재작성과 충돌하므로 PDO 핸들로 직접 실행
+					\Rhymix\Framework\DB::getInstance()->getHandle()->exec(
+						'ALTER TABLE `' . self::dbPrefix() . 'commerce_grade` MODIFY `credit_rate` DECIMAL(6,2) NOT NULL DEFAULT 0'
+					);
+				}
+			}
+			catch (\Exception $e)
+			{
+				// 변환 실패는 치명적이지 않다 (정수 적립률로 계속 동작)
+			}
+		}
+
+		return new \BaseObject();
+	}
+
+	/**
+	 * 캐시 재생성.
+	 */
+	public function recompileCache()
+	{
+	}
+
+	/**
+	 * DB 테이블 프리픽스.
+	 *
+	 * @return string
+	 */
+	protected static function dbPrefix(): string
+	{
+		return (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
+	}
+
+	/**
+	 * commerce_grade.credit_rate 가 아직 정수형인가 (소수점 변환 필요 여부).
+	 *
+	 * SHOW COLUMNS 는 프레임워크 자동 프리픽스 재작성과 충돌하므로 PDO 핸들로 직접 조회한다.
+	 *
+	 * @return bool
+	 */
+	protected static function isGradeRateInt(): bool
+	{
+		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->query(
+			'SHOW COLUMNS FROM `' . self::dbPrefix() . 'commerce_grade` LIKE \'credit_rate\''
+		);
+		$col = $stmt ? $stmt->fetchObject() : null;
+		return $col && stripos((string)$col->Type, 'int') !== false;
+	}
+
+	/**
+	 * 설정 기본값 저장.
+	 *
+	 * @return void
+	 */
+	protected function prepareConfig(): void
+	{
+		$config = \ModuleModel::getModuleConfig('commerce');
+		if (!is_object($config))
+		{
+			$config = new \stdClass;
+		}
+
+		$changed = false;
+		foreach (ConfigModel::DEFAULTS as $key => $value)
+		{
+			if (!isset($config->{$key}))
+			{
+				$config->{$key} = $value;
+				$changed = true;
+			}
+		}
+
+		if ($changed)
+		{
+			ConfigModel::setConfig($config);
+		}
+	}
+
+	/**
+	 * 기본 판매자(사이트 운영자)를 만든다. 이미 있으면 아무것도 하지 않는다.
+	 *
+	 * 독립몰 모드에서도 order_seller 계층이 항상 이 판매자를 가리킨다 —
+	 * 오픈마켓 전환 시 코드 변경이 없는 이유.
+	 *
+	 * @return void
+	 */
+	protected static function createDefaultSeller(): void
+	{
+		if (self::getDefaultSeller())
+		{
+			return;
+		}
+
+		executeQuery('commerce.insertSeller', (object)[
+			'seller_srl' => getNextSequence(),
+			'member_srl' => 0,
+			'shop_name' => \Context::getSiteTitle() ?: 'Shop',
+			'commission_rate' => 0,
+			'status' => 'active',
+			'regdate' => self::now(),
+		]);
+	}
+
+	/**
+	 * 기본 인스턴스(shop mid)를 만든다. 이미 있으면 아무것도 하지 않는다.
+	 *
+	 * @return void
+	 */
+	protected static function createDefaultInstance(): void
+	{
+		if (self::getDefaultInstance())
+		{
+			return;
+		}
+
+		$mid = self::DEFAULT_MID;
+		if (\ModuleModel::isIDExists($mid))
+		{
+			$mid = \ModuleModel::getNextAvailableMid($mid) ?: ($mid . '_' . time());
+		}
+
+		\ModuleController::getInstance()->insertModule((object)[
+			'mid' => $mid,
+			'module' => 'commerce',
+			'browser_title' => lang('commerce.commerce') ?: 'Shop',
+			'description' => '',
+			'layout_srl' => -1,
+			'mlayout_srl' => -1,
+			'skin' => '/USE_DEFAULT/',
+			'mskin' => '/USE_DEFAULT/',
+			'isMenuCreate' => false,
+		]);
+
+		self::$_default_instance = null;
+	}
+}

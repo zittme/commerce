@@ -1,0 +1,44 @@
+<table name="commerce_item">
+	<column name="item_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="seller_srl" type="bigint" notnull="notnull" default="0" index="idx_seller_srl" />
+	<column name="category_srl" type="bigint" notnull="notnull" default="0" index="idx_category_srl" />
+	<column name="item_name" type="varchar" size="250" notnull="notnull" />
+	<column name="item_code" type="varchar" size="100" index="idx_item_code" />
+	<!-- 정가 / 판매가(0이면 정가로 판매) -->
+	<column name="price" type="bigint" notnull="notnull" default="0" />
+	<column name="sale_price" type="bigint" notnull="notnull" default="0" />
+	<!--
+	  옵션 없는 상품의 재고. 옵션이 있으면(has_options=Y) 재고는 옵션 단위로만 관리하고
+	  이 값은 쓰지 않는다. 차감은 반드시 조건부 UPDATE (stock >= n) 원자 경로.
+	-->
+	<column name="stock" type="int" notnull="notnull" default="0" />
+	<column name="use_stock" type="char" size="1" notnull="notnull" default="Y" />
+	<column name="summary" type="varchar" size="250" />
+	<column name="content" type="bigtext" />
+	<column name="thumb" type="varchar" size="250" />
+	<!-- 추가 이미지 갤러리 (JSON 배열) -->
+	<column name="images" type="text" />
+	<!-- 판매기간 예약 (YYYYMMDDHHIISS, 비우면 상시) -->
+	<column name="sale_start" type="char" size="14" />
+	<column name="sale_end" type="char" size="14" />
+	<!-- 구매수량 제한 (0 = 제한 없음) -->
+	<column name="min_qty" type="int" notnull="notnull" default="0" />
+	<column name="max_qty" type="int" notnull="notnull" default="0" />
+	<!-- 세금 구분: taxable(과세) / free(면세) — 결제 시 면세금액을 PG 에 전달한다 -->
+	<column name="tax_type" type="varchar" size="10" notnull="notnull" default="taxable" />
+	<!-- 성인 상품: 구매 시 본인인증 게이트 (member/identity 연동) -->
+	<column name="is_adult" type="char" size="1" notnull="notnull" default="N" />
+	<column name="has_options" type="char" size="1" notnull="notnull" default="N" />
+	<!-- default(기본 정책) / free / fixed -->
+	<column name="ship_fee_type" type="varchar" size="10" notnull="notnull" default="default" />
+	<column name="ship_fee" type="bigint" notnull="notnull" default="0" />
+	<!-- sale / soldout / hidden / stop -->
+	<column name="status" type="varchar" size="20" notnull="notnull" default="sale" index="idx_status" />
+	<column name="is_recommend" type="char" size="1" notnull="notnull" default="N" index="idx_recommend" />
+	<column name="is_new" type="char" size="1" notnull="notnull" default="N" />
+	<column name="view_count" type="int" notnull="notnull" default="0" />
+	<column name="buy_count" type="int" notnull="notnull" default="0" />
+	<column name="list_order" type="bigint" notnull="notnull" default="0" index="idx_list_order" />
+	<column name="regdate" type="char" size="14" index="idx_regdate" />
+	<column name="last_update" type="char" size="14" />
+</table>

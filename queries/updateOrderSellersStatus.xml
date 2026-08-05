@@ -1,0 +1,13 @@
+<query id="updateOrderSellersStatus" action="update">
+	<!-- 주문의 모든 하위주문 상태 일괄 전이 (조건부) -->
+	<tables>
+		<table name="commerce_order_seller" />
+	</tables>
+	<columns>
+		<column name="status" var="status" notnull="notnull" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="order_srl" var="order_srl" required="true" />
+		<condition operation="in" column="status" var="from_status_list" pipe="and" required="true" />
+	</conditions>
+</query>

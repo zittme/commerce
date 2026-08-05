@@ -1,0 +1,15 @@
+<query id="getOrderListByMember" action="select">
+	<tables>
+		<table name="commerce_order" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="member_srl" var="member_srl" required="true" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="order_srl" order="desc" />
+		<list_count var="list_count" default="50" />
+	</navigation>
+</query>

@@ -1,0 +1,11 @@
+<query id="getOrderByCode" action="select">
+	<tables>
+		<table name="commerce_order" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="order_code" var="order_code" required="true" />
+	</conditions>
+</query>

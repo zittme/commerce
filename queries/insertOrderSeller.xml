@@ -1,0 +1,16 @@
+<query id="insertOrderSeller" action="insert">
+	<tables>
+		<table name="commerce_order_seller" />
+	</tables>
+	<columns>
+		<column name="order_seller_srl" var="order_seller_srl" notnull="notnull" />
+		<column name="order_srl" var="order_srl" notnull="notnull" />
+		<column name="seller_srl" var="seller_srl" notnull="notnull" />
+		<column name="item_total" var="item_total" default="0" />
+		<column name="delivery_fee" var="delivery_fee" default="0" />
+		<column name="discount" var="discount" default="0" />
+		<column name="settle_amount" var="settle_amount" default="0" />
+		<column name="status" var="status" default="pending" />
+		<column name="regdate" var="regdate" />
+	</columns>
+</query>

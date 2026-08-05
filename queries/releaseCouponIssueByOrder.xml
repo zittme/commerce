@@ -1,0 +1,13 @@
+<query id="releaseCouponIssueByOrder" action="update">
+	<!-- 주문 취소 시 쿠폰 반환 -->
+	<tables>
+		<table name="commerce_coupon_issue" />
+	</tables>
+	<columns>
+		<column name="order_srl" var="new_order_srl" notnull="notnull" />
+		<column name="used_date" var="used_date" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="order_srl" var="order_srl" required="true" />
+	</conditions>
+</query>

@@ -1,0 +1,27 @@
+<query id="insertOrder" action="insert">
+	<tables>
+		<table name="commerce_order" />
+	</tables>
+	<columns>
+		<column name="order_srl" var="order_srl" notnull="notnull" />
+		<column name="order_code" var="order_code" notnull="notnull" />
+		<column name="channel" var="channel" default="web" />
+		<column name="member_srl" var="member_srl" default="0" />
+		<column name="orderer_name" var="orderer_name" notnull="notnull" />
+		<column name="orderer_phone" var="orderer_phone" />
+		<column name="orderer_email" var="orderer_email" />
+		<column name="guest_password" var="guest_password" />
+		<column name="item_total" var="item_total" default="0" />
+		<column name="delivery_fee_total" var="delivery_fee_total" default="0" />
+		<column name="discount_total" var="discount_total" default="0" />
+		<column name="credit_used" var="credit_used" default="0" />
+		<column name="payment_price" var="payment_price" default="0" />
+		<column name="pay_order_srl" var="pay_order_srl" default="0" />
+		<column name="status" var="status" default="pending" />
+		<column name="memo" var="memo" />
+		<column name="ipaddress" var="ipaddress" />
+		<column name="regdate" var="regdate" />
+		<column name="paid_date" var="paid_date" />
+		<column name="cancelled_date" var="cancelled_date" />
+	</columns>
+</query>

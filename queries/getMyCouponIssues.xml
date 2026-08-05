@@ -1,0 +1,17 @@
+<query id="getMyCouponIssues" action="select">
+	<!-- 회원의 미사용 발급 쿠폰 -->
+	<tables>
+		<table name="commerce_coupon_issue" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="member_srl" var="member_srl" required="true" />
+		<condition operation="equal" column="order_srl" var="order_srl" pipe="and" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="issue_srl" order="desc" />
+		<list_count var="list_count" default="100" />
+	</navigation>
+</query>

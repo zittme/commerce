@@ -1,0 +1,36 @@
+<query id="updateItem" action="update">
+	<tables>
+		<table name="commerce_item" />
+	</tables>
+	<columns>
+		<column name="seller_srl" var="seller_srl" />
+		<column name="category_srl" var="category_srl" />
+		<column name="item_name" var="item_name" />
+		<column name="item_code" var="item_code" />
+		<column name="price" var="price" />
+		<column name="sale_price" var="sale_price" />
+		<column name="stock" var="stock" />
+		<column name="use_stock" var="use_stock" />
+		<column name="summary" var="summary" />
+		<column name="content" var="content" />
+		<column name="thumb" var="thumb" />
+		<column name="images" var="images" />
+		<column name="sale_start" var="sale_start" />
+		<column name="sale_end" var="sale_end" />
+		<column name="min_qty" var="min_qty" />
+		<column name="max_qty" var="max_qty" />
+		<column name="tax_type" var="tax_type" />
+		<column name="is_adult" var="is_adult" />
+		<column name="has_options" var="has_options" />
+		<column name="ship_fee_type" var="ship_fee_type" />
+		<column name="ship_fee" var="ship_fee" />
+		<column name="status" var="status" />
+		<column name="is_recommend" var="is_recommend" />
+		<column name="is_new" var="is_new" />
+		<column name="list_order" var="list_order" />
+		<column name="last_update" var="last_update" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="item_srl" var="item_srl" required="true" />
+	</conditions>
+</query>

@@ -1,0 +1,20 @@
+<table name="commerce_claim">
+	<!-- 취소·반품·교환 — 주문 상태에 섞지 않고 별도 관리 (부분취소 지원) -->
+	<column name="claim_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />
+	<column name="order_seller_srl" type="bigint" notnull="notnull" default="0" index="idx_order_seller_srl" />
+	<column name="member_srl" type="bigint" notnull="notnull" default="0" index="idx_member_srl" />
+	<!-- cancel / return / exchange -->
+	<column name="claim_type" type="varchar" size="10" notnull="notnull" />
+	<column name="reason" type="text" />
+	<!-- 대상 품목 JSON: [{order_item_srl, qty}] -->
+	<column name="items" type="text" />
+	<!-- requested / approved / rejected / done -->
+	<column name="status" type="varchar" size="12" notnull="notnull" default="requested" index="idx_status" />
+	<column name="refund_amount" type="bigint" notnull="notnull" default="0" />
+	<!-- 승인 시 재고 복구 여부 -->
+	<column name="restock" type="char" size="1" notnull="notnull" default="Y" />
+	<column name="admin_memo" type="text" />
+	<column name="regdate" type="char" size="14" index="idx_regdate" />
+	<column name="processed_date" type="char" size="14" />
+</table>

@@ -1,0 +1,14 @@
+<query id="getOrderItems" action="select">
+	<tables>
+		<table name="commerce_order_item" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="order_srl" var="order_srl" required="true" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="order_item_srl" order="asc" />
+	</navigation>
+</query>

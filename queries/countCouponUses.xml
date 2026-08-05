@@ -1,0 +1,13 @@
+<query id="countCouponUses" action="select">
+	<!-- 회원별 사용(또는 발급) 횟수 -->
+	<tables>
+		<table name="commerce_coupon_issue" />
+	</tables>
+	<columns>
+		<column name="count(*)" alias="count" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="coupon_srl" var="coupon_srl" required="true" />
+		<condition operation="equal" column="member_srl" var="member_srl" pipe="and" />
+	</conditions>
+</query>

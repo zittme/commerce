@@ -1,0 +1,10 @@
+<query id="deleteCart" action="delete">
+	<tables>
+		<table name="commerce_cart" />
+	</tables>
+	<conditions>
+		<condition operation="equal" column="cart_srl" var="cart_srl" />
+		<condition operation="equal" column="member_srl" var="owner_member_srl" pipe="and" />
+		<condition operation="equal" column="session_key" var="owner_session_key" pipe="and" />
+	</conditions>
+</query>

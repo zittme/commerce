@@ -1,0 +1,17 @@
+<query id="updateClaimStatusIf" action="update">
+	<!-- 클레임 처리 — 조건부 전이 (중복 승인 방지) -->
+	<tables>
+		<table name="commerce_claim" />
+	</tables>
+	<columns>
+		<column name="status" var="status" notnull="notnull" />
+		<column name="refund_amount" var="refund_amount" />
+		<column name="restock" var="restock" />
+		<column name="admin_memo" var="admin_memo" />
+		<column name="processed_date" var="processed_date" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="claim_srl" var="claim_srl" required="true" />
+		<condition operation="in" column="status" var="from_status_list" pipe="and" required="true" />
+	</conditions>
+</query>

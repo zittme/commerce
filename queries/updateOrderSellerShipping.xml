@@ -1,0 +1,17 @@
+<query id="updateOrderSellerShipping" action="update">
+	<!-- 하위주문 배송 처리 (조건부 전이) -->
+	<tables>
+		<table name="commerce_order_seller" />
+	</tables>
+	<columns>
+		<column name="status" var="status" notnull="notnull" />
+		<column name="shipping_company" var="shipping_company" />
+		<column name="shipping_invoice" var="shipping_invoice" />
+		<column name="shipped_date" var="shipped_date" />
+		<column name="delivered_date" var="delivered_date" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="order_seller_srl" var="order_seller_srl" required="true" />
+		<condition operation="in" column="status" var="from_status_list" pipe="and" required="true" />
+	</conditions>
+</query>

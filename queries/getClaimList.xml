@@ -1,0 +1,18 @@
+<query id="getClaimList" action="select">
+	<tables>
+		<table name="commerce_claim" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="in" column="status" var="status_list" />
+		<condition operation="equal" column="order_srl" var="order_srl" pipe="and" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="claim_srl" order="desc" />
+		<list_count var="list_count" default="20" />
+		<page_count var="page_count" default="10" />
+		<page var="page" default="1" />
+	</navigation>
+</query>

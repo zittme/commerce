@@ -1,0 +1,16 @@
+<query id="insertOrderAddress" action="insert">
+	<tables>
+		<table name="commerce_order_address" />
+	</tables>
+	<columns>
+		<column name="address_srl" var="address_srl" notnull="notnull" />
+		<column name="order_srl" var="order_srl" notnull="notnull" />
+		<column name="receiver_name" var="receiver_name" notnull="notnull" />
+		<column name="receiver_phone" var="receiver_phone" />
+		<column name="zipcode" var="zipcode" />
+		<column name="address1" var="address1" />
+		<column name="address2" var="address2" />
+		<column name="delivery_memo" var="delivery_memo" />
+		<column name="regdate" var="regdate" />
+	</columns>
+</query>

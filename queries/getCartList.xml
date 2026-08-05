@@ -1,0 +1,15 @@
+<query id="getCartList" action="select">
+	<tables>
+		<table name="commerce_cart" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="member_srl" var="member_srl" />
+		<condition operation="equal" column="session_key" var="session_key" pipe="and" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="cart_srl" order="asc" />
+	</navigation>
+</query>

@@ -1,0 +1,16 @@
+<query id="insertOption" action="insert">
+	<tables>
+		<table name="commerce_item_option" />
+	</tables>
+	<columns>
+		<column name="option_srl" var="option_srl" notnull="notnull" />
+		<column name="item_srl" var="item_srl" notnull="notnull" />
+		<column name="option_label" var="option_label" notnull="notnull" />
+		<column name="price_add" var="price_add" default="0" />
+		<column name="stock" var="stock" default="0" />
+		<column name="sku" var="sku" />
+		<column name="list_order" var="list_order" default="0" />
+		<column name="status" var="status" default="Y" />
+		<column name="regdate" var="regdate" />
+	</columns>
+</query>

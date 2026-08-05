@@ -1,0 +1,23 @@
+<query id="getItemList" action="select">
+	<tables>
+		<table name="commerce_item" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="in" column="status" var="status_list" />
+		<condition operation="equal" column="category_srl" var="category_srl" pipe="and" />
+		<condition operation="equal" column="seller_srl" var="seller_srl" pipe="and" />
+		<condition operation="equal" column="is_recommend" var="is_recommend" pipe="and" />
+		<condition operation="like" column="item_name" var="search_keyword" pipe="and" />
+		<condition operation="more" column="sale_price" var="price_min" pipe="and" />
+		<condition operation="less" column="sale_price" var="price_max" pipe="and" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="list_order" order="asc" />
+		<list_count var="list_count" default="20" />
+		<page_count var="page_count" default="10" />
+		<page var="page" default="1" />
+	</navigation>
+</query>

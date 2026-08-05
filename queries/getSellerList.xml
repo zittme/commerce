@@ -1,0 +1,15 @@
+<query id="getSellerList" action="select">
+	<tables>
+		<table name="commerce_seller" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="status" var="status" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="seller_srl" order="asc" />
+		<list_count var="list_count" default="50" />
+	</navigation>
+</query>

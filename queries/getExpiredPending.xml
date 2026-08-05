@@ -1,0 +1,17 @@
+<query id="getExpiredPending" action="select">
+	<!-- 결제 대기 만료 주문 — lazy 정리 대상, 소량씩 -->
+	<tables>
+		<table name="commerce_order" />
+	</tables>
+	<columns>
+		<column name="order_srl" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="status" var="status" required="true" />
+		<condition operation="below" column="regdate" var="before" pipe="and" required="true" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="order_srl" order="asc" />
+		<list_count var="list_count" default="20" />
+	</navigation>
+</query>

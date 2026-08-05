@@ -1,0 +1,82 @@
+@version(2)
+@load('css/shop.css')
+
+<div class="shp">
+	@php $shp_thumb_style = !empty($item->thumb) ? "background-image:url('" . $item->thumb . "');" : ''; @endphp
+	<div class="shp-detail">
+		<div class="shp-detail-thumb" style="{{ $shp_thumb_style }}"></div>
+		<div class="shp-detail-info">
+			<div class="shp-badges" style="margin-bottom:8px">
+				@if ($item->is_recommend === 'Y')<span class="shp-badge">{{ $lang->shop_badge_recommend }}</span>@endif
+				@if ($item->is_new === 'Y')<span class="shp-badge">NEW</span>@endif
+				@if ($item->is_adult === 'Y')<span class="shp-badge is-adult">{{ $lang->shop_adult_item }}</span>@endif
+				@if ($item->tax_type === 'free')<span class="shp-badge">{{ $lang->shop_tax_free }}</span>@endif
+			</div>
+			<h1>{{ $item->item_name }}</h1>
+			@if (!empty($item->summary))
+			<p class="shp-detail-summary">{{ $item->summary }}</p>
+			@endif
+			<p class="shp-detail-price">
+				@if ($item->sale_price > 0 && $item->sale_price < $item->price)
+				<s>{{ number_format($item->price) }}</s>{{ number_format($effective_price) }}원
+				@else
+				{{ number_format($effective_price) }}원
+				@endif
+			</p>
+
+			@if (!$purchasable)
+			<p class="shp-warn">{{ $lang->shop_not_purchasable }}</p>
+			@elseif (!$adult_ok)
+			<p class="shp-warn">{{ $lang->shop_adult_gate }}</p>
+			@else
+			<form action="{{ getUrl('') }}" method="post">
+				<input type="hidden" name="act" value="procCommerceCartAdd" />
+				<input type="hidden" name="mid" value="{{ $mid }}" />
+				<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
+
+				@if (!empty($options))
+				<div class="shp-row">
+					<label>{{ $lang->shop_option }}</label>
+					<select name="option_srl" required>
+						<option value="">{{ $lang->shop_select_option }}</option>
+						@foreach ($options as $opt)
+						<option value="{{ $opt->option_srl }}" @if((int)$opt->stock <= 0) disabled @endif>
+							{{ $opt->option_label }}
+							@if ($opt->price_add != 0)({{ $opt->price_add > 0 ? '+' : '' }}{{ number_format($opt->price_add) }}원)@endif
+							@if ((int)$opt->stock <= 0)- {{ $lang->shop_soldout }}@endif
+						</option>
+						@endforeach
+					</select>
+				</div>
+				@endif
+
+				<div class="shp-row">
+					<label>{{ $lang->shop_qty }}
+						@if ($item->min_qty > 0 || $item->max_qty > 0)
+						<small style="font-weight:400;color:#6b7684">
+							@if ($item->min_qty > 0){{ sprintf($lang->shop_min_qty, $item->min_qty) }}@endif
+							@if ($item->max_qty > 0){{ sprintf($lang->shop_max_qty, $item->max_qty) }}@endif
+						</small>
+						@endif
+					</label>
+					<input class="shp-qty" type="number" name="qty" value="{{ $item->min_qty > 0 ? $item->min_qty : 1 }}" min="{{ $item->min_qty > 0 ? $item->min_qty : 1 }}" @if ($item->max_qty > 0) max="{{ $item->max_qty }}" @endif />
+				</div>
+
+				<div class="shp-actions">
+					<button type="submit" name="direct" value="Y" class="shp-btn shp-btn-primary">{{ $lang->shop_buy_now }}</button>
+					<button type="submit" class="shp-btn shp-btn-ghost">{{ $lang->shop_add_cart }}</button>
+				</div>
+			</form>
+			@endif
+		</div>
+	</div>
+
+	@if (!empty($item->content))
+	<div class="shp-content">{!! $item->content !!}</div>
+	@endif
+
+	<p class="shp-foot-links">
+		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a>
+		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceCart') }}">{{ $lang->shop_cart }}</a>
+	</p>
+</div>

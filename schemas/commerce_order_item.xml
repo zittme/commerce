@@ -1,0 +1,18 @@
+<table name="commerce_order_item">
+	<!-- 주문 상품 — 이름·가격·썸네일을 주문 시점 스냅샷으로 보존한다 -->
+	<column name="order_item_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="order_seller_srl" type="bigint" notnull="notnull" index="idx_order_seller_srl" />
+	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />
+	<column name="item_srl" type="bigint" notnull="notnull" default="0" />
+	<column name="option_srl" type="bigint" notnull="notnull" default="0" />
+	<column name="item_name" type="varchar" size="250" notnull="notnull" />
+	<column name="option_name" type="varchar" size="250" />
+	<column name="thumb" type="varchar" size="250" />
+	<!-- 단가(옵션가 포함) 스냅샷 -->
+	<column name="price" type="bigint" notnull="notnull" default="0" />
+	<column name="qty" type="int" notnull="notnull" default="1" />
+	<column name="subtotal" type="bigint" notnull="notnull" default="0" />
+	<!-- none / requested / done -->
+	<column name="claim_status" type="varchar" size="10" notnull="notnull" default="none" />
+	<column name="regdate" type="char" size="14" />
+</table>

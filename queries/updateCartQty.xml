@@ -1,0 +1,11 @@
+<query id="updateCartQty" action="update">
+	<tables>
+		<table name="commerce_cart" />
+	</tables>
+	<columns>
+		<column name="qty" var="qty" notnull="notnull" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="cart_srl" var="cart_srl" required="true" />
+	</conditions>
+</query>

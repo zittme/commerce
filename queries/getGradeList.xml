@@ -1,0 +1,12 @@
+<query id="getGradeList" action="select">
+	<tables>
+		<table name="commerce_grade" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<navigation>
+		<index var="sort_index" default="min_spend" order="asc" />
+		<list_count var="list_count" default="100" />
+	</navigation>
+</query>

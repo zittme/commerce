@@ -1,0 +1,68 @@
+@version(2)
+@load('css/shop.css')
+
+<div class="shp">
+	<div class="shp-top">
+		<h2 class="shp-title">{{ $lang->commerce }}</h2>
+		<a class="shp-cart-link" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceCart') }}">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.4l.7 2H21l-2.4 8.4a2 2 0 0 1-1.9 1.6H8.5a2 2 0 0 1-2-1.5L4.2 6H3V4zm4.7 4 1.5 6h7.9l1.7-6H7.7zM9 19.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm8 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>
+			{{ $lang->shop_cart }}
+			@if ($cart_count > 0)<span class="shp-cart-count">{{ $cart_count }}</span>@endif
+		</a>
+	</div>
+
+	<form action="{{ getUrl('') }}" method="get" class="shp-filter">
+		<input type="hidden" name="mid" value="{{ $mid }}" />
+		<select name="category" onchange="this.form.submit()">
+			<option value="">{{ $lang->shop_all_categories }}</option>
+			@foreach ($shop_categories as $c)
+			<option value="{{ $c->category_srl }}" @if($current_category === (int)$c->category_srl) selected @endif>{{ $c->title }}</option>
+			@endforeach
+		</select>
+		<input type="text" name="q" placeholder="{{ $lang->shop_search }}" value="{{ $current_q }}" />
+		<button type="submit">{{ $lang->cmd_search ?? '검색' }}</button>
+		<span class="shp-sort">
+			@foreach (['new' => $lang->shop_sort_new, 'popular' => $lang->shop_sort_popular, 'price_low' => $lang->shop_sort_price_low, 'price_high' => $lang->shop_sort_price_high] as $key => $label)
+			<a class="{{ $current_sort === $key ? 'is-on' : '' }}" href="{{ getUrl('', 'mid', $mid, 'category', $current_category ?: '', 'q', $current_q, 'sort', $key) }}">{{ $label }}</a>
+			@endforeach
+		</span>
+	</form>
+
+	@if (empty($items))
+	<p class="shp-empty">{{ $lang->shop_no_items }}</p>
+	@else
+	<div class="shp-grid">
+		@foreach ($items as $it)
+		<a class="shp-card" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $it->item_srl) }}">
+			<span class="shp-card-thumb" @if (!empty($it->thumb)) style="background-image:url('{{ escape($it->thumb) }}')" @endif>
+				@if (empty($it->thumb))
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm1 2v12h14V6H5zm3 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm-2 8 3.5-4.5 2.5 3 3.5-4.5L19 17H6z"/></svg>
+				@endif
+			</span>
+			@if ($it->status === 'soldout')
+			<span class="shp-soldout-cover">{{ $lang->shop_soldout }}</span>
+			@endif
+			<span class="shp-card-body">
+				<span class="shp-badges">
+					@if ($it->is_recommend === 'Y')<span class="shp-badge">{{ $lang->shop_badge_recommend }}</span>@endif
+					@if ($it->is_new === 'Y')<span class="shp-badge">NEW</span>@endif
+					@if ($it->is_adult === 'Y')<span class="shp-badge is-adult">19</span>@endif
+				</span>
+				<span class="shp-card-name">{{ $it->item_name }}</span>
+				<span class="shp-price">
+					@if ($it->sale_price > 0 && $it->sale_price < $it->price)
+					<s>{{ number_format($it->price) }}</s>{{ number_format($it->sale_price) }}원
+					@else
+					{{ number_format($it->price) }}원
+					@endif
+				</span>
+			</span>
+		</a>
+		@endforeach
+	</div>
+	@endif
+
+	<p class="shp-foot-links">
+		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceMyOrders') }}">{{ $lang->shop_my_orders }}</a>
+	</p>
+</div>

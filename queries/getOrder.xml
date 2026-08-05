@@ -1,0 +1,11 @@
+<query id="getOrder" action="select">
+	<tables>
+		<table name="commerce_order" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="order_srl" var="order_srl" required="true" />
+	</conditions>
+</query>

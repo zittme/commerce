@@ -1,0 +1,73 @@
+@version(2)
+@load('css/shop.css')
+
+<div class="shp shp-narrow">
+	<div class="shp-top"><h2 class="shp-title">{{ $lang->shop_order_detail }}</h2></div>
+
+	<dl class="shp-detail-list">
+		<dt>{{ $lang->shop_order_code }}</dt>
+		<dd><strong>{{ $order->order_code }}</strong></dd>
+		<dt>{{ $lang->reservation_status ?? '상태' }}</dt>
+		<dd><span class="shp-st shp-st-{{ $order->status }}">{{ $lang->{'shop_status_' . $order->status} ?? $order->status }}</span></dd>
+		<dt>{{ $lang->shop_orderer }}</dt>
+		<dd>{{ $order->orderer_name }}</dd>
+		<dt>{{ $lang->shop_item_total }}</dt>
+		<dd>{{ number_format($order->item_total) }}원</dd>
+		@if ($order->discount_total > 0)
+		<dt>{{ $lang->shop_discount }}</dt>
+		<dd>-{{ number_format($order->discount_total) }}원</dd>
+		@endif
+		@if (!empty($order->credit_used) && $order->credit_used > 0)
+		<dt>{{ $lang->shop_credit }}</dt>
+		<dd>-{{ number_format($order->credit_used) }}원</dd>
+		@endif
+		<dt>{{ $lang->shop_ship_fee }}</dt>
+		<dd>{{ $order->delivery_fee_total > 0 ? number_format($order->delivery_fee_total) . '원' : $lang->shop_ship_free }}</dd>
+		<dt>{{ $lang->shop_total }}</dt>
+		<dd><strong>{{ number_format($order->payment_price) }}원</strong></dd>
+	</dl>
+
+	<table class="shp-table">
+		<thead><tr><th>{{ $lang->shop_item }}</th><th>{{ $lang->shop_qty }}</th><th>{{ $lang->shop_subtotal }}</th></tr></thead>
+		<tbody>
+			@foreach ($order_items as $oi)
+			<tr>
+				<td>{{ $oi->item_name }}@if (!empty($oi->option_name))<br /><small style="color:#6b7684">{{ $oi->option_name }}</small>@endif</td>
+				<td>{{ $oi->qty }}</td>
+				<td>{{ number_format($oi->subtotal) }}원</td>
+			</tr>
+			@endforeach
+		</tbody>
+	</table>
+
+	@foreach ($order_sellers as $os)
+	@if (!empty($os->shipping_invoice))
+	<div class="shp-summary">
+		<div class="shp-summary-row"><span>{{ $lang->shop_shipping_info }}</span><span>{{ $os->shipping_company }} {{ $os->shipping_invoice }}</span></div>
+	</div>
+	@endif
+	@endforeach
+
+	@if (in_array($order->status, ['pending', 'paid']))
+	<form action="{{ getUrl('') }}" method="post" style="margin-top:8px" onsubmit="return confirm('{{ $lang->shop_claim_confirm }}')">
+		<input type="hidden" name="act" value="procCommerceClaim" />
+		<input type="hidden" name="mid" value="{{ $mid }}" />
+		<input type="hidden" name="order_code" value="{{ $order->order_code }}" />
+		@if ($order->member_srl == 0)
+		<input type="hidden" name="guest_password" value="{{ escape(Context::get('gp')) }}" />
+		@endif
+		<div class="shp-row">
+			<label>{{ $lang->shop_claim_reason }}</label>
+			<input type="text" name="reason" placeholder="{{ $lang->shop_claim_reason_ph }}" />
+		</div>
+		<button type="submit" class="shp-btn shp-btn-ghost" style="width:100%">
+			{{ $order->status === 'pending' ? $lang->shop_cancel_order : $lang->shop_request_claim }}
+		</button>
+	</form>
+	@endif
+
+	<p class="shp-foot-links">
+		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a>
+		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceMyOrders') }}">{{ $lang->shop_my_orders }}</a>
+	</p>
+</div>

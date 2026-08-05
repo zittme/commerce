@@ -1,0 +1,14 @@
+<query id="updateCategory" action="update">
+	<tables>
+		<table name="commerce_category" />
+	</tables>
+	<columns>
+		<column name="parent_srl" var="parent_srl" />
+		<column name="title" var="title" />
+		<column name="list_order" var="list_order" />
+		<column name="is_active" var="is_active" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="category_srl" var="category_srl" required="true" />
+	</conditions>
+</query>

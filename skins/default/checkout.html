@@ -1,0 +1,115 @@
+@version(2)
+@load('css/shop.css')
+
+<div class="shp shp-narrow">
+	<div class="shp-top"><h2 class="shp-title">{{ $lang->shop_checkout }}</h2></div>
+
+	<table class="shp-table">
+		<thead><tr><th>{{ $lang->shop_item }}</th><th>{{ $lang->shop_qty }}</th><th>{{ $lang->shop_subtotal }}</th></tr></thead>
+		<tbody>
+			@foreach ($cart->items as $entry)
+			@if (!$entry->blocked)
+			<tr>
+				<td>{{ $entry->item->item_name }}@if ($entry->option)<br /><small style="color:#6b7684">{{ $entry->option->option_label }}</small>@endif</td>
+				<td>{{ $entry->qty }}</td>
+				<td>{{ number_format($entry->subtotal) }}원</td>
+			</tr>
+			@endif
+			@endforeach
+		</tbody>
+	</table>
+
+	<div class="shp-summary">
+		<div class="shp-summary-row"><span>{{ $lang->shop_item_total }}</span><span>{{ number_format($cart->item_total) }}원</span></div>
+		<div class="shp-summary-row"><span>{{ $lang->shop_ship_fee }}</span><span>{{ $ship_fee > 0 ? number_format($ship_fee) . '원' : $lang->shop_ship_free }}</span></div>
+		<div class="shp-summary-row is-total"><span>{{ $lang->shop_total }}</span><span>{{ number_format($payment_price) }}원</span></div>
+	</div>
+
+	@if ($payment_price > 0 && !$pay_available)
+	<p class="shp-warn">{{ $lang->shop_pay_unavailable }}</p>
+	@else
+	<form action="{{ getUrl('') }}" method="post" class="shp-form">
+		<input type="hidden" name="act" value="procCommerceOrder" />
+		<input type="hidden" name="mid" value="{{ $mid }}" />
+
+		<fieldset>
+			<legend>{{ $lang->shop_orderer }}</legend>
+			<div class="shp-form-grid">
+				<div class="shp-row"><label>{{ $lang->shop_name }} *</label><input type="text" name="orderer_name" required value="{{ $is_member ? ($logged_info->nick_name ?? '') : '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->shop_phone }} *</label><input type="tel" name="orderer_phone" required /></div>
+				<div class="shp-row"><label>{{ $lang->shop_email }}</label><input type="email" name="orderer_email" value="{{ $is_member ? ($logged_info->email_address ?? '') : '' }}" /></div>
+				@if (!$is_member)
+				<div class="shp-row"><label>{{ $lang->shop_guest_password }} *</label><input type="password" name="guest_password" minlength="4" required autocomplete="new-password" /><small style="display:block;margin-top:4px;font-size:12px;color:#6b7684">{{ $lang->shop_guest_password_help }}</small></div>
+				@endif
+			</div>
+		</fieldset>
+
+		<fieldset>
+			<legend>{{ $lang->shop_shipping }}</legend>
+			<div class="shp-form-grid">
+				<div class="shp-row"><label>{{ $lang->shop_receiver }}</label><input type="text" name="receiver_name" placeholder="{{ $lang->shop_same_as_orderer }}" /></div>
+				<div class="shp-row"><label>{{ $lang->shop_receiver_phone }}</label><input type="tel" name="receiver_phone" placeholder="{{ $lang->shop_same_as_orderer }}" /></div>
+				<div class="shp-row"><label>{{ $lang->shop_zipcode }}</label><input type="text" name="zipcode" /></div>
+				<div class="shp-row" style="grid-column:1/-1"><label>{{ $lang->shop_address }} *</label><input type="text" name="address1" required /></div>
+				<div class="shp-row" style="grid-column:1/-1"><label>{{ $lang->shop_address_detail }}</label><input type="text" name="address2" /></div>
+				<div class="shp-row" style="grid-column:1/-1"><label>{{ $lang->shop_delivery_memo }}</label><input type="text" name="delivery_memo" placeholder="{{ $lang->shop_delivery_memo_ph }}" /></div>
+			</div>
+		</fieldset>
+
+		@if ($is_member)
+		<fieldset>
+			<legend>{{ $lang->shop_coupon }}</legend>
+			<div class="shp-form-grid">
+				@if (!empty($my_coupons))
+				<div class="shp-row">
+					<label>{{ $lang->shop_coupon_select }}</label>
+					<select name="coupon_issue_srl" id="shpCouponSelect">
+						<option value="">{{ $lang->shop_coupon_none }}</option>
+						@foreach ($my_coupons as $mc)
+						<option value="{{ $mc->issue_srl }}" data-discount="{{ $mc->discount }}">{{ $mc->coupon->title }} (-{{ number_format($mc->discount) }}원)</option>
+						@endforeach
+					</select>
+				</div>
+				@endif
+				<div class="shp-row">
+					<label>{{ $lang->shop_coupon_code }}</label>
+					<input type="text" name="coupon_code" id="shpCouponCode" autocomplete="off" placeholder="{{ $lang->shop_coupon_code_ph }}" />
+				</div>
+			</div>
+			<small style="display:block;margin-top:6px;font-size:12px;color:#6b7684">{{ $lang->shop_coupon_help }}</small>
+		</fieldset>
+
+		@if ($credit_balance > 0)
+		<fieldset>
+			<legend>{{ $lang->shop_credit }}</legend>
+			<div class="shp-form-grid">
+				<div class="shp-row">
+					<label>{{ $lang->shop_credit_use }} ({{ $lang->shop_credit_balance }}: {{ number_format($credit_balance) }}원)</label>
+					<input type="number" name="use_credit" min="0" max="{{ $credit_balance }}" value="0" />
+				</div>
+			</div>
+			<small style="display:block;margin-top:6px;font-size:12px;color:#6b7684">{{ $lang->shop_credit_help }}</small>
+		</fieldset>
+		@endif
+		@endif
+
+		<fieldset>
+			<label class="shp-check">
+				<input type="checkbox" name="agree_privacy" value="Y" required />
+				{{ $lang->shop_agree_privacy }}
+			</label>
+			@if (!empty($shop_config->privacy_text))
+			<div class="shp-privacy">{{ $shop_config->privacy_text }}</div>
+			@endif
+		</fieldset>
+
+		<button type="submit" class="shp-btn shp-btn-primary" style="width:100%">
+			{{ $payment_price > 0 ? sprintf($lang->shop_pay_amount, number_format($payment_price)) : $lang->shop_order_free }}
+		</button>
+	</form>
+	@endif
+
+	<p class="shp-foot-links">
+		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceCart') }}">{{ $lang->shop_cart }}</a>
+	</p>
+</div>

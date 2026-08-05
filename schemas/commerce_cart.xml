@@ -1,0 +1,10 @@
+<table name="commerce_cart">
+	<column name="cart_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<!-- 회원은 member_srl, 비회원은 session_key(쿠키) 로 식별 -->
+	<column name="member_srl" type="bigint" notnull="notnull" default="0" index="idx_member_srl" />
+	<column name="session_key" type="varchar" size="64" index="idx_session_key" />
+	<column name="item_srl" type="bigint" notnull="notnull" />
+	<column name="option_srl" type="bigint" notnull="notnull" default="0" />
+	<column name="qty" type="int" notnull="notnull" default="1" />
+	<column name="regdate" type="char" size="14" />
+</table>

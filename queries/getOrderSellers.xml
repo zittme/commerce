@@ -1,0 +1,14 @@
+<query id="getOrderSellers" action="select">
+	<tables>
+		<table name="commerce_order_seller" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="order_srl" var="order_srl" required="true" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="order_seller_srl" order="asc" />
+	</navigation>
+</query>

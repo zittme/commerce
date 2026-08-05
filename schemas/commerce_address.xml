@@ -1,0 +1,13 @@
+<table name="commerce_address">
+	<!-- 회원 배송지 주소록 -->
+	<column name="address_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="member_srl" type="bigint" notnull="notnull" index="idx_member_srl" />
+	<column name="title" type="varchar" size="60" />
+	<column name="receiver_name" type="varchar" size="80" notnull="notnull" />
+	<column name="receiver_phone" type="varchar" size="30" />
+	<column name="zipcode" type="varchar" size="10" />
+	<column name="address1" type="varchar" size="250" />
+	<column name="address2" type="varchar" size="250" />
+	<column name="is_default" type="char" size="1" notnull="notnull" default="N" />
+	<column name="regdate" type="char" size="14" />
+</table>

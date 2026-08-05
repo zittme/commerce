@@ -1,0 +1,8 @@
+<query id="deleteOption" action="delete">
+	<tables>
+		<table name="commerce_item_option" />
+	</tables>
+	<conditions>
+		<condition operation="equal" column="option_srl" var="option_srl" required="true" />
+	</conditions>
+</query>
