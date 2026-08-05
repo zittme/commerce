@@ -12,7 +12,7 @@ use Zittme\Modules\Commerce\Models\Stock;
 /**
  * 주문 생성·조회·클레임.
  *
- * ★ 철칙: 금액은 브라우저 값을 절대 믿지 않는다 — 장바구니를 서버에서 다시 해석해
+ * 철칙: 금액은 브라우저 값을 절대 믿지 않는다 — 장바구니를 서버에서 다시 해석해
  *   단가·합계·배송비를 전부 재계산한다. 재고는 품목마다 원자 선점하고,
  *   중간에 하나라도 실패하면 이미 선점한 것을 전부 되돌린다.
  */
@@ -63,7 +63,7 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_need_agreement');
 		}
 
-		// ★ 서버 재계산 — 장바구니를 지금 시점 가격으로 다시 해석
+		// 서버 재계산 — 장바구니를 지금 시점 가격으로 다시 해석
 		$owner = CartModel::owner();
 		$resolved = CartModel::resolve($owner);
 		$entries = array_values(array_filter($resolved->items, function($e) { return !$e->blocked; }));
@@ -84,7 +84,7 @@ class Order extends Base
 		$item_total = $resolved->item_total;
 		$delivery_fee = CartModel::calcShipFee($resolved);
 
-		// ★ 재고 원자 선점 — 실패 시 이미 선점한 것 전부 롤백
+		// 재고 원자 선점 — 실패 시 이미 선점한 것 전부 롤백
 		$reserved = [];
 		foreach ($entries as $entry)
 		{

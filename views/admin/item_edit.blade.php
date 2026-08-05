@@ -67,7 +67,7 @@
 		@endif
 		@endif
 
-		{{-- ① 기본 정보 --}}
+		{{-- 1. 기본 정보 --}}
 		<div class="rsva-panel">
 			<h3>기본 정보</h3>
 			<p class="ie-sec-desc">구매자에게 가장 먼저 보이는 정보입니다.</p>
@@ -116,7 +116,7 @@
 			</div>
 		</div>
 
-		{{-- ② 가격 --}}
+		{{-- 2. 가격 --}}
 		<div class="rsva-panel">
 			<h3>가격</h3>
 			<div class="rsva-form-grid">
@@ -141,7 +141,7 @@
 			</div>
 		</div>
 
-		{{-- ③ 재고·구매수량 --}}
+		{{-- 3. 재고·구매수량 --}}
 		<div class="rsva-panel">
 			<h3>재고·구매 수량</h3>
 			<div class="rsva-form-grid">
@@ -169,7 +169,7 @@
 			</div>
 		</div>
 
-		{{-- ④ 배송 --}}
+		{{-- 4. 배송 --}}
 		<div class="rsva-panel">
 			<h3>배송</h3>
 			<div class="rsva-form-grid">
@@ -189,14 +189,14 @@
 			</div>
 		</div>
 
-		{{-- ⑤ 상세 설명 --}}
+		{{-- 5. 상세 설명 --}}
 		<div class="rsva-panel">
 			<h3>상세 설명</h3>
 			<p class="ie-sec-desc">이미지를 끌어다 놓거나 붙여넣을 수 있어요. 상품 페이지 본문에 그대로 표시됩니다.</p>
 			{!! $editor !!}
 		</div>
 
-		{{-- ⑥ 노출·판매 설정 --}}
+		{{-- 6. 노출·판매 설정 --}}
 		<div class="rsva-panel">
 			<h3>노출·판매 설정</h3>
 			<div class="rsva-form-grid">

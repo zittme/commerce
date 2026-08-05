@@ -14,7 +14,7 @@ use Zittme\Modules\Commerce\Models\Config as ConfigModel;
  * 결제는 zittme_pay 에 위임한다 (의존 방향: commerce → zittme_pay 단방향).
  * 부가 모듈 — 엔진 배포본에 포함하지 않는다.
  *
- * ★ 철칙: 주문 금액은 항상 서버가 재계산한다. 재고는 조건부 UPDATE 원자 경로로만 차감한다.
+ * 철칙: 주문 금액은 항상 서버가 재계산한다. 재고는 조건부 UPDATE 원자 경로로만 차감한다.
  */
 class Base extends \ModuleObject
 {

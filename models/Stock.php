@@ -5,7 +5,7 @@ namespace Zittme\Modules\Commerce\Models;
 /**
  * 재고 — 커머스 동시성의 심장.
  *
- * ★ 차감·복구는 오직 조건부 UPDATE(affected rows 판정)로만 한다.
+ * 차감·복구는 오직 조건부 UPDATE(affected rows 판정)로만 한다.
  *   PHP 에서 "조회 → 판단 → 저장"으로 나누면 동시 주문에서 재고가 음수로 뚫린다.
  *   (예약 모듈 Slot::occupy 와 같은 검증된 패턴)
  */

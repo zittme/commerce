@@ -1139,7 +1139,7 @@ class Admin extends Base
 			}
 			$restock = \Context::get('restock') === 'N' ? 'N' : 'Y';
 
-			// ★ 조건부 전이 승자만 실행
+			// 조건부 전이 승자만 실행
 			$won_output = executeQuery('commerce.updateClaimStatusIf', (object)[
 				'claim_srl' => $claim_srl,
 				'status' => 'done',

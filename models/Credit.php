@@ -7,7 +7,7 @@ use Zittme\Modules\Commerce\Controllers\Base;
 /**
  * 적립금 — 커머스 자체 원장.
  *
- * ★ 코어 point 모듈은 커뮤니티 포인트라 연동하지 않는다 (사용자 지시).
+ * 코어 point 모듈은 커뮤니티 포인트라 연동하지 않는다 (사용자 지시).
  * 잔액은 commerce_credit_balance, 이력은 commerce_credit_log.
  * 사용 차감은 `balance >= n` 조건부 UPDATE 원자 경로로만 일어난다 — 음수 잔액 불가.
  */
