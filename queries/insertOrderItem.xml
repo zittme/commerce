@@ -14,6 +14,7 @@
 		<column name="price" var="price" default="0" />
 		<column name="qty" var="qty" default="1" />
 		<column name="subtotal" var="subtotal" default="0" />
+		<column name="tax_type" var="tax_type" default="taxable" />
 		<column name="claim_status" var="claim_status" default="none" />
 		<column name="regdate" var="regdate" />
 	</columns>

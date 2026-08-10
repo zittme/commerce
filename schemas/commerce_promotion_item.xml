@@ -1,0 +1,7 @@
+<table name="commerce_promotion_item">
+	<!-- 기획전-상품 매핑. 기획전 편집·상품 편집 양쪽에서 같은 매핑을 수정한다 -->
+	<column name="promo_item_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="promo_srl" type="bigint" notnull="notnull" index="idx_promo_srl" />
+	<column name="item_srl" type="bigint" notnull="notnull" index="idx_item_srl" />
+	<column name="list_order" type="int" notnull="notnull" default="0" />
+</table>

@@ -1,0 +1,13 @@
+<table name="commerce_stock_log">
+	<column name="log_srl" type="bignumber" notnull="notnull" primary_key="primary_key" />
+	<column name="item_srl" type="bignumber" notnull="notnull" index="idx_item" />
+	<column name="option_srl" type="bignumber" notnull="notnull" default="0" />
+	<!-- in(입고) / out(출고) / loss(손실) -->
+	<column name="type" type="varchar" size="10" notnull="notnull" />
+	<column name="qty" type="number" notnull="notnull" />
+	<!-- 조정 후 재고 (감사 추적용 스냅샷) -->
+	<column name="stock_after" type="number" notnull="notnull" default="0" />
+	<column name="memo" type="varchar" size="250" />
+	<column name="member_srl" type="bignumber" notnull="notnull" default="0" />
+	<column name="regdate" type="date" index="idx_regdate" />
+</table>

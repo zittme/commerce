@@ -1,0 +1,13 @@
+<query id="updateBadge" action="update">
+	<tables><table name="commerce_badge" /></tables>
+	<columns>
+		<column name="title" var="title" />
+		<column name="color" var="color" />
+		<column name="bg_color" var="bg_color" />
+		<column name="list_order" var="list_order" filter="number" />
+		<column name="is_active" var="is_active" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="badge_srl" var="badge_srl" filter="number" notnull="notnull" />
+	</conditions>
+</query>

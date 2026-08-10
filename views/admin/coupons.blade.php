@@ -1,31 +1,32 @@
 @include('_tabs')
+@include('_langfield_assets')
 
 <div class="rsva">
 	<div class="rsva-panel">
-		<h3>쿠폰 만들기</h3>
+		<h3>{{ lang('commerce.admin_coupons_1') }}</h3>
 		<form action="{{ getUrl('') }}" method="post" class="rsva-inline">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminInsertCoupon" />
-			<div style="min-width:180px"><label>이름</label><input type="text" name="title" required /></div>
-			<div><label>코드 (비우면 발급 전용)</label><input type="text" name="code" placeholder="WELCOME10" style="width:130px" /></div>
-			<div><label>할인 방식</label><select name="discount_type" style="width:90px"><option value="fixed">정액(원)</option><option value="percent">정률(%)</option></select></div>
-			<div><label>할인값</label><input type="number" name="discount_value" min="0" required style="width:90px" /></div>
-			<div><label>최대 할인액</label><input type="number" name="max_discount" min="0" value="0" style="width:100px" /></div>
-			<div><label>최소 주문금액</label><input type="number" name="min_order" min="0" value="0" style="width:100px" /></div>
-			<div><label>시작일</label><input type="date" name="use_start" /></div>
-			<div><label>종료일</label><input type="date" name="use_end" /></div>
-			<div><label>1인당 횟수</label><input type="number" name="per_member" min="1" value="1" style="width:70px" /></div>
-			<div><label>전체 한도 (0=무제한)</label><input type="number" name="total_limit" min="0" value="0" style="width:90px" /></div>
-			<div><button type="submit" class="rsva-btn rsva-btn-primary">저장</button></div>
+			<div style="min-width:180px"><label>{{ lang('commerce.admin_coupons_2') }}</label><span class="zlf-row-wrap"><input type="text" name="title" required />@include('_langfield', ['lf_name' => 'title', 'lf_value' => '', 'lf_key' => 'coupon'])</span></div>
+			<div><label>{{ lang('commerce.admin_coupons_3') }}</label><input type="text" name="code" placeholder="WELCOME10" style="width:130px" /></div>
+			<div><label>{{ lang('commerce.admin_coupons_4') }}</label><select name="discount_type" style="width:90px"><option value="fixed">{{ lang('commerce.admin_coupons_5') }}</option><option value="percent">{{ lang('commerce.admin_coupons_6') }}</option></select></div>
+			<div><label>{{ lang('commerce.admin_coupons_7') }}</label><input type="number" name="discount_value" min="0" required style="width:90px" /></div>
+			<div><label>{{ lang('commerce.admin_coupons_8') }}</label><input type="number" name="max_discount" min="0" value="0" style="width:100px" /></div>
+			<div><label>{{ lang('commerce.admin_coupons_9') }}</label><input type="number" name="min_order" min="0" value="0" style="width:100px" /></div>
+			<div><label>{{ lang('commerce.admin_coupons_10') }}</label><input type="date" name="use_start" /></div>
+			<div><label>{{ lang('commerce.admin_coupons_11') }}</label><input type="date" name="use_end" /></div>
+			<div><label>{{ lang('commerce.admin_coupons_12') }}</label><input type="number" name="per_member" min="1" value="1" style="width:70px" /></div>
+			<div><label>{{ lang('commerce.admin_coupons_13') }}</label><input type="number" name="total_limit" min="0" value="0" style="width:90px" /></div>
+			<div><button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_coupons_14') }}</button></div>
 		</form>
-		<small style="display:block;margin-top:8px;color:#6b7684;font-size:12px">할인은 상품 금액에만 적용됩니다(배송비 제외). 정률 쿠폰은 최대 할인액으로 상한을 둘 수 있습니다.</small>
+		<small style="display:block;margin-top:8px;color:#6b7684;font-size:12px">{{ lang('commerce.admin_coupons_15') }}</small>
 	</div>
 
 	@if (empty($coupons))
-	<p class="rsva-empty">등록된 쿠폰이 없습니다.</p>
+	<p class="rsva-empty">{{ lang('commerce.admin_coupons_16') }}</p>
 	@else
 	<table class="rsva-table">
-		<thead><tr><th>이름</th><th>코드</th><th>할인</th><th>조건</th><th>기간</th><th>사용/한도</th><th>상태</th><th>발급·관리</th></tr></thead>
+		<thead><tr><th>{{ lang('commerce.admin_coupons_2') }}</th><th>{{ lang('commerce.admin_coupons_17') }}</th><th>{{ lang('commerce.admin_coupons_18') }}</th><th>{{ lang('commerce.admin_coupons_19') }}</th><th>{{ lang('commerce.admin_coupons_20') }}</th><th>{{ lang('commerce.admin_coupons_21') }}</th><th>{{ lang('commerce.admin_coupons_22') }}</th><th>{{ lang('commerce.admin_coupons_23') }}</th></tr></thead>
 		<tbody>
 			@foreach ($coupons as $c)
 			<tr>
@@ -45,14 +46,14 @@
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminIssueCoupon" />
 						<input type="hidden" name="coupon_srl" value="{{ $c->coupon_srl }}" />
-						<div><input type="text" name="target" placeholder="아이디 또는 이메일" style="width:140px" /></div>
-						<div><button type="submit" class="rsva-btn rsva-btn-sm">발급</button></div>
+						<div><input type="text" name="target" placeholder="{{ lang('commerce.admin_coupons_26') }}" style="width:140px" /></div>
+						<div><button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_coupons_24') }}</button></div>
 					</form>
 					<form action="{{ getUrl('') }}" method="post" style="display:inline-block;margin-top:4px" onsubmit="return confirm('쿠폰을 삭제할까요? 발급 이력은 남습니다.')">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminDeleteCoupon" />
 						<input type="hidden" name="coupon_srl" value="{{ $c->coupon_srl }}" />
-						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">삭제</button>
+						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_coupons_25') }}</button>
 					</form>
 				</td>
 			</tr>

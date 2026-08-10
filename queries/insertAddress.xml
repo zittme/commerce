@@ -1,0 +1,17 @@
+<query id="insertAddress" action="insert">
+	<tables>
+		<table name="commerce_address" />
+	</tables>
+	<columns>
+		<column name="address_srl" var="address_srl" filter="number" notnull="notnull" />
+		<column name="member_srl" var="member_srl" filter="number" notnull="notnull" />
+		<column name="title" var="title" />
+		<column name="receiver_name" var="receiver_name" notnull="notnull" />
+		<column name="receiver_phone" var="receiver_phone" />
+		<column name="zipcode" var="zipcode" />
+		<column name="address1" var="address1" />
+		<column name="address2" var="address2" />
+		<column name="is_default" var="is_default" default="N" />
+		<column name="regdate" var="regdate" default="curdate()" />
+	</columns>
+</query>

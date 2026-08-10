@@ -1,0 +1,9 @@
+<query id="deleteAddress" action="delete">
+	<tables>
+		<table name="commerce_address" />
+	</tables>
+	<conditions>
+		<condition operation="equal" column="address_srl" var="address_srl" notnull="notnull" />
+		<condition operation="equal" column="member_srl" var="member_srl" pipe="and" notnull="notnull" />
+	</conditions>
+</query>

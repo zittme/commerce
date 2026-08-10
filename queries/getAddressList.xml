@@ -1,0 +1,15 @@
+<query id="getAddressList" action="select">
+	<tables>
+		<table name="commerce_address" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="member_srl" var="member_srl" required="true" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="address_srl" order="desc" />
+		<list_count var="list_count" default="20" />
+	</navigation>
+</query>

@@ -8,6 +8,7 @@
 	<conditions>
 		<condition operation="in" column="status" var="status_list" />
 		<condition operation="equal" column="category_srl" var="category_srl" pipe="and" />
+		<condition operation="in" column="category_srl" var="category_srl_list" pipe="and" />
 		<condition operation="equal" column="seller_srl" var="seller_srl" pipe="and" />
 		<condition operation="equal" column="is_recommend" var="is_recommend" pipe="and" />
 		<condition operation="like" column="item_name" var="search_keyword" pipe="and" />

@@ -1,57 +1,80 @@
 @version(2)
 @load('css/shop.css')
 
-<div class="shp shp-narrow">
+<div class="shp">
 	<div class="shp-top"><h2 class="shp-title">{{ $lang->shop_cart }}</h2></div>
 
 	@if (empty($cart->items))
 	<p class="shp-empty">{{ $lang->shop_cart_empty }}</p>
+	<p class="shp-foot-links"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a></p>
 	@else
-	<table class="shp-table">
-		<thead><tr><th></th><th>{{ $lang->shop_item }}</th><th>{{ $lang->shop_qty }}</th><th>{{ $lang->shop_subtotal }}</th><th></th></tr></thead>
-		<tbody>
-			@foreach ($cart->items as $entry)
-			@php $shp_row_thumb = !empty($entry->item->thumb) ? "background-image:url('" . $entry->item->thumb . "');" : ''; @endphp
-			<tr class="{{ $entry->blocked ? 'shp-blocked' : '' }}">
-				<td><span class="shp-mini-thumb" style="{{ $shp_row_thumb }}"></span></td>
-				<td>
-					<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $entry->item->item_srl) }}"><strong>{{ $entry->item->item_name }}</strong></a>
-					@if ($entry->option)<br /><small style="color:#6b7684">{{ $entry->option->option_label }}</small>@endif
-					@if ($entry->blocked)<br /><small style="color:#c0392b">{{ $lang->shop_cart_blocked }}</small>@endif
-				</td>
-				<td>
-					<form action="{{ getUrl('') }}" method="post" style="display:flex;gap:5px;align-items:center">
-						<input type="hidden" name="act" value="procCommerceCartUpdate" />
-						<input type="hidden" name="mid" value="{{ $mid }}" />
-						<input type="hidden" name="cart_srl" value="{{ $entry->cart_srl }}" />
-						<input type="number" name="qty" value="{{ $entry->qty }}" min="1" style="width:70px;padding:6px 8px;border:1px solid #e5e8ee;border-radius:8px" />
-						<button type="submit" style="padding:6px 10px;border:1px solid #e5e8ee;border-radius:8px;background:#fff;cursor:pointer;font-family:inherit">{{ $lang->shop_change }}</button>
-					</form>
-				</td>
-				<td><strong>{{ number_format($entry->subtotal) }}원</strong></td>
-				<td>
-					<form action="{{ getUrl('') }}" method="post" style="display:inline">
-						<input type="hidden" name="act" value="procCommerceCartDelete" />
-						<input type="hidden" name="mid" value="{{ $mid }}" />
-						<input type="hidden" name="cart_srl" value="{{ $entry->cart_srl }}" />
-						<button type="submit" style="padding:6px 10px;border:1px solid #e5e8ee;border-radius:8px;background:#fff;cursor:pointer;color:#c0392b;font-family:inherit">{{ $lang->shop_delete }}</button>
-					</form>
-				</td>
-			</tr>
-			@endforeach
-		</tbody>
-	</table>
+	<div class="shp-2col">
+		<div class="shp-2col-main">
+			<div class="shp-box">
+				@foreach ($cart->items as $entry)
+				@php $shp_row_thumb = !empty($entry->item->thumb) ? "background-image:url('" . $entry->item->thumb . "');" : ''; @endphp
+				<div class="shp-cart-item {{ $entry->blocked ? 'is-blocked' : '' }}">
+					<a class="shp-cart-thumb" style="{{ $shp_row_thumb }}" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $entry->item->item_srl) }}" aria-label="{{ $entry->item->item_name }}"></a>
+					<div class="shp-cart-info">
+						<a class="shp-cart-name" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $entry->item->item_srl) }}">{{ $entry->item->item_name }}</a>
+						@if ($entry->option)<div class="shp-cart-option">{{ $entry->option->option_label }}</div>@endif
+						@if ($entry->blocked)<div class="shp-cart-blocked">{{ $lang->shop_cart_blocked }}</div>@endif
+						<form action="{{ getUrl('') }}" method="post" class="shp-cart-qty">
+							<input type="hidden" name="act" value="procCommerceCartUpdate" />
+							<input type="hidden" name="mid" value="{{ $mid }}" />
+							<input type="hidden" name="cart_srl" value="{{ $entry->cart_srl }}" />
+							<div class="shp-stepper">
+								<button type="button" class="shp-step" data-step="-1" aria-label="수량 줄이기">&minus;</button>
+								<input class="shp-qty" type="number" name="qty" value="{{ $entry->qty }}" min="1" />
+								<button type="button" class="shp-step" data-step="1" aria-label="수량 늘리기">+</button>
+							</div>
+						</form>
+					</div>
+					<div class="shp-cart-right">
+						<form action="{{ getUrl('') }}" method="post" class="shp-cart-del">
+							<input type="hidden" name="act" value="procCommerceCartDelete" />
+							<input type="hidden" name="mid" value="{{ $mid }}" />
+							<input type="hidden" name="cart_srl" value="{{ $entry->cart_srl }}" />
+							<button type="submit" aria-label="{{ $lang->shop_delete }}"><svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+						</form>
+						<strong class="shp-cart-price">{{ number_format($entry->subtotal) }}원</strong>
+					</div>
+				</div>
+				@endforeach
+			</div>
+			<p class="shp-foot-links" style="text-align:left"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a></p>
+		</div>
 
-	<div class="shp-summary">
-		<div class="shp-summary-row"><span>{{ $lang->shop_item_total }}</span><span>{{ number_format($cart->item_total) }}원</span></div>
-		<div class="shp-summary-row"><span>{{ $lang->shop_ship_fee }}</span><span>{{ $ship_fee > 0 ? number_format($ship_fee) . '원' : $lang->shop_ship_free }}</span></div>
-		<div class="shp-summary-row is-total"><span>{{ $lang->shop_total }}</span><span>{{ number_format($cart->item_total + $ship_fee) }}원</span></div>
+		<aside class="shp-2col-aside">
+			<div class="shp-box shp-paybox">
+				<h3>{{ $lang->shop_order_estimate ?? '주문 예상 금액' }}</h3>
+				<div class="shp-summary-row"><span>{{ $lang->shop_item_total }}</span><span>{{ number_format($cart->item_total) }}원</span></div>
+				<div class="shp-summary-row"><span>{{ $lang->shop_ship_fee }}</span><span>{{ $ship_fee > 0 ? '+' . number_format($ship_fee) . '원' : $lang->shop_ship_free }}</span></div>
+				<div class="shp-summary-row is-total"><span>{{ $lang->shop_total }}</span><span>{{ number_format($cart->item_total + $ship_fee) }}원</span></div>
+				<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceCheckout') }}" class="shp-btn shp-btn-primary" style="width:100%;margin-top:14px">{{ $lang->shop_checkout }}</a>
+			</div>
+		</aside>
 	</div>
-
-	<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceCheckout') }}" class="shp-btn shp-btn-primary" style="width:100%">{{ $lang->shop_checkout }}</a>
 	@endif
 
-	<p class="shp-foot-links">
-		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a>
-	</p>
+	<script>
+	(function () {
+		// 수량 스테퍼: 누르면 바로 저장한다
+		document.querySelectorAll('.shp-cart-qty').forEach(function (form) {
+			var input = form.querySelector('.shp-qty');
+			form.querySelectorAll('.shp-step').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					var q = (parseInt(input.value, 10) || 1) + parseInt(btn.getAttribute('data-step'), 10);
+					if (q < 1) q = 1;
+					input.value = q;
+					form.submit();
+				});
+			});
+			input.addEventListener('change', function () {
+				if ((parseInt(input.value, 10) || 0) < 1) input.value = 1;
+				form.submit();
+			});
+		});
+	})();
+	</script>
 </div>

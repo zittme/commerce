@@ -1,0 +1,16 @@
+<query id="insertStockLog" action="insert">
+	<tables>
+		<table name="commerce_stock_log" />
+	</tables>
+	<columns>
+		<column name="log_srl" var="log_srl" filter="number" notnull="notnull" />
+		<column name="item_srl" var="item_srl" filter="number" notnull="notnull" />
+		<column name="option_srl" var="option_srl" filter="number" default="0" />
+		<column name="type" var="type" notnull="notnull" />
+		<column name="qty" var="qty" filter="number" notnull="notnull" />
+		<column name="stock_after" var="stock_after" filter="number" default="0" />
+		<column name="memo" var="memo" />
+		<column name="member_srl" var="member_srl" filter="number" default="0" />
+		<column name="regdate" var="regdate" default="curdate()" />
+	</columns>
+</query>

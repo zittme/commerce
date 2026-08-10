@@ -1,0 +1,286 @@
+@version(2)
+{{-- 쇼핑 프론트 관리 플로팅 — 관리자에게만 보인다. 메인 형태·카테고리 배치·배너를 화면에서 바로 편집한다 --}}
+<button type="button" class="shp-admin-fab" id="shpAdminFab">
+	<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/></svg>
+	쇼핑 설정
+</button>
+
+<div class="shp-admin-panel" id="shpAdminPanel" hidden>
+	<div class="shp-admin-panel-head">
+		<strong>쇼핑 설정</strong>
+		<button type="button" id="shpAdminClose" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+	</div>
+
+	<form action="./" method="post" id="shpAdminForm">
+		<input type="hidden" name="module" value="commerce" />
+		<input type="hidden" name="act" value="procCommerceAdminSaveFront" />
+		<input type="hidden" name="success_return_url" value="{{ getNotEncodedFullUrl('', 'mid', $mid) }}" />
+		<input type="hidden" name="home_banners" id="shpAdmBannersJson" value="{{ $shop_config->home_banners ?? '[]' }}" />
+
+		<div class="shp-admin-sec">
+			<label class="shp-admin-label">메인 형태</label>
+			<label><input type="radio" name="shop_main" value="list" @if (($shop_config->shop_main ?? 'list') !== 'home') checked @endif /> 전체 상품 목록</label>
+			<label><input type="radio" name="shop_main" value="home" @if (($shop_config->shop_main ?? 'list') === 'home') checked @endif /> 쇼핑 메인페이지 (배너 + 섹션)</label>
+		</div>
+
+		<div class="shp-admin-sec">
+			<label class="shp-admin-label">카테고리 배치</label>
+			<label><input type="radio" name="category_layout" value="top" @if (($shop_config->category_layout ?? 'top') !== 'side') checked @endif /> 상단</label>
+			<label><input type="radio" name="category_layout" value="side" @if (($shop_config->category_layout ?? 'top') === 'side') checked @endif /> 좌측 사이드바</label>
+		</div>
+
+		<div class="shp-admin-sec" id="shpAdmBannerSec">
+			<label class="shp-admin-label">배너</label>
+			<div id="shpAdmBannerRows"></div>
+			<button type="button" class="shp-adm-btn" id="shpAdmBannerAdd">배너 추가</button>
+		</div>
+
+		<button type="submit" class="shp-adm-btn shp-adm-btn-primary" style="width:100%">저장</button>
+	</form>
+</div>
+
+<script>
+(function () {
+	var LANGS = {!! json_encode(Zittme\Modules\Commerce\Models\Lang::languages(), JSON_UNESCAPED_UNICODE) !!};
+	var fab = document.getElementById('shpAdminFab');
+	var panel = document.getElementById('shpAdminPanel');
+	if (!fab || !panel) return;
+	fab.addEventListener('click', function () { panel.hidden = !panel.hidden; });
+	document.getElementById('shpAdminClose').addEventListener('click', function () { panel.hidden = true; });
+
+	var rowsEl = document.getElementById('shpAdmBannerRows');
+	var jsonEl = document.getElementById('shpAdmBannersJson');
+	var csrf = (document.querySelector('meta[name=csrf-token]') || {}).content || '';
+	var GLOBE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.3 2.6 2.3 14.4 0 17"/><path d="M12 3.5c-2.3 2.6-2.3 14.4 0 17"/></svg>';
+	var LANG_PREFIX = '$user_lang->';
+
+	// 다국어 문구 고르기 — 새 문구 만들기는 관리자 화면에서 한다
+	var langBox = null;
+	function closeLangBox() { if (langBox) { langBox.remove(); langBox = null; } }
+	function openLangBox(button, input, hidden) {
+		closeLangBox();
+		langBox = document.createElement('div');
+		langBox.className = 'shp-adm-langbox';
+		var fields = '';
+		Object.keys(LANGS).forEach(function (code) {
+			fields += '<label class="shp-adm-langrow"><span></span><input type="text" data-lang-input="' + code + '" /></label>';
+		});
+		langBox.innerHTML =
+			'<div class="shp-adm-langtabs"><button type="button" class="is-on" data-tab="pick">등록된 문구</button><button type="button" data-tab="new">새로 만들기</button></div>' +
+			'<div data-body="pick"><input type="search" placeholder="문구 검색" /><ul><li class="is-empty">불러오는 중…</li></ul></div>' +
+			'<div data-body="new" hidden>' + fields + '<button type="button" class="shp-adm-langsave" data-save>저장하고 사용</button></div>' +
+			'<button type="button" data-clear>연결 해제</button>';
+		// 언어 이름은 textContent 로 넣어 값이 그대로 보이게 한다
+		Object.keys(LANGS).forEach(function (code) {
+			var row = langBox.querySelector('[data-lang-input="' + code + '"]').parentNode;
+			row.querySelector('span').textContent = LANGS[code];
+		});
+		document.body.appendChild(langBox);
+
+		var rect = button.getBoundingClientRect();
+		langBox.style.left = Math.max(8, Math.min(rect.left - 220, window.innerWidth - 268)) + 'px';
+		langBox.style.top = Math.min(rect.bottom + 6, window.innerHeight - 280) + 'px';
+
+		var listEl = langBox.querySelector('ul');
+		var searchEl = langBox.querySelector('input');
+		function load() {
+			listEl.innerHTML = '<li class="is-empty">불러오는 중…</li>';
+			exec_json('commerce.procCommerceAdminGetLangCodes', { keyword: searchEl.value }, function (ret) {
+				var codes = ret.codes || [];
+				if (!codes.length) { listEl.innerHTML = '<li class="is-empty">등록된 문구가 없습니다. 관리자 화면에서 먼저 만들어 주세요.</li>'; return; }
+				listEl.innerHTML = '';
+				codes.forEach(function (row) {
+					var li = document.createElement('li');
+					li.innerHTML = '<b></b><small></small>';
+					li.querySelector('b').textContent = row.value || row.code;
+					li.querySelector('small').textContent = row.code;
+					li.addEventListener('click', function () {
+						hidden.value = row.code;
+						input.value = row.value || row.code;
+						input.readOnly = true;
+						button.classList.add('is-on');
+						closeLangBox();
+					});
+					listEl.appendChild(li);
+				});
+			}, function () { listEl.innerHTML = '<li class="is-empty">목록을 불러오지 못했습니다.</li>'; });
+		}
+		var timer = null;
+		searchEl.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(load, 250); });
+		langBox.querySelectorAll('[data-tab]').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				var tab = btn.getAttribute('data-tab');
+				langBox.querySelectorAll('[data-tab]').forEach(function (b) { b.classList.toggle('is-on', b === btn); });
+				langBox.querySelectorAll('[data-body]').forEach(function (b) { b.hidden = b.getAttribute('data-body') !== tab; });
+			});
+		});
+
+		langBox.querySelector('[data-save]').addEventListener('click', function () {
+			var values = {};
+			langBox.querySelectorAll('[data-lang-input]').forEach(function (el) {
+				values[el.getAttribute('data-lang-input')] = el.value;
+			});
+			exec_json('commerce.procCommerceAdminSaveLangCode', { code: hidden.value, values: values }, function (ret) {
+				hidden.value = ret.code;
+				input.value = ret.value || ret.code;
+				input.readOnly = true;
+				button.classList.add('is-on');
+				closeLangBox();
+			}, function (ret) {
+				alert((ret && ret.message) || '저장하지 못했습니다.');
+			});
+		});
+
+		langBox.querySelector('[data-clear]').addEventListener('click', function () {
+			hidden.value = '';
+			input.value = '';
+			input.readOnly = false;
+			button.classList.remove('is-on');
+			closeLangBox();
+		});
+		load();
+		if (hidden.value) {
+			exec_json('commerce.procCommerceAdminGetLangCode', { code: hidden.value }, function (ret) {
+				var values = ret.values || {};
+				langBox.querySelectorAll('[data-lang-input]').forEach(function (el) {
+					el.value = values[el.getAttribute('data-lang-input')] || '';
+				});
+			});
+		}
+	}
+	document.addEventListener('click', function (e) {
+		if (langBox && !e.target.closest('.shp-adm-langbox') && !e.target.closest('[data-lang]')) closeLangBox();
+	});
+
+	// 저장값이 코어 규약이면 코드를 물리고 칸에는 실제 문구를 보여준다
+	function setLangField(row, key, value) {
+		var input = row.querySelector('[data-k=' + key + ']');
+		var hidden = row.querySelector('[data-k=' + key + '_code]');
+		var button = row.querySelector('[data-lang=' + key + ']');
+		if (String(value).indexOf(LANG_PREFIX) !== 0) { input.value = value; return; }
+		var code = String(value).substring(LANG_PREFIX.length);
+		hidden.value = code;
+		input.value = code;
+		input.readOnly = true;
+		button.classList.add('is-on');
+		exec_json('commerce.procCommerceAdminGetLangCode', { code: code }, function (ret) {
+			var values = ret.values || {};
+			for (var k in values) { if (values[k]) { input.value = values[k]; break; } }
+		});
+	}
+
+	// 파일 업로드: 관리자 전용 업로드 액션으로 보내고 URL 을 받아 채운다
+	function upload(input, cb) {
+		var f = input.files && input.files[0];
+		if (!f) return;
+		var fd = new FormData();
+		fd.append('file', f);
+		fetch('./?module=commerce&act=procCommerceAdminUploadBanner', {
+			method: 'POST', body: fd, headers: { 'X-CSRF-Token': csrf }
+		}).then(function (r) { return r.json(); }).then(function (res) {
+			if (res && !res.error && res.url) cb(res.url);
+			else alert(res && res.message ? res.message : '업로드에 실패했습니다.');
+		}).catch(function () { alert('업로드에 실패했습니다.'); });
+	}
+
+	function addRow(data) {
+		data = data || {};
+		var row = document.createElement('div');
+		row.className = 'shp-adm-banner';
+		row.innerHTML =
+			'<div class="shp-adm-banner-tools">' +
+				'<button type="button" data-mv="-1" title="위로">&uarr;</button>' +
+				'<button type="button" data-mv="1" title="아래로">&darr;</button>' +
+				'<button type="button" data-del="1" title="삭제">&times;</button>' +
+			'</div>' +
+			'<label>배경</label>' +
+			'<select data-k="bg_type">' +
+				'<option value="gradient">그라디언트</option>' +
+				'<option value="color">단색</option>' +
+				'<option value="image">이미지</option>' +
+			'</select>' +
+			'<div class="shp-adm-bg-color" hidden><input type="color" data-k="bg_color" value="#1a1f2e" /> <input type="color" data-k="bg_color2" value="#0d1019" /></div>' +
+			'<div class="shp-adm-bg-image" hidden><input type="file" accept="image/*" data-up="image" /><input type="hidden" data-k="image" /><span class="shp-adm-file" data-name="image"></span></div>' +
+			'<label>포인트 이미지 (우측, 선택)</label>' +
+			'<div><input type="file" accept="image/*" data-up="point_image" /><input type="hidden" data-k="point_image" /><span class="shp-adm-file" data-name="point_image"></span></div>' +
+			'<label>글자 색 / 그림자</label>' +
+			'<div><input type="color" data-k="text_color" value="#ffffff" /> <label style="display:inline;font-size:12.5px"><input type="checkbox" data-k="shadow" checked /> 글자 그림자</label></div>' +
+			'<label>제목</label><span class="shp-adm-lang"><input type="text" data-k="title" /><input type="hidden" data-k="title_code" /><button type="button" class="shp-adm-globe" data-lang="title" title="다국어 문구 연결">' + GLOBE + '</button></span>' +
+			'<label>문구</label><span class="shp-adm-lang"><input type="text" data-k="text" /><input type="hidden" data-k="text_code" /><button type="button" class="shp-adm-globe" data-lang="text" title="다국어 문구 연결">' + GLOBE + '</button></span>' +
+			'<label>링크 URL (비우면 상품 목록)</label><input type="text" data-k="url" />';
+		function el(sel) { return row.querySelector(sel); }
+		el('[data-k=bg_type]').value = data.bg_type || (data.image ? 'image' : 'gradient');
+		el('[data-k=bg_color]').value = data.bg_color || '#1a1f2e';
+		el('[data-k=bg_color2]').value = data.bg_color2 || '#0d1019';
+		el('[data-k=text_color]').value = data.text_color || '#ffffff';
+		el('[data-k=shadow]').checked = (data.shadow || 'Y') !== 'N';
+		el('[data-k=image]').value = data.image || '';
+		el('[data-k=point_image]').value = data.point_image || '';
+		setLangField(row, 'title', data.title || '');
+		setLangField(row, 'text', data.text || '');
+		el('[data-k=url]').value = data.url || '';
+		function refreshBg() {
+			var t = el('[data-k=bg_type]').value;
+			el('.shp-adm-bg-color').hidden = t === 'image';
+			el('.shp-adm-bg-image').hidden = t !== 'image';
+		}
+		function refreshFiles() {
+			['image', 'point_image'].forEach(function (k) {
+				var url = el('[data-k=' + k + ']').value;
+				el('[data-name=' + k + ']').textContent = url ? url.split('/').pop() : '';
+			});
+		}
+		el('[data-k=bg_type]').addEventListener('change', refreshBg);
+		row.querySelectorAll('[data-up]').forEach(function (input) {
+			input.addEventListener('change', function () {
+				upload(input, function (url) {
+					el('[data-k=' + input.getAttribute('data-up') + ']').value = url;
+					refreshFiles();
+				});
+			});
+		});
+		row.querySelectorAll('[data-lang]').forEach(function (btn) {
+			var key = btn.getAttribute('data-lang');
+			btn.addEventListener('click', function () {
+				openLangBox(btn, row.querySelector('[data-k=' + key + ']'), row.querySelector('[data-k=' + key + '_code]'));
+			});
+		});
+		el('[data-del]').addEventListener('click', function () { row.remove(); });
+		row.querySelectorAll('[data-mv]').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				var dir = parseInt(btn.getAttribute('data-mv'), 10);
+				var ref = dir < 0 ? row.previousElementSibling : row.nextElementSibling;
+				if (!ref) return;
+				if (dir < 0) rowsEl.insertBefore(row, ref);
+				else rowsEl.insertBefore(ref, row);
+			});
+		});
+		refreshBg();
+		refreshFiles();
+		rowsEl.appendChild(row);
+	}
+
+	var initial = [];
+	try { initial = JSON.parse(jsonEl.value) || []; } catch (e) {}
+	initial.forEach(addRow);
+	document.getElementById('shpAdmBannerAdd').addEventListener('click', function () { addRow(); });
+
+	document.getElementById('shpAdminForm').addEventListener('submit', function () {
+		var out = [];
+		rowsEl.querySelectorAll('.shp-adm-banner').forEach(function (row) {
+			function v(k) { return row.querySelector('[data-k=' + k + ']').value; }
+			var item = {
+				bg_type: v('bg_type'), bg_color: v('bg_color'), bg_color2: v('bg_color2'),
+				image: v('image'), point_image: v('point_image'),
+				text_color: v('text_color'),
+				shadow: row.querySelector('[data-k=shadow]').checked ? 'Y' : 'N',
+				title: v('title_code').trim() ? (LANG_PREFIX + v('title_code').trim()) : v('title').trim(),
+				text: v('text_code').trim() ? (LANG_PREFIX + v('text_code').trim()) : v('text').trim(),
+				url: v('url').trim()
+			};
+			if (item.title || item.text || item.image || item.point_image) out.push(item);
+		});
+		jsonEl.value = JSON.stringify(out);
+	});
+})();
+</script>

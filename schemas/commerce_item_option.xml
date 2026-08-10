@@ -3,8 +3,12 @@
 	<column name="option_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="item_srl" type="bigint" notnull="notnull" index="idx_item_srl" />
 	<column name="option_label" type="varchar" size="250" notnull="notnull" />
+	<!-- basic: 상품 자체가 바뀌는 기본 옵션(가격 = 판매가 + 추가금) / extra: 별도 추가상품(가격 = 추가금 단독) -->
+	<column name="option_type" type="varchar" size="10" notnull="notnull" default="basic" />
+	<!-- 조합형: 축 이름 => 값 (JSON). 축 없이 만든 옵션은 비어 있다 -->
+	<column name="combo" type="varchar" size="250" />
 	<column name="price_add" type="bigint" notnull="notnull" default="0" />
-	<!-- ★ 차감은 조건부 UPDATE (stock >= n) 로만 -->
+	<!-- 차감은 조건부 UPDATE (stock >= n) 로만 -->
 	<column name="stock" type="int" notnull="notnull" default="0" />
 	<column name="sku" type="varchar" size="80" />
 	<column name="list_order" type="int" notnull="notnull" default="0" />

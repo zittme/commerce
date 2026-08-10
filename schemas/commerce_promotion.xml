@@ -1,0 +1,15 @@
+<table name="commerce_promotion">
+	<!-- 기획전(특별전) — 상품 묶음 + 전용 페이지. 전용 할인 없음(상품 할인가 그대로) -->
+	<column name="promo_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="title" type="varchar" size="120" notnull="notnull" />
+	<column name="slug" type="varchar" size="80" notnull="notnull" index="idx_slug" />
+	<!-- 배너 JSON (홈 배너와 같은 스키마: bg_type, bg_color, bg_color2, image, point_image, text_color, shadow, text) -->
+	<column name="banner" type="text" />
+	<column name="description" type="text" />
+	<column name="start_date" type="char" size="14" index="idx_start_date" />
+	<column name="end_date" type="char" size="14" index="idx_end_date" />
+	<!-- Y: 노출 / N: 숨김 -->
+	<column name="status" type="char" size="1" notnull="notnull" default="Y" />
+	<column name="list_order" type="int" notnull="notnull" default="0" />
+	<column name="regdate" type="char" size="14" />
+</table>

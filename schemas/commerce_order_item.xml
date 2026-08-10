@@ -12,6 +12,8 @@
 	<column name="price" type="bigint" notnull="notnull" default="0" />
 	<column name="qty" type="int" notnull="notnull" default="1" />
 	<column name="subtotal" type="bigint" notnull="notnull" default="0" />
+	<!-- 주문 시점의 과세 구분 스냅샷 (taxable / free) -->
+	<column name="tax_type" type="varchar" size="10" notnull="notnull" default="taxable" />
 	<!-- none / requested / done -->
 	<column name="claim_status" type="varchar" size="10" notnull="notnull" default="none" />
 	<column name="regdate" type="char" size="14" />

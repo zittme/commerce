@@ -1,0 +1,12 @@
+<query id="insertBadge" action="insert">
+	<tables><table name="commerce_badge" /></tables>
+	<columns>
+		<column name="badge_srl" var="badge_srl" filter="number" notnull="notnull" />
+		<column name="title" var="title" notnull="notnull" />
+		<column name="color" var="color" />
+		<column name="bg_color" var="bg_color" />
+		<column name="list_order" var="list_order" filter="number" default="0" />
+		<column name="is_active" var="is_active" default="Y" />
+		<column name="regdate" var="regdate" />
+	</columns>
+</query>

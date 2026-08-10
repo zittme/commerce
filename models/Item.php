@@ -63,6 +63,24 @@ class Item
 	 * @param object $item
 	 * @return bool
 	 */
+	/**
+	 * 판매 중인 기본 옵션(변형)이 있는지. 있으면 본품 단독 주문은 막는다.
+	 *
+	 * @param int $item_srl
+	 * @return bool
+	 */
+	public static function hasBasicOptions(int $item_srl): bool
+	{
+		foreach (self::getOptions($item_srl, true) as $opt)
+		{
+			if (($opt->option_type ?? 'basic') === 'basic')
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function isPurchasable(object $item): bool
 	{
 		if (($item->status ?? '') !== 'sale')
@@ -78,7 +96,17 @@ class Item
 		{
 			return false;
 		}
-		// 옵션 상품은 옵션 재고로, 아니면 상품 재고로 판정
+		// 재고 관리를 쓰지 않는 상품은 옵션 여부와 무관하게 항상 구매 가능
+		if (($item->use_stock ?? 'Y') !== 'Y')
+		{
+			return true;
+		}
+		// 본품 재고가 있으면 구매 가능. 옵션은 변형 상품이라, 옵션이 전부
+		// 매진이어도 본품은 팔 수 있다 (매진 옵션은 화면에서 선택만 막는다).
+		if ((int)$item->stock > 0)
+		{
+			return true;
+		}
 		if (($item->has_options ?? 'N') === 'Y')
 		{
 			foreach (self::getOptions((int)$item->item_srl, true) as $opt)
@@ -88,9 +116,8 @@ class Item
 					return true;
 				}
 			}
-			return false;
 		}
-		return ($item->use_stock ?? 'Y') !== 'Y' || (int)$item->stock > 0;
+		return false;
 	}
 
 	/**

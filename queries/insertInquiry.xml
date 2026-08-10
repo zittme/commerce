@@ -1,0 +1,14 @@
+<query id="insertInquiry" action="insert">
+	<tables>
+		<table name="commerce_inquiry" />
+	</tables>
+	<columns>
+		<column name="inquiry_srl" var="inquiry_srl" filter="number" notnull="notnull" />
+		<column name="item_srl" var="item_srl" filter="number" notnull="notnull" />
+		<column name="member_srl" var="member_srl" filter="number" default="0" />
+		<column name="nick_name" var="nick_name" />
+		<column name="is_secret" var="is_secret" default="N" />
+		<column name="content" var="content" notnull="notnull" />
+		<column name="regdate" var="regdate" default="curdate()" />
+	</columns>
+</query>

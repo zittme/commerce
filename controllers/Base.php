@@ -9,7 +9,7 @@ use Zittme\Modules\Commerce\Models\Config as ConfigModel;
  *
  * 전략: "오픈마켓 스키마, 독립몰 릴리즈" — 주문은 처음부터 3계층이다:
  *   commerce_order(결제 단위) → commerce_order_seller(판매자별) → commerce_order_item(스냅샷)
- * 독립몰 모드에서도 order_seller 는 반드시 1건 생성한다. 분기하지 말 것.
+ * 독립몰 모드에서도 order_seller 는 1건을 생성한다.
  *
  * 결제는 zittme_pay 에 위임한다 (의존 방향: commerce → zittme_pay 단방향).
  * 부가 모듈 — 엔진 배포본에 포함하지 않는다.
@@ -19,7 +19,7 @@ use Zittme\Modules\Commerce\Models\Config as ConfigModel;
 class Base extends \ModuleObject
 {
 	/**
-	 * 기본 인스턴스 주소 (단일 인스턴스 모델 — 예약 모듈과 동일 규약).
+	 * 기본 인스턴스 주소 (단일 인스턴스 모델).
 	 */
 	public const DEFAULT_MID = 'shop';
 
@@ -40,6 +40,8 @@ class Base extends \ModuleObject
 	public const SELLER_PREPARING = 'preparing';
 	public const SELLER_SHIPPING = 'shipping';
 	public const SELLER_DELIVERED = 'delivered';
+	// 구매확정 — 배송완료 후 구매자가 확정. 확정해야 리뷰를 쓸 수 있다
+	public const SELLER_CONFIRMED = 'confirmed';
 	public const SELLER_CANCELLED = 'cancelled';
 	public const SELLER_REFUNDED = 'refunded';
 

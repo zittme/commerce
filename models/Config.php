@@ -8,11 +8,11 @@ namespace Zittme\Modules\Commerce\Models;
 class Config
 {
 	/**
-	 * 기본값. (extra_var 미설정 undefined 함정 방지 — 반드시 기본값을 둔다)
+	 * 설정 기본값. 설정하지 않은 항목도 값이 있도록 여기에 모아 둔다.
 	 */
 	public const DEFAULTS = [
 		'enabled' => 'Y',
-		// single(독립몰) / open(오픈마켓, 2차)
+		// single(독립몰) / open(오픈마켓)
 		'market_mode' => 'single',
 		'code_prefix' => 'O',
 		// 비회원 주문 허용
@@ -23,8 +23,29 @@ class Config
 		'default_ship_fee' => 3000,
 		// 이 금액 이상 무료배송 (0 = 사용 안 함)
 		'free_ship_over' => 50000,
+		// 도서·산간 등 지역 추가 배송비 (JSON: [{name, zips, fee}], zips는 접두/범위 쉼표 구분)
+		'ship_extra_zones' => '[]',
+		// 스윗트래커(스마트택배) API 키 — 입력하면 송장 기준 배송 상태 자동 추적
+		'sweettracker_api_key' => '',
+		// 리뷰 작성 적립금 (상품당 첫 리뷰 1회, 0 = 미지급)
+		'review_credit_text' => 0,
+		'review_credit_photo' => 0,
 		// 취소·반품 신청 가능 기간(배송완료 후 일수)
 		'claim_days' => 7,
+		// 상품 상세: 우측 플로팅(스티키) 구매 박스 사용 여부
+		'item_sticky' => 'N',
+		// 쇼핑 메인: list(상품 목록) / home(배너·섹션 구성 홈)
+		'shop_main' => 'list',
+		// 카테고리 배치: top(상단 셀렉트) / side(좌측 사이드바)
+		'category_layout' => 'top',
+		// 쇼핑 홈 섹션 on/off 와 섹션당 노출 개수
+		'home_show_recommend' => 'Y',
+		'home_show_new' => 'Y',
+		'home_show_popular' => 'Y',
+		'home_show_sale' => 'Y',
+		'home_count' => 8,
+		// 쇼핑 홈 배너 (JSON 배열: [{image,title,text,url}])
+		'home_banners' => '[]',
 		// 개인정보
 		'privacy_text' => '주문 처리를 위해 이름, 연락처, 배송지 정보를 수집합니다. 수집된 정보는 주문 이행 및 배송 목적으로만 사용됩니다.',
 		'privacy_version' => '1.0',
@@ -37,6 +58,21 @@ class Config
 		// 알림
 		'notify_admin' => 'N',
 		'notify_admin_email' => '',
+		// 거래명세서에 찍히는 판매자 정보
+		'biz_name' => '',
+		'biz_ceo' => '',
+		'biz_number' => '',
+		'biz_address' => '',
+		'biz_tel' => '',
+		'biz_note' => '',
+		// 사업자 구분 — taxable(과세) / exempt(면세) / simplified(간이)
+		'biz_tax_mode' => 'taxable',
+		// 부가세율 (%)
+		'vat_rate' => 10,
+		// 상품 가격이 부가세 포함가인지 (Y = 역산, N = 표시가에 가산)
+		'price_includes_tax' => 'Y',
+		// 해외 배송 — 켜면 주문서에 배송 국가를 고르게 하고, 국외 주문은 영세율로 본다
+		'allow_overseas' => 'N',
 	];
 
 	/**

@@ -27,7 +27,9 @@ class Grade
 			return [];
 		}
 		$data = is_array($output->data) ? $output->data : [$output->data];
-		return array_values(array_filter($data, function($row) { return !empty($row->grade_srl); }));
+		$rows = array_values(array_filter($data, function($row) { return !empty($row->grade_srl); }));
+		// 다국어 문구를 연결한 이름은 미리 바꿔 둔다 (원본은 title_raw)
+		return Lang::textAll($rows, ['title']);
 	}
 
 	/**
@@ -42,13 +44,20 @@ class Grade
 		{
 			return null;
 		}
-		$stmt = \Rhymix\Framework\DB::getInstance()->query(
+		// 별칭(mg, g)을 쓰는 조인은 프레임워크의 자동 프리픽스 재작성과 충돌하므로
+		// PDO 핸들로 직접 실행한다 (Install::isGradeRateInt 와 같은 이유).
+		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
+		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare(
 			'SELECT mg.grade_srl, mg.total_spend, g.title, g.credit_rate, g.min_spend, g.discount_type, g.discount_value'
-			. ' FROM commerce_member_grade mg LEFT JOIN commerce_grade g ON g.grade_srl = mg.grade_srl'
-			. ' WHERE mg.member_srl = ?',
-			$member_srl
+			. ' FROM `' . $prefix . 'commerce_member_grade` AS mg'
+			. ' LEFT JOIN `' . $prefix . 'commerce_grade` AS g ON g.grade_srl = mg.grade_srl'
+			. ' WHERE mg.member_srl = ?'
 		);
-		$row = $stmt ? $stmt->fetchObject() : null;
+		$row = null;
+		if ($stmt && $stmt->execute([$member_srl]))
+		{
+			$row = $stmt->fetchObject() ?: null;
+		}
 		return ($row && !empty($row->grade_srl) && !empty($row->title)) ? $row : null;
 	}
 

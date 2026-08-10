@@ -7,8 +7,8 @@ use Zittme\Modules\Commerce\Models\Order as OrderModel;
 /**
  * 트리거 수신.
  *
- * 주의: 결제 핸들러는 PG 콜백 요청 안에서 실행된다 — 세션 접근 금지 (pitfall #57).
- * 주의: eventHandler 는 모듈 설치/업데이트 1회 실행으로 DB 에 등록해야 동작한다.
+ * 결제 핸들러는 PG 콜백 요청 안에서 실행되므로 세션에 접근하지 않는다.
+ * eventHandler 는 모듈 설치·업데이트 때 DB 에 등록되어야 동작한다.
  */
 class Trigger extends Base
 {

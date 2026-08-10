@@ -1,0 +1,44 @@
+/* 쇼핑 프론트 관리 플로팅 — 모듈이 직접 싣는다 (스킨과 무관) */
+.shp-admin-fab { position: fixed; right: 24px; bottom: 24px; z-index: 990; display: inline-flex; align-items: center; gap: 7px; padding: 11px 18px; border: 0; border-radius: 999px; background: #1a1f2e; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.22); }
+.shp-admin-fab:hover { background: #2a3040; }
+.shp-admin-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 991; width: 360px; max-width: 92vw; background: #fff; box-shadow: -8px 0 32px rgba(0,0,0,.18); overflow-y: auto; padding: 18px 18px 28px; box-sizing: border-box; }
+.shp-admin-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.shp-admin-panel-head strong { font-size: 16px; }
+.shp-admin-panel-head button { border: 0; background: none; cursor: pointer; color: #555; padding: 4px; }
+.shp-admin-sec { margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+.shp-admin-sec > label { display: block; margin-bottom: 6px; font-size: 13.5px; }
+.shp-admin-label { font-weight: 700; font-size: 13px !important; color: #333; margin-bottom: 8px !important; }
+.shp-adm-btn { display: inline-block; padding: 9px 14px; border: 1px solid #d5d8de; border-radius: 8px; background: #fff; font-size: 13.5px; cursor: pointer; }
+.shp-adm-btn:hover { background: #f4f6f9; }
+/* 배너 제목·문구의 다국어 문구 연결 */
+.shp-adm-lang { display: flex; gap: 6px; align-items: stretch; }
+.shp-adm-lang > input[type="text"] { flex: 1; min-width: 0; }
+.shp-adm-globe { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; padding: 0; border: 1px solid #d5d8de; border-radius: 8px; background: #fff; color: #8b95a1; cursor: pointer; }
+.shp-adm-globe:hover, .shp-adm-globe.is-on { border-color: var(--shp-point, #2677e3); color: var(--shp-point, #2677e3); }
+.shp-adm-langbox { position: fixed; z-index: 100000; width: 260px; padding: 10px; border: 1px solid #e5e8ee; border-radius: 10px; background: #fff; box-shadow: 0 16px 40px -18px rgba(16,24,40,.45); font-size: 13px; color: #1c2330; }
+.shp-adm-langbox input[type="search"] { width: 100%; box-sizing: border-box; padding: 7px 9px; margin-bottom: 8px; border: 1px solid #e5e8ee; border-radius: 8px; font-size: 12.5px; }
+.shp-adm-langbox ul { max-height: 190px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.shp-adm-langbox li { padding: 7px 9px; border-radius: 7px; font-size: 12.5px; cursor: pointer; }
+.shp-adm-langbox li:hover { background: #f2f6fd; }
+.shp-adm-langbox li small { display: block; color: #8b95a1; font-size: 11px; }
+.shp-adm-langbox li.is-empty { color: #8b95a1; cursor: default; }
+.shp-adm-langbox li.is-empty:hover { background: none; }
+.shp-adm-langbox [data-clear] { width: 100%; margin-top: 8px; padding: 6px 0; border: 1px solid #e5e8ee; border-radius: 8px; background: #fff; font-size: 12px; color: #6b7684; cursor: pointer; }
+.shp-adm-langtabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.shp-adm-langtabs button { flex: 1; padding: 6px 0; border: 1px solid #e5e8ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 12px; color: #6b7684; cursor: pointer; }
+.shp-adm-langtabs button.is-on { border-color: var(--shp-point, #2677e3); background: var(--shp-point, #2677e3); color: #fff; font-weight: 700; }
+.shp-adm-langrow { display: flex !important; align-items: center; gap: 8px; margin: 0 0 6px !important; }
+.shp-adm-langrow span { flex: 0 0 68px; font-size: 12px; color: #6b7684; }
+.shp-adm-langrow input { flex: 1; min-width: 0; box-sizing: border-box; padding: 6px 8px; border: 1px solid #e5e8ee; border-radius: 7px; font-size: 12.5px; font-family: inherit; }
+.shp-adm-langsave { width: 100%; margin-top: 6px; padding: 7px 0; border: 0; border-radius: 8px; background: var(--shp-point, #2677e3); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.shp-adm-btn-primary { background: #1a1f2e; border-color: #1a1f2e; color: #fff; font-weight: 600; }
+.shp-adm-btn-primary:hover { background: #2a3040; }
+.shp-adm-banner { position: relative; border: 1px solid #e3e6eb; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #fafbfc; }
+.shp-adm-banner label { display: block; margin: 8px 0 3px; font-size: 12px; color: #666; }
+.shp-adm-banner input[type=text], .shp-adm-banner select { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid #d5d8de; border-radius: 7px; font-size: 13px; }
+.shp-adm-banner input[type=file] { font-size: 12px; max-width: 100%; }
+.shp-adm-banner input[type=color] { width: 42px; height: 30px; padding: 0; border: 1px solid #d5d8de; border-radius: 6px; vertical-align: middle; }
+.shp-adm-file { display: inline-block; margin-left: 6px; font-size: 11.5px; color: #4a6; word-break: break-all; }
+.shp-adm-banner-tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
+.shp-adm-banner-tools button { width: 24px; height: 24px; border: 1px solid #d5d8de; border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; line-height: 1; color: #555; }
+.shp-adm-banner-tools button:hover { background: #f0f2f5; }

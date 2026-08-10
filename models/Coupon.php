@@ -54,7 +54,9 @@ class Coupon
 			return [];
 		}
 		$data = is_array($output->data) ? $output->data : [$output->data];
-		return array_values(array_filter($data, function($row) { return !empty($row->coupon_srl); }));
+		$rows = array_values(array_filter($data, function($row) { return !empty($row->coupon_srl); }));
+		// 다국어 문구를 연결한 이름은 미리 바꿔 둔다 (원본은 title_raw)
+		return Lang::textAll($rows, ['title']);
 	}
 
 	/**

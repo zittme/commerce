@@ -1,42 +1,43 @@
 @include('_tabs')
+@include('_langfield_assets')
 
 <div class="rsva">
 	<div class="rsva-panel">
-		<h3>등급 만들기</h3>
-		<p style="margin:-8px 0 14px;font-size:13px;color:#6b7684">누적 결제완료 금액이 기준액 이상이면 자동으로 해당 등급이 됩니다 (가장 높은 구간 적용). 결제·취소 시 자동 재계산되며, 등급이 오르면 지정한 쿠폰이 1회 자동 발급됩니다. <strong>등급 할인</strong>을 설정하면 해당 등급 회원의 장바구니·주문 단가에 자동 적용됩니다 (쿠폰과 중복 적용).</p>
+		<h3>{{ lang('commerce.admin_grades_1') }}</h3>
+		<p style="margin:-8px 0 14px;font-size:13px;color:#6b7684">{{ lang('commerce.admin_grades_2') }} <strong>{{ lang('commerce.admin_grades_3') }}</strong>{{ lang('commerce.admin_grades_4') }}</p>
 		<form action="{{ getUrl('') }}" method="post" class="rsva-inline">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminInsertGrade" />
-			<div style="min-width:160px"><label>등급명</label><input type="text" name="title" required placeholder="예: VIP" /></div>
-			<div><label>기준 누적 금액 (원)</label><input type="number" name="min_spend" min="0" value="0" style="width:140px" /></div>
-			<div><label>적립률 % (0=기본 따름, 0.01 단위)</label><input type="number" name="credit_rate" min="0" max="100" step="0.01" value="0" style="width:120px" /></div>
+			<div style="min-width:160px"><label>{{ lang('commerce.admin_grades_5') }}</label><span class="zlf-row-wrap"><input type="text" name="title" required placeholder="{{ lang('commerce.admin_grades_26') }}" />@include('_langfield', ['lf_name' => 'title', 'lf_value' => '', 'lf_key' => 'gradenew'])</span></div>
+			<div><label>{{ lang('commerce.admin_grades_6') }}</label><input type="number" name="min_spend" min="0" value="0" style="width:140px" /></div>
+			<div><label>{{ lang('commerce.admin_grades_7') }}</label><input type="number" name="credit_rate" min="0" max="100" step="0.01" value="0" style="width:120px" /></div>
 			<div>
-				<label>등급 할인</label>
+				<label>{{ lang('commerce.admin_grades_3') }}</label>
 				<select name="discount_type" style="width:110px">
-					<option value="">없음</option>
-					<option value="percent">정률 (%)</option>
-					<option value="amount">정액 (원)</option>
+					<option value="">{{ lang('commerce.admin_grades_8') }}</option>
+					<option value="percent">{{ lang('commerce.admin_grades_9') }}</option>
+					<option value="amount">{{ lang('commerce.admin_grades_10') }}</option>
 				</select>
 			</div>
-			<div><label>할인값</label><input type="number" name="discount_value" min="0" step="0.01" value="0" style="width:100px" /></div>
+			<div><label>{{ lang('commerce.admin_grades_11') }}</label><input type="number" name="discount_value" min="0" step="0.01" value="0" style="width:100px" /></div>
 			<div style="min-width:180px">
-				<label>등급 달성 쿠폰</label>
+				<label>{{ lang('commerce.admin_grades_12') }}</label>
 				<select name="coupon_srl" style="width:100%">
-					<option value="0">없음</option>
+					<option value="0">{{ lang('commerce.admin_grades_8') }}</option>
 					@foreach ($grade_coupons as $c)
 					<option value="{{ $c->coupon_srl }}">{{ $c->title }}</option>
 					@endforeach
 				</select>
 			</div>
-			<div><button type="submit" class="rsva-btn rsva-btn-primary">추가</button></div>
+			<div><button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_grades_13') }}</button></div>
 		</form>
 	</div>
 
 	@if (empty($grades))
-	<p class="rsva-empty">등급이 없습니다. 등급을 만들면 회원의 누적 구매액에 따라 자동으로 부여됩니다.</p>
+	<p class="rsva-empty">{{ lang('commerce.admin_grades_14') }}</p>
 	@else
 	<table class="rsva-table">
-		<thead><tr><th>등급</th><th>기준 누적 금액</th><th>적립률</th><th>등급 할인</th><th>달성 쿠폰</th><th>수정</th><th></th></tr></thead>
+		<thead><tr><th>{{ lang('commerce.admin_grades_15') }}</th><th>{{ lang('commerce.admin_grades_16') }}</th><th>{{ lang('commerce.admin_grades_17') }}</th><th>{{ lang('commerce.admin_grades_3') }}</th><th>{{ lang('commerce.admin_grades_18') }}</th><th>{{ lang('commerce.admin_grades_19') }}</th><th></th></tr></thead>
 		<tbody>
 			@foreach ($grades as $g)
 			<tr>
@@ -61,26 +62,26 @@
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminInsertGrade" />
 						<input type="hidden" name="grade_srl" value="{{ $g->grade_srl }}" />
-						<div><input type="text" name="title" value="{{ $g->title }}" style="width:100px" /></div>
+						<div class="zlf-row-wrap"><input type="text" name="title" value="{{ $g->title }}" style="width:100px" />@include('_langfield', ['lf_name' => 'title', 'lf_value' => $g->title, 'lf_key' => $g->grade_srl])</div>
 						<div><input type="number" name="min_spend" min="0" value="{{ $g->min_spend }}" style="width:120px" /></div>
 						<div><input type="number" name="credit_rate" min="0" max="100" step="0.01" value="{{ $g->credit_rate }}" style="width:80px" /></div>
 						<div>
 							<select name="discount_type" style="width:96px">
-								<option value="">할인 없음</option>
-								<option value="percent" @if(($g->discount_type ?? '') === 'percent') selected @endif>정률 %</option>
-								<option value="amount" @if(($g->discount_type ?? '') === 'amount') selected @endif>정액 원</option>
+								<option value="">{{ lang('commerce.admin_grades_20') }}</option>
+								<option value="percent" @if(($g->discount_type ?? '') === 'percent') selected @endif>{{ lang('commerce.admin_grades_21') }}</option>
+								<option value="amount" @if(($g->discount_type ?? '') === 'amount') selected @endif>{{ lang('commerce.admin_grades_22') }}</option>
 							</select>
 						</div>
 						<div><input type="number" name="discount_value" min="0" step="0.01" value="{{ (float)($g->discount_value ?? 0) }}" style="width:86px" /></div>
 						<div>
 							<select name="coupon_srl" style="width:140px">
-								<option value="0">쿠폰 없음</option>
+								<option value="0">{{ lang('commerce.admin_grades_23') }}</option>
 								@foreach ($grade_coupons as $c)
 								<option value="{{ $c->coupon_srl }}" @if((int)$c->coupon_srl === (int)$g->coupon_srl) selected @endif>{{ $c->title }}</option>
 								@endforeach
 							</select>
 						</div>
-						<div><button type="submit" class="rsva-btn rsva-btn-sm">저장</button></div>
+						<div><button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_grades_24') }}</button></div>
 					</form>
 				</td>
 				<td>
@@ -88,7 +89,7 @@
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminDeleteGrade" />
 						<input type="hidden" name="grade_srl" value="{{ $g->grade_srl }}" />
-						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">삭제</button>
+						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_grades_25') }}</button>
 					</form>
 				</td>
 			</tr>

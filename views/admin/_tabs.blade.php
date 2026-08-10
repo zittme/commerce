@@ -1,5 +1,5 @@
 <style>
-/* 예약 운영 화면 — Pretendard / #2677e3, 관리자 리디자인 톤 */
+/* 운영 화면 공통 스타일 */
 .rsva { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; word-break: keep-all; color: #1c2330; }
 .rsva-table td { color: #1c2330; }
 .rsva-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
@@ -86,23 +86,24 @@ body { -webkit-font-smoothing: antialiased; color: var(--zmc-ink); }
 @media (max-width: 900px) { .zmc-side { width: 62px; padding: 18px 9px; } .zmc-logo { padding: 0 6px 16px; } .zmc-logo span, .zmc-nav a span, .zmc-side-foot { display: none; } .zmc-top { margin-left: 62px; padding: 14px 16px; } .rsva { margin-left: 62px; padding: 18px 16px 70px; } }
 </style>
 @php
-$zmc_menu = [
-	'dashboard' => '대시보드', 'orders' => '주문 관리', 'items' => '상품 관리', 'categories' => '카테고리',
-	'claims' => '취소·반품', 'coupons' => '쿠폰', 'credits' => '적립금', 'grades' => '구매 등급', 'stats' => '통계', 'config' => '설정',
-];
+$zmc_menu = [];
+foreach (['dashboard', 'orders', 'items', 'stock', 'categories', 'badges', 'promotions', 'qna', 'claims', 'coupons', 'credits', 'grades', 'stats', 'config'] as $zmc_key)
+{
+	$zmc_menu[$zmc_key] = lang('commerce.admin_menu_' . $zmc_key);
+}
 $zmc_active_alias = ['order_view' => 'orders', 'item_edit' => 'items'];
 $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 @endphp
 <aside class="zmc-side">
-	<div class="zmc-logo"><b>zittme</b> <span>쇼핑 콘솔</span></div>
+	<div class="zmc-logo"><b>zittme</b> <span>{{ lang('commerce.admin_console_title') }}</span></div>
 	<nav class="zmc-nav">
 		@foreach ($zmc_menu as $key => $label)
 		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole', 'p', $key) }}" class="{{ $zmc_current === $key ? 'is-active' : '' }}"><span>{{ $label }}</span></a>
 		@endforeach
 	</nav>
 	<div class="zmc-side-foot">
-		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', '') }}" target="_blank">사이트 보기</a>
-		<a href="{{ getUrl('', 'mid', '', 'module', 'admin', 'act', '') }}" target="_blank">zittme 관리자</a>
+		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', '') }}" target="_blank">{{ lang('commerce.admin_view_site') }}</a>
+		<a href="{{ getUrl('', 'mid', '', 'module', 'admin', 'act', '') }}" target="_blank">{{ lang('commerce.admin_go_admin') }}</a>
 	</div>
 </aside>
 <div class="zmc-top"><h2>{{ $zmc_menu[$zmc_current] ?? '' }}</h2></div>
@@ -111,6 +112,8 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 	function toP(n) { return n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(); }
 	function rewrite() {
 		document.querySelectorAll('a[href*="dispCommerceAdmin"]').forEach(function (a) {
+			// 콘솔 페이지가 아닌 독립 화면(주문서 인쇄 등)은 그대로 둔다
+			if (a.hasAttribute('data-zmc-keep')) return;
 			var m = a.getAttribute('href').match(/dispCommerceAdmin([A-Za-z]+)/);
 			if (!m) return;
 			var u = new URL(a.href, location.href);
@@ -146,8 +149,8 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 </div>
 
 <div class="rsva" style="margin:0 0 14px;padding:16px 20px;border:1px solid rgba(38,119,227,.35);border-radius:12px;background:#f2f6fd;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-	<div style="font-size:13.5px;color:#1c2330"><b style="color:#2677e3">쇼핑 전용 콘솔</b>에서 관리하세요. 상품·주문·클레임 운영은 별도 패널로 제공됩니다.</div>
-	<a href="{{ getUrl('', 'module', '', 'act', 'dispCommerceConsole') }}" target="_blank" class="rsva-btn rsva-btn-primary" id="zmcOpenConsole">콘솔 새탭으로 열기</a>
+	<div style="font-size:13.5px;color:#1c2330">{!! lang('commerce.admin_console_notice') !!}</div>
+	<a href="{{ getUrl('', 'module', '', 'act', 'dispCommerceConsole') }}" target="_blank" class="rsva-btn rsva-btn-primary" id="zmcOpenConsole">{{ lang('commerce.admin_open_console') }}</a>
 </div>
 @if ($shop_tab === 'dashboard')
 <script>
@@ -163,16 +166,5 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 </script>
 @endif
 
-<ul class="x_nav x_nav-tabs rsva">
-	<li @if($shop_tab === 'dashboard') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminDashboard') }}">대시보드</a></li>
-	<li @if($shop_tab === 'orders') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrders') }}">주문 관리</a></li>
-	<li @if($shop_tab === 'items') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}">상품 관리</a></li>
-	<li @if($shop_tab === 'categories') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCategories') }}">카테고리</a></li>
-	<li @if($shop_tab === 'claims') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminClaims') }}">취소·반품</a></li>
-	<li @if($shop_tab === 'coupons') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCoupons') }}">쿠폰</a></li>
-	<li @if($shop_tab === 'credits') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCredits') }}">적립금</a></li>
-	<li @if($shop_tab === 'grades') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminGrades') }}">구매 등급</a></li>
-	<li @if($shop_tab === 'stats') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminStats') }}">통계</a></li>
-	<li @if($shop_tab === 'config') class="x_active" @endif><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminConfig') }}">설정</a></li>
-</ul>
+{{-- 관리자 탭 제거: 운영 화면은 전용 콘솔에서만 제공한다 --}}
 @endif

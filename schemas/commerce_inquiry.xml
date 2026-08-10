@@ -1,0 +1,12 @@
+<table name="commerce_inquiry">
+	<!-- 상품 문의 — 비밀글 지원, 판매자 답변 1개 -->
+	<column name="inquiry_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="item_srl" type="bigint" notnull="notnull" index="idx_item_srl" />
+	<column name="member_srl" type="bigint" notnull="notnull" default="0" index="idx_member_srl" />
+	<column name="nick_name" type="varchar" size="80" />
+	<column name="is_secret" type="char" size="1" notnull="notnull" default="N" />
+	<column name="content" type="text" notnull="notnull" />
+	<column name="answer" type="text" />
+	<column name="answer_date" type="char" size="14" />
+	<column name="regdate" type="char" size="14" index="idx_regdate" />
+</table>

@@ -157,13 +157,21 @@ class Cart
 				$option = ($output->toBool() && is_object($output->data) && !empty($output->data->option_srl)) ? $output->data : null;
 			}
 
-			$unit_original = Item::effectivePrice($item) + ($option ? (int)$option->price_add : 0);
+			// 추가 옵션(extra)은 별개 추가상품 — 추가금이 곧 단가. 기본 옵션(basic)은 판매가 + 추가금
+			if ($option && ($option->option_type ?? 'basic') === 'extra')
+			{
+				$unit_original = (int)$option->price_add;
+			}
+			else
+			{
+				$unit_original = Item::effectivePrice($item) + ($option ? (int)$option->price_add : 0);
+			}
 			// 등급 할인은 서버 재계산 경로(여기) 한 곳에서만 적용된다 — 장바구니·주문 일관
 			$unit = Grade::applyDiscount($unit_original, $grade_discount);
 			$qty = max(1, (int)$row->qty);
 			$subtotal = $unit * $qty;
-			$blocked = !Item::isPurchasable($item) || !Item::isQtyAllowed($item, $qty)
-				|| (($item->has_options ?? 'N') === 'Y' && !$option);
+			// 본품 행(option 없음)도 허용한다 — '선택 안 함' 선택지가 곧 본품이다
+			$blocked = !Item::isPurchasable($item) || !Item::isQtyAllowed($item, $qty);
 
 			$items[] = (object)[
 				'cart_srl' => (int)$row->cart_srl,
@@ -195,6 +203,86 @@ class Cart
 	 * @param object $resolved resolve() 결과
 	 * @return int
 	 */
+	/**
+	 * 지역 추가 배송비. 설정 ship_extra_zones(JSON) 한 줄은
+	 *   country: 적용 국가 (빈 값이면 국내 KR)
+	 *   regions: 시·도 이름 목록 (쉼표 구분, 배송지 주소 앞부분과 맞춘다)
+	 *   zips:    우편번호 패턴 (접두 "63" 또는 범위 "40200-40240", 쉼표 구분)
+	 * 셋 중 하나라도 걸리면 그 줄의 추가금을 쓴다. 국가가 다르면 아예 후보에서 뺀다.
+	 *
+	 * @param string $zipcode
+	 * @param string $address1 배송지 주소 (시·도 판정용)
+	 * @param string $country 배송 국가
+	 * @return int
+	 */
+	public static function extraShipFee(string $zipcode, string $address1 = '', string $country = 'KR'): int
+	{
+		$zipcode = preg_replace('/[^0-9]/', '', $zipcode);
+		$country = strtoupper(trim($country)) ?: 'KR';
+		$region = $address1 !== '' ? Stats::normalizeRegion(explode(' ', trim($address1))[0]) : '';
+
+		$zones = json_decode((string)(Base::config()->ship_extra_zones ?? '[]'), true);
+		if (!is_array($zones))
+		{
+			return 0;
+		}
+		foreach ($zones as $zone)
+		{
+			$zone = (array)$zone;
+			$fee = (int)($zone['fee'] ?? 0);
+			if ($fee <= 0)
+			{
+				continue;
+			}
+
+			// 국가를 비워 둔 기존 설정은 국내 규칙으로 본다
+			$zone_country = strtoupper(trim((string)($zone['country'] ?? ''))) ?: 'KR';
+			if ($zone_country !== $country)
+			{
+				continue;
+			}
+
+			if ($region !== '')
+			{
+				foreach (array_filter(array_map('trim', explode(',', (string)($zone['regions'] ?? '')))) as $name)
+				{
+					if (Stats::normalizeRegion($name) === $region)
+					{
+						return $fee;
+					}
+				}
+			}
+
+			// 국가만 지정하고 지역·우편번호를 비우면 그 나라 전체에 적용된다
+			if ($country !== 'KR' && trim((string)($zone['regions'] ?? '')) === '' && trim((string)($zone['zips'] ?? '')) === '')
+			{
+				return $fee;
+			}
+
+			if ($zipcode === '')
+			{
+				continue;
+			}
+			foreach (array_filter(array_map('trim', explode(',', (string)($zone['zips'] ?? '')))) as $pattern)
+			{
+				if (strpos($pattern, '-') !== false)
+				{
+					[$from, $to] = array_map('trim', explode('-', $pattern, 2));
+					$zip_num = (int)substr($zipcode, 0, max(strlen($from), 1));
+					if ($from !== '' && $to !== '' && $zip_num >= (int)$from && $zip_num <= (int)$to)
+					{
+						return $fee;
+					}
+				}
+				elseif ($pattern !== '' && strpos($zipcode, $pattern) === 0)
+				{
+					return $fee;
+				}
+			}
+		}
+		return 0;
+	}
+
 	public static function calcShipFee(object $resolved): int
 	{
 		$config = Base::config();

@@ -1,0 +1,18 @@
+<query id="updatePromotion" action="update">
+	<tables>
+		<table name="commerce_promotion" />
+	</tables>
+	<columns>
+		<column name="title" var="title" />
+		<column name="slug" var="slug" />
+		<column name="banner" var="banner" />
+		<column name="description" var="description" />
+		<column name="start_date" var="start_date" />
+		<column name="end_date" var="end_date" />
+		<column name="status" var="status" />
+		<column name="list_order" var="list_order" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="promo_srl" var="promo_srl" notnull="notnull" />
+	</conditions>
+</query>

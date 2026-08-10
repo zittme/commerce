@@ -23,11 +23,14 @@
 		<column name="tax_type" var="tax_type" default="taxable" />
 		<column name="is_adult" var="is_adult" default="N" />
 		<column name="has_options" var="has_options" default="N" />
+		<column name="option_axes" var="option_axes" />
+		<column name="option_mode" var="option_mode" />
 		<column name="ship_fee_type" var="ship_fee_type" default="default" />
 		<column name="ship_fee" var="ship_fee" default="0" />
 		<column name="status" var="status" default="sale" />
 		<column name="is_recommend" var="is_recommend" default="N" />
 		<column name="is_new" var="is_new" default="N" />
+		<column name="badges" var="badges" />
 		<column name="list_order" var="list_order" default="0" />
 		<column name="regdate" var="regdate" />
 		<column name="last_update" var="last_update" />

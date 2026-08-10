@@ -1,0 +1,8 @@
+<query id="deleteInquiry" action="delete">
+	<tables>
+		<table name="commerce_inquiry" />
+	</tables>
+	<conditions>
+		<condition operation="equal" column="inquiry_srl" var="inquiry_srl" notnull="notnull" />
+	</conditions>
+</query>

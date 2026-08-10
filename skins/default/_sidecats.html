@@ -1,0 +1,81 @@
+@version(2)
+{{-- 사이드 카테고리 트리 — 하위가 있으면 화살표로 접고 펼친다. 현재 카테고리의 조상은 자동으로 펼쳐진다 --}}
+<aside class="shp-side-cats" id="shpSideCats">
+	<h3>{{ $lang->shop_category ?? '카테고리' }}</h3>
+	<a class="{{ empty($current_category) ? 'is-on' : '' }}" href="{{ getUrl('', 'mid', $mid, 'v', 'list') }}">{{ $lang->shop_all ?? '전체' }}</a>
+	@foreach ($shop_categories as $cat)
+	<a class="{{ (int)($current_category ?? 0) === (int)$cat->category_srl ? 'is-on' : '' }} {{ ($cat->depth ?? 0) > 0 ? 'is-sub' : '' }}"
+		data-srl="{{ $cat->category_srl }}" data-parent="{{ (int)$cat->parent_srl }}" data-depth="{{ $cat->depth ?? 0 }}"
+		style="{{ ($cat->depth ?? 0) > 0 ? 'padding-left:' . (14 + $cat->depth * 14) . 'px' : '' }}"
+		href="{{ getUrl('', 'mid', $mid, 'v', 'list', 'category', $cat->category_srl) }}">{{ $cat->title }}</a>
+	@endforeach
+</aside>
+
+<script>
+(function () {
+	var wrap = document.getElementById('shpSideCats');
+	if (!wrap) return;
+	var links = [].slice.call(wrap.querySelectorAll('a[data-srl]'));
+	var byParent = {};
+	links.forEach(function (a) {
+		var p = a.getAttribute('data-parent');
+		(byParent[p] = byParent[p] || []).push(a);
+	});
+	var expanded = {};
+	function parentOf(srl) {
+		var a = wrap.querySelector('a[data-srl="' + srl + '"]');
+		return a ? a.getAttribute('data-parent') : '0';
+	}
+	function apply() {
+		links.forEach(function (a) {
+			var p = a.getAttribute('data-parent');
+			var show = true;
+			while (p && p !== '0') {
+				if (!expanded[p]) { show = false; break; }
+				p = parentOf(p);
+			}
+			a.style.display = show ? '' : 'none';
+		});
+	}
+	// 하위가 있는 항목에 토글 화살표를 붙인다
+	links.forEach(function (a) {
+		var srl = a.getAttribute('data-srl');
+		if (!byParent[srl]) return;
+		a.classList.add('has-child');
+		var btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'shp-cat-toggle';
+		btn.setAttribute('aria-label', '하위 카테고리 열기');
+		btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+		btn.addEventListener('click', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			expanded[srl] = !expanded[srl];
+			btn.classList.toggle('is-open', !!expanded[srl]);
+			apply();
+		});
+		a.appendChild(btn);
+	});
+	// 현재 카테고리에 하위가 있으면 그 하위를 펼친다 (1차 메뉴 클릭 → 이동 후 하위 노출)
+	var on = wrap.querySelector('a.is-on[data-srl]');
+	if (on && byParent[on.getAttribute('data-srl')]) {
+		expanded[on.getAttribute('data-srl')] = true;
+		var onBtn = on.querySelector('.shp-cat-toggle');
+		if (onBtn) onBtn.classList.add('is-open');
+	}
+	// 현재 카테고리의 조상 경로는 자동으로 펼친다
+	if (on) {
+		var p = on.getAttribute('data-parent');
+		var guard = 0;
+		while (p && p !== '0' && guard++ < 20) {
+			expanded[p] = true;
+			var pa = wrap.querySelector('a[data-srl="' + p + '"]');
+			if (!pa) break;
+			var b = pa.querySelector('.shp-cat-toggle');
+			if (b) b.classList.add('is-open');
+			p = pa.getAttribute('data-parent');
+		}
+	}
+	apply();
+})();
+</script>

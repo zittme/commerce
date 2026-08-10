@@ -5,19 +5,19 @@
 		<input type="hidden" name="module" value="admin" />
 		<input type="hidden" name="act" value="dispCommerceAdminClaims" />
 		<select name="f_status">
-			<option value="">전체</option>
-			<option value="requested" @if($filters->status === 'requested') selected @endif>신청</option>
-			<option value="done" @if($filters->status === 'done') selected @endif>처리 완료</option>
-			<option value="rejected" @if($filters->status === 'rejected') selected @endif>거절</option>
+			<option value="">{{ lang('commerce.admin_claims_1') }}</option>
+			<option value="requested" @if($filters->status === 'requested') selected @endif>{{ lang('commerce.admin_claims_2') }}</option>
+			<option value="done" @if($filters->status === 'done') selected @endif>{{ lang('commerce.admin_claims_3') }}</option>
+			<option value="rejected" @if($filters->status === 'rejected') selected @endif>{{ lang('commerce.admin_claims_4') }}</option>
 		</select>
-		<button type="submit" class="rsva-btn">검색</button>
+		<button type="submit" class="rsva-btn">{{ lang('commerce.admin_claims_5') }}</button>
 	</form>
 
 	@if (empty($claims))
-	<p class="rsva-empty">클레임이 없습니다.</p>
+	<p class="rsva-empty">{{ lang('commerce.admin_claims_6') }}</p>
 	@else
 	<table class="rsva-table">
-		<thead><tr><th>주문번호</th><th>구분</th><th>사유</th><th>상태</th><th>처리</th></tr></thead>
+		<thead><tr><th>{{ lang('commerce.admin_claims_7') }}</th><th>{{ lang('commerce.admin_claims_8') }}</th><th>{{ lang('commerce.admin_claims_9') }}</th><th>{{ lang('commerce.admin_claims_10') }}</th><th>{{ lang('commerce.admin_claims_11') }}</th></tr></thead>
 		<tbody>
 			@foreach ($claims as $c)
 			@php $co = $order_map[(int)$c->order_srl] ?? null; @endphp
@@ -35,10 +35,10 @@
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminUpdateClaim" />
 						<input type="hidden" name="claim_srl" value="{{ $c->claim_srl }}" />
-						<div><label>환불액 (반품배송비 차감 반영)</label><input type="number" name="refund_amount" min="0" value="{{ $co ? $co->payment_price : 0 }}" style="width:110px" /></div>
-						<div><label>재입고</label><select name="restock" style="width:80px"><option value="Y">예</option><option value="N">아니요</option></select></div>
-						<div><button type="submit" name="claim_action" value="approve" class="rsva-btn rsva-btn-sm rsva-btn-primary">승인·환불</button></div>
-						<div><button type="submit" name="claim_action" value="reject" class="rsva-btn rsva-btn-sm rsva-btn-danger">거절</button></div>
+						<div><label>{{ lang('commerce.admin_claims_12') }}</label><input type="number" name="refund_amount" min="0" value="{{ $co ? $co->payment_price : 0 }}" style="width:110px" /></div>
+						<div><label>{{ lang('commerce.admin_claims_13') }}</label><select name="restock" style="width:80px"><option value="Y">{{ lang('commerce.admin_claims_14') }}</option><option value="N">{{ lang('commerce.admin_claims_15') }}</option></select></div>
+						<div><button type="submit" name="claim_action" value="approve" class="rsva-btn rsva-btn-sm rsva-btn-primary">{{ lang('commerce.admin_claims_16') }}</button></div>
+						<div><button type="submit" name="claim_action" value="reject" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_claims_4') }}</button></div>
 					</form>
 					@else
 					{{ $c->refund_amount > 0 ? '환불 ' . number_format($c->refund_amount) . '원' : '-' }}

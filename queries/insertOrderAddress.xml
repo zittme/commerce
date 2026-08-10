@@ -7,6 +7,7 @@
 		<column name="order_srl" var="order_srl" notnull="notnull" />
 		<column name="receiver_name" var="receiver_name" notnull="notnull" />
 		<column name="receiver_phone" var="receiver_phone" />
+		<column name="country" var="country" default="KR" />
 		<column name="zipcode" var="zipcode" />
 		<column name="address1" var="address1" />
 		<column name="address2" var="address2" />

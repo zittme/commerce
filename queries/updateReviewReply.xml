@@ -1,0 +1,12 @@
+<query id="updateReviewReply" action="update">
+	<tables>
+		<table name="commerce_review" />
+	</tables>
+	<columns>
+		<column name="reply" var="reply" />
+		<column name="reply_date" var="reply_date" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="review_srl" var="review_srl" notnull="notnull" />
+	</conditions>
+</query>

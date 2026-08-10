@@ -8,18 +8,24 @@ use Zittme\Modules\Commerce\Models\Config as ConfigModel;
  * 설치와 업데이트.
  *
  * 설치 시 (1) 설정 기본값, (2) 기본 판매자(seller_srl 자동, 사이트 운영자),
- * (3) 기본 인스턴스(shop mid)를 만든다. 단일 인스턴스 모델 — 예약 모듈과 동일 규약.
+ * (3) 기본 인스턴스(shop mid)를 만든다. 단일 인스턴스 모델.
  */
 class Install extends Base
 {
 	/**
 	 * 최초 스키마 이후 추가된 칼럼. [테이블, 칼럼, 타입, 길이]
-	 * 스키마 XML 에 칼럼을 추가할 때 반드시 여기에도 적을 것.
+	 * 스키마 XML 에 칼럼을 추가하면 여기에도 적어야 기존 설치본에 반영된다.
 	 */
 	public const ADDED_COLUMNS = [
 		// POS 등 채널 확장용 — 최초 설치본에는 스키마에 포함, 기존 설치본에는 여기서 붙인다
 		['commerce_order', 'channel', 'varchar', 10],
-		// C2 확장 (판매기간·구매수량·세금·성인·갤러리)
+		// 옵션 2종 구분 (basic: 변형 / extra: 추가상품)
+		['commerce_item_option', 'option_type', 'varchar', 10],
+		// 상품에 붙일 뱃지 (badge_srl 목록, 쉼표 구분)
+		['commerce_item', 'badges', 'varchar', 250],
+		// 리뷰 사진·영상 첨부 (JSON URL 배열)
+		['commerce_review', 'images', 'text', null],
+		// 판매기간·구매수량·세금·성인·갤러리
 		['commerce_item', 'images', 'text', null],
 		['commerce_item', 'sale_start', 'char', 14],
 		['commerce_item', 'sale_end', 'char', 14],
@@ -27,7 +33,14 @@ class Install extends Base
 		['commerce_item', 'max_qty', 'int', null],
 		['commerce_item', 'tax_type', 'varchar', 10],
 		['commerce_item', 'is_adult', 'char', 1],
-		// C8 적립금
+		// 조합형 옵션 (축 정의 + 조합 매칭 키)
+		['commerce_item', 'option_axes', 'text', null],
+		['commerce_item_option', 'combo', 'varchar', 250],
+		['commerce_item', 'option_mode', 'varchar', 10],
+		// 세금 표기 (주문 시점 과세 구분 스냅샷 + 배송 국가)
+		['commerce_order_item', 'tax_type', 'varchar', 10],
+		['commerce_order_address', 'country', 'varchar', 2],
+		// 적립금
 		['commerce_order', 'credit_used', 'bigint', null],
 		// 등급별 상품 할인 (정액/정률)
 		['commerce_grade', 'discount_type', 'varchar', 10],
@@ -42,7 +55,41 @@ class Install extends Base
 		$this->prepareConfig();
 		self::createDefaultSeller();
 		self::createDefaultInstance();
+		self::enableMemberPhoneField();
 		return new \BaseObject();
+	}
+
+	/**
+	 * 회원 가입폼의 연락처(phone_number) 항목을 활성화한다.
+	 * 주문 시 연락처를 회원 정보에 저장하는 기능이 회원 화면에서도 보이게 하기 위함.
+	 */
+	protected static function enableMemberPhoneField(): void
+	{
+		try
+		{
+			$member_config = \ModuleModel::getModuleConfig('member');
+			if (!is_object($member_config) || !isset($member_config->signupForm) || !is_array($member_config->signupForm))
+			{
+				return;
+			}
+			$changed = false;
+			foreach ($member_config->signupForm as $field)
+			{
+				if (is_object($field) && ($field->name ?? '') === 'phone_number' && ($field->isUse ?? false) !== true)
+				{
+					$field->isUse = true;
+					$changed = true;
+				}
+			}
+			if ($changed)
+			{
+				\ModuleController::getInstance()->insertModuleConfig('member', $member_config);
+			}
+		}
+		catch (\Exception $e)
+		{
+			// 회원 설정을 못 만져도 커머스 설치는 계속한다
+		}
 	}
 
 	/**
@@ -73,8 +120,8 @@ class Install extends Base
 			}
 		}
 
-		// C8 이후 추가된 테이블
-		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade'] as $table)
+		// 뒤에 추가된 테이블
+		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade', 'commerce_stock_log', 'commerce_review', 'commerce_inquiry', 'commerce_address', 'commerce_tracking', 'commerce_promotion', 'commerce_promotion_item', 'commerce_badge'] as $table)
 		{
 			if (!$oDB->isTableExists($table))
 			{
@@ -97,7 +144,35 @@ class Install extends Base
 			}
 		}
 
+		// 진열 순서가 비어 있는 상품이 남아 있으면 채워야 한다
+		if ($oDB->isTableExists('commerce_item') && self::hasUnorderedItems())
+		{
+			return true;
+		}
+
 		return false;
+	}
+
+	/**
+	 * 진열 순서가 아직 0 인 상품이 있는가.
+	 *
+	 * 목록 기본 정렬이 진열 순서이므로, 예전에 등록된 상품도 값을 채워 줘야
+	 * 등록한 차례대로 보인다.
+	 *
+	 * @return bool
+	 */
+	protected static function hasUnorderedItems(): bool
+	{
+		try
+		{
+			$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()
+				->query('SELECT COUNT(*) FROM `' . self::dbPrefix() . 'commerce_item` WHERE list_order = 0');
+			return $stmt ? ((int)$stmt->fetchColumn() > 0) : false;
+		}
+		catch (\Throwable $e)
+		{
+			return false;
+		}
 	}
 
 	/**
@@ -108,6 +183,7 @@ class Install extends Base
 		$this->prepareConfig();
 		self::createDefaultSeller();
 		self::createDefaultInstance();
+		self::enableMemberPhoneField();
 
 		$oDB = \DB::getInstance();
 		foreach (self::ADDED_COLUMNS as [$table, $column, $type, $size])
@@ -134,6 +210,19 @@ class Install extends Base
 			catch (\Exception $e)
 			{
 				// 변환 실패는 치명적이지 않다 (정수 적립률로 계속 동작)
+			}
+		}
+
+		// 진열 순서가 비어 있는 상품은 번호를 그대로 넣어 등록순으로 맞춘다
+		if ($oDB->isTableExists('commerce_item') && self::hasUnorderedItems())
+		{
+			try
+			{
+				\Rhymix\Framework\DB::getInstance()->getHandle()
+					->exec('UPDATE `' . self::dbPrefix() . 'commerce_item` SET list_order = item_srl WHERE list_order = 0');
+			}
+			catch (\Throwable $e)
+			{
 			}
 		}
 

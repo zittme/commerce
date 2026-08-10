@@ -1,0 +1,12 @@
+<query id="updateInquiryAnswer" action="update">
+	<tables>
+		<table name="commerce_inquiry" />
+	</tables>
+	<columns>
+		<column name="answer" var="answer" />
+		<column name="answer_date" var="answer_date" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="inquiry_srl" var="inquiry_srl" notnull="notnull" />
+	</conditions>
+</query>

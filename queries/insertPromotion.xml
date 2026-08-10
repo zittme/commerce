@@ -1,0 +1,17 @@
+<query id="insertPromotion" action="insert">
+	<tables>
+		<table name="commerce_promotion" />
+	</tables>
+	<columns>
+		<column name="promo_srl" var="promo_srl" notnull="notnull" />
+		<column name="title" var="title" notnull="notnull" />
+		<column name="slug" var="slug" notnull="notnull" />
+		<column name="banner" var="banner" />
+		<column name="description" var="description" />
+		<column name="start_date" var="start_date" />
+		<column name="end_date" var="end_date" />
+		<column name="status" var="status" default="Y" />
+		<column name="list_order" var="list_order" default="0" />
+		<column name="regdate" var="regdate" default="curdate()" />
+	</columns>
+</query>

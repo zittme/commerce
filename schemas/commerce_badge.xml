@@ -1,0 +1,11 @@
+<table name="commerce_badge">
+	<column name="badge_srl" type="bigint" size="20" notnull="notnull" primarykey="primarykey" />
+	<!-- 상품 카드에 찍히는 문구. 짧을수록 잘 읽힌다 -->
+	<column name="title" type="varchar" size="30" notnull="notnull" />
+	<!-- 글자색·배경색. 비워 두면 스킨 기본값을 쓴다 -->
+	<column name="color" type="varchar" size="20" />
+	<column name="bg_color" type="varchar" size="20" />
+	<column name="list_order" type="number" size="11" notnull="notnull" default="0" index="idx_list_order" />
+	<column name="is_active" type="char" size="1" notnull="notnull" default="Y" index="idx_is_active" />
+	<column name="regdate" type="varchar" size="14" />
+</table>

@@ -18,37 +18,73 @@
 		<action name="dispCommerceMyOrders" class="Controllers\Front" />
 
 		<!-- 장바구니·주문 proc (JSON POST 규약) -->
+		<action name="procCommerceReviewInsert" class="Controllers\Review" standalone="true" />
+		<action name="procCommerceReviewUpload" class="Controllers\Review" standalone="true" />
+		<action name="procCommerceReviewDelete" class="Controllers\Review" standalone="true" />
+		<action name="procCommerceInquiryInsert" class="Controllers\Review" standalone="true" />
+		<action name="procCommerceInquiryDelete" class="Controllers\Review" standalone="true" />
 		<action name="procCommerceCartAdd" class="Controllers\Cart" standalone="true" />
 		<action name="procCommerceCartUpdate" class="Controllers\Cart" standalone="true" />
 		<action name="procCommerceCartDelete" class="Controllers\Cart" standalone="true" />
 		<action name="procCommerceOrder" class="Controllers\Order" standalone="true" />
 		<action name="procCommerceGuestLookup" class="Controllers\Order" standalone="true" />
 		<action name="procCommerceClaim" class="Controllers\Order" standalone="true" />
+		<action name="procCommerceConfirmPurchase" class="Controllers\Order" standalone="true" />
 
 		<!-- 전용 콘솔 (별도 풀스크린 패널 — 관리자에서 새탭으로 진입, 코드에서 관리자 권한 검사) -->
 		<action name="dispCommerceConsole" class="Controllers\Console" standalone="true" />
 
+		<!-- 주문서(거래명세서) 인쇄 — 껍데기 없는 새 창, 코드에서 관리자 권한 검사 -->
+		<action name="dispCommerceAdminOrderInvoice" class="Controllers\Admin" standalone="true" />
+
+		<!-- 주문 CSV 내보내기 — 파일 응답이라 껍데기 없이 내보낸다 -->
+		<action name="dispCommerceAdminExportOrders" class="Controllers\Admin" standalone="true" />
+		<action name="dispCommerceAdminExportStats" class="Controllers\Admin" standalone="true" />
+
 		<!-- 관리자: 전용 운영 화면 세트 -->
 		<action name="dispCommerceAdminDashboard" class="Controllers\Admin" admin-index="true" menu-name="commerce" menu-index="true" permission="manager" />
-		<action name="dispCommerceAdminOrders" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminOrderView" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminItems" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminItemEdit" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminCategories" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminClaims" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminCoupons" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminCredits" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminGrades" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminStats" class="Controllers\Admin" menu-name="commerce" permission="manager" />
-		<action name="dispCommerceAdminConfig" class="Controllers\Admin" menu-name="commerce" permission="manager" />
+		<action name="dispCommerceAdminOrders" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminOrderView" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminItems" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminItemEdit" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminStock" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminStockAdjust" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminQna" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminSaveFront" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminUploadBanner" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminReviewReply" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminInquiryAnswer" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminPromotions" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminInsertPromotion" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminDeletePromotion" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminCategories" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminClaims" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminCoupons" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminCredits" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminGrades" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminStats" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminConfig" class="Controllers\Admin" permission="manager" />
 
 		<action name="procCommerceAdminInsertConfig" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminInsertItem" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminDeleteItem" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminSortItems" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminUploadItemImage" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminSaveItemImages" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminBuildCombos" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminInsertOption" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminUpdateOption" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminDeleteOption" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminInsertCategory" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminDeleteCategory" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminSortCategories" class="Controllers\Admin" permission="manager" />
+		<!-- 다국어 코드 (코어 lang 테이블 재사용) -->
+		<action name="procCommerceAdminGetLangCodes" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminGetLangCode" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminSaveLangCode" class="Controllers\Admin" permission="manager" />
+		<action name="dispCommerceAdminBadges" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminInsertBadge" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminDeleteBadge" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminUpdateOrder" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminUpdateClaim" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminInsertCoupon" class="Controllers\Admin" permission="manager" />
@@ -69,8 +105,8 @@
 
 	<!--
 	  결제 통지 수신 + 사이트맵 단일 인스턴스 규약.
-	  ⚠️ eventHandler 는 모듈 설치/업데이트 1회 실행으로 DB 에 등록해야 동작한다.
-	  ⚠️ 결제 트리거 핸들러는 PG 콜백 요청 안에서 실행되므로 세션 접근 금지 (pitfall #57).
+	  eventHandler 는 모듈 설치/업데이트 1회 실행으로 DB 에 등록해야 동작한다.
+	  결제 트리거 핸들러는 PG 콜백 요청 안에서 실행되므로 세션 접근 금지.
 	-->
 	<eventHandlers>
 		<eventHandler after="zittme_pay.approved" class="Controllers\Trigger" method="triggerPayApproved" />

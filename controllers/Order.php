@@ -12,7 +12,7 @@ use Zittme\Modules\Commerce\Models\Stock;
 /**
  * 주문 생성·조회·클레임.
  *
- * 철칙: 금액은 브라우저 값을 절대 믿지 않는다 — 장바구니를 서버에서 다시 해석해
+ * 금액은 브라우저 값을 쓰지 않는다. 장바구니를 서버에서 다시 해석해
  *   단가·합계·배송비를 전부 재계산한다. 재고는 품목마다 원자 선점하고,
  *   중간에 하나라도 실패하면 이미 선점한 것을 전부 되돌린다.
  */
@@ -83,6 +83,12 @@ class Order extends Base
 
 		$item_total = $resolved->item_total;
 		$delivery_fee = CartModel::calcShipFee($resolved);
+		// 도서·산간 등 지역 추가 배송비 (우편번호 기준)
+		$delivery_fee += CartModel::extraShipFee(
+			(string)\Context::get('zipcode'),
+			(string)\Context::get('address1'),
+			self::filterCountry((string)\Context::get('country'))
+		);
 
 		// 재고 원자 선점 — 실패 시 이미 선점한 것 전부 롤백
 		$reserved = [];
@@ -242,6 +248,8 @@ class Order extends Base
 				'price' => $entry->unit_price,
 				'qty' => $entry->qty,
 				'subtotal' => $entry->subtotal,
+				// 상품 설정이 나중에 바뀌어도 명세서의 과세 구분은 그대로 남아야 한다
+				'tax_type' => ($entry->item->tax_type ?? 'taxable') === 'free' ? 'free' : 'taxable',
 				'claim_status' => 'none',
 				'regdate' => $now,
 			]);
@@ -253,6 +261,7 @@ class Order extends Base
 			'order_srl' => $order_srl,
 			'receiver_name' => mb_substr($receiver_name, 0, 80),
 			'receiver_phone' => mb_substr(trim((string)\Context::get('receiver_phone')) ?: $orderer_phone, 0, 30),
+			'country' => self::filterCountry((string)\Context::get('country')),
 			'zipcode' => mb_substr(trim((string)\Context::get('zipcode')), 0, 10),
 			'address1' => mb_substr($address1, 0, 250),
 			'address2' => mb_substr(trim((string)\Context::get('address2')), 0, 250),
@@ -260,7 +269,59 @@ class Order extends Base
 			'regdate' => $now,
 		]);
 
+		// 연락처 저장 (회원, 요청 시): 회원 정보의 전화번호를 주문자 연락처로 갱신한다
+		if ($logged_info && !empty($logged_info->member_srl) && \Context::get('save_phone') === 'Y')
+		{
+			$new_phone = preg_replace('/[^0-9+]/', '', $orderer_phone);
+			if ($new_phone !== '' && $new_phone !== (string)($logged_info->phone_number ?? ''))
+			{
+				\Rhymix\Framework\DB::getInstance()->query(
+					'UPDATE member SET phone_number = ? WHERE member_srl = ?',
+					$new_phone, (int)$logged_info->member_srl
+				);
+				\MemberController::clearMemberCache((int)$logged_info->member_srl);
+			}
+		}
+
+		// 배송지 저장 (회원, 요청 시): 같은 주소가 이미 있으면 중복 저장하지 않는다
+		$save_member_srl = ($logged_info && !empty($logged_info->member_srl)) ? (int)$logged_info->member_srl : 0;
+		if ($save_member_srl > 0 && \Context::get('save_address') === 'Y')
+		{
+			$dup = false;
+			$saved_output = executeQuery('commerce.getAddressList', (object)['member_srl' => $save_member_srl]);
+			if ($saved_output->toBool() && !empty($saved_output->data))
+			{
+				foreach (is_array($saved_output->data) ? $saved_output->data : [$saved_output->data] as $saved)
+				{
+					if ((string)($saved->address1 ?? '') === $address1 && (string)($saved->address2 ?? '') === trim((string)\Context::get('address2')))
+					{
+						$dup = true;
+						break;
+					}
+				}
+			}
+			if (!$dup)
+			{
+				executeQuery('commerce.insertAddress', (object)[
+					'address_srl' => getNextSequence(),
+					'member_srl' => $save_member_srl,
+					'title' => mb_substr(trim((string)\Context::get('address_title')), 0, 60),
+					'receiver_name' => mb_substr($receiver_name, 0, 80),
+					'receiver_phone' => mb_substr(trim((string)\Context::get('receiver_phone')) ?: $orderer_phone, 0, 30),
+					'zipcode' => mb_substr(trim((string)\Context::get('zipcode')), 0, 10),
+					'address1' => mb_substr($address1, 0, 250),
+					'address2' => mb_substr(trim((string)\Context::get('address2')), 0, 250),
+					'regdate' => $now,
+				]);
+			}
+		}
+
 		OrderModel::log($order_srl, $order_seller_srl, 'create', '', self::ORDER_PENDING, $member_srl);
+
+		// 주문 알림 메일 — 관리자(신규 주문) + 구매자(접수 안내)
+		$notify_order = OrderModel::get($order_srl);
+		OrderModel::notifyMail('new_order', $notify_order);
+		OrderModel::notifyMail('received', $notify_order);
 
 		// 주문된 항목만 장바구니에서 제거
 		CartModel::removeMany(array_map(function($e) { return $e->cart_srl; }, $entries));
@@ -280,6 +341,7 @@ class Order extends Base
 			$pay = \Zittme\Modules\Zittme_pay\PayService::createOrder([
 				'source_module' => 'commerce',
 				'source_srl' => $order_srl,
+				'source_code' => $order_code,
 				'member_srl' => $member_srl,
 				'amount' => $payment_price,
 				'title' => $first->item->item_name . (count($entries) > 1 ? ' 외 ' . (count($entries) - 1) . '건' : ''),
@@ -329,6 +391,75 @@ class Order extends Base
 
 		$mid = (string)\Context::get('mid') ?: (self::getDefaultInstance()->mid ?? self::DEFAULT_MID);
 		$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order->order_code, 'gp', $raw));
+	}
+
+	/**
+	 * 구매확정 — 배송완료 주문을 구매자가 확정한다. 확정한 상품만 리뷰를 쓸 수 있다.
+	 */
+	public function procCommerceConfirmPurchase()
+	{
+		$code = trim((string)\Context::get('order_code'));
+		$order = $code !== '' ? OrderModel::getByCode($code) : null;
+		if (!$order)
+		{
+			return new \BaseObject(-1, 'msg_shop_order_not_found');
+		}
+
+		// 본인 확인 (회원 본인 / 비회원 비밀번호)
+		$logged_info = \Context::get('logged_info');
+		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
+		if ((int)$order->member_srl > 0)
+		{
+			if ($member_srl !== (int)$order->member_srl)
+			{
+				return new \BaseObject(-1, 'msg_shop_not_yours');
+			}
+		}
+		else
+		{
+			$raw = (string)\Context::get('guest_password');
+			if ($raw === '' || empty($order->guest_password)
+				|| !\Rhymix\Framework\Password::checkPassword($raw, $order->guest_password))
+			{
+				return new \BaseObject(-1, 'msg_shop_wrong_password');
+			}
+		}
+
+		if ($order->status !== self::ORDER_PAID)
+		{
+			return new \BaseObject(-1, 'msg_shop_confirm_not_allowed');
+		}
+
+		// 배송완료 상태의 하위주문만 확정으로 전이한다
+		$output = executeQuery('commerce.updateOrderSellersStatus', (object)[
+			'order_srl' => (int)$order->order_srl,
+			'status' => self::SELLER_CONFIRMED,
+			'from_status_list' => self::SELLER_DELIVERED,
+		]);
+		if (!$output->toBool())
+		{
+			return $output;
+		}
+
+		$this->setMessage('msg_shop_confirmed');
+		$mid = (string)\Context::get('mid') ?: (self::getDefaultInstance()->mid ?? self::DEFAULT_MID);
+
+		// 구매확정 후 리뷰 작성 유도: 단일 상품이면 상품 리뷰 폼으로, 여러 상품이면 주문 상세의 리뷰 안내로
+		$confirm_items = OrderModel::getItems((int)$order->order_srl);
+		$distinct = [];
+		foreach ($confirm_items as $ci)
+		{
+			if ((int)$ci->item_srl > 0)
+			{
+				$distinct[(int)$ci->item_srl] = true;
+			}
+		}
+		if ($member_srl > 0 && count($distinct) === 1)
+		{
+			$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', array_key_first($distinct), 'review', '1'));
+			return;
+		}
+		$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order->order_code, 'gp', (string)\Context::get('guest_password'), 'review', '1'));
 	}
 
 	/**
@@ -387,6 +518,12 @@ class Order extends Base
 		$claim_type = in_array(\Context::get('claim_type'), ['cancel', 'return', 'exchange'], true)
 			? (string)\Context::get('claim_type') : 'cancel';
 		$sellers = OrderModel::getSellerOrders((int)$order->order_srl);
+		// 배송 중부터는 취소가 아니라 반품으로 처리한다 (회수 물류 필요)
+		$seller_status = count($sellers) ? (string)$sellers[0]->status : '';
+		if ($claim_type === 'cancel' && in_array($seller_status, [self::SELLER_SHIPPING, self::SELLER_DELIVERED], true))
+		{
+			$claim_type = 'return';
+		}
 		$delivered = count($sellers) && $sellers[0]->status === self::SELLER_DELIVERED;
 		if ($delivered && !empty($sellers[0]->delivered_date))
 		{
@@ -426,6 +563,7 @@ class Order extends Base
 			'regdate' => self::now(),
 		]);
 		OrderModel::log((int)$order->order_srl, 0, 'claim', '', 'requested', $member_srl, $claim_type);
+		OrderModel::notifyMail('claim', $order, '유형: ' . $claim_type . ' / 사유: ' . mb_substr(trim((string)\Context::get('reason')), 0, 200));
 
 		// 품목을 신청 상태로 표시 (중복 신청 방지)
 		foreach ($targets as $t)
@@ -438,6 +576,22 @@ class Order extends Base
 
 		$this->setMessage('msg_shop_claim_requested');
 		$this->setRedirectUrl($result_url);
+	}
+
+	/**
+	 * 배송 국가 코드 정리. 값이 없거나 형식이 아니면 국내(KR)로 본다.
+	 *
+	 * @param string $country
+	 * @return string
+	 */
+	public static function filterCountry(string $country): string
+	{
+		$country = strtoupper(trim($country));
+		if (strlen($country) !== 2 || !ctype_alpha($country))
+		{
+			return 'KR';
+		}
+		return $country;
 	}
 
 	/**

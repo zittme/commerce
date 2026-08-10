@@ -14,7 +14,7 @@
 	<column name="orderer_email" type="varchar" size="120" />
 	<!-- 비회원 주문 조회용 비밀번호 해시 -->
 	<column name="guest_password" type="varchar" size="128" />
-	<!-- ★ 금액은 전부 서버 재계산 값. 브라우저 값은 절대 저장하지 않는다 -->
+	<!-- 금액은 전부 서버에서 다시 계산한 값이다 -->
 	<column name="item_total" type="bigint" notnull="notnull" default="0" />
 	<column name="delivery_fee_total" type="bigint" notnull="notnull" default="0" />
 	<column name="discount_total" type="bigint" notnull="notnull" default="0" />

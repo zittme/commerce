@@ -1,0 +1,18 @@
+<query id="insertTracking" action="insert">
+	<tables>
+		<table name="commerce_tracking" />
+	</tables>
+	<columns>
+		<column name="tracking_srl" var="tracking_srl" notnull="notnull" />
+		<column name="order_seller_srl" var="order_seller_srl" notnull="notnull" />
+		<column name="order_srl" var="order_srl" notnull="notnull" />
+		<column name="courier_code" var="courier_code" />
+		<column name="invoice" var="invoice" />
+		<column name="level" var="level" />
+		<column name="status_name" var="status_name" />
+		<column name="complete" var="complete" />
+		<column name="details" var="details" />
+		<column name="regdate" var="regdate" />
+		<column name="last_update" var="last_update" />
+	</columns>
+</query>

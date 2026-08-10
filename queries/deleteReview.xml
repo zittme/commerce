@@ -1,0 +1,8 @@
+<query id="deleteReview" action="delete">
+	<tables>
+		<table name="commerce_review" />
+	</tables>
+	<conditions>
+		<condition operation="equal" column="review_srl" var="review_srl" notnull="notnull" />
+	</conditions>
+</query>

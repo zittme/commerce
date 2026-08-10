@@ -5,7 +5,7 @@ namespace Zittme\Modules\Commerce\Controllers;
 /**
  * 쇼핑 전용 콘솔 — zittme 관리자에 귀속되지 않는 별도 풀스크린 운영 패널.
  *
- * bizchat 콘솔과 같은 규약: standalone act + layout 'none'.
+ * standalone act + layout 'none' 으로 띄운다.
  * 화면 데이터 로직은 Admin 을 그대로 상속해 재사용하고,
  * 콘솔 셸(사이드바·링크 재작성)은 views/admin/_tabs 의 콘솔 분기가 담당한다.
  * 관리자 화면에서는 새탭으로 이 콘솔에 입장한다.
@@ -21,7 +21,11 @@ class Console extends Admin
 		'order_view' => 'dispCommerceAdminOrderView',
 		'items' => 'dispCommerceAdminItems',
 		'item_edit' => 'dispCommerceAdminItemEdit',
+		'stock' => 'dispCommerceAdminStock',
 		'categories' => 'dispCommerceAdminCategories',
+		'badges' => 'dispCommerceAdminBadges',
+		'promotions' => 'dispCommerceAdminPromotions',
+		'qna' => 'dispCommerceAdminQna',
 		'claims' => 'dispCommerceAdminClaims',
 		'coupons' => 'dispCommerceAdminCoupons',
 		'credits' => 'dispCommerceAdminCredits',

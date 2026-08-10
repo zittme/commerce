@@ -8,22 +8,41 @@
 			<span class="rsva-st {{ $order->status === 'paid' ? 'rsva-st-confirmed' : ($order->status === 'pending' ? 'rsva-st-hold' : 'rsva-st-cancelled') }}">{{ ['pending'=>'결제대기','paid'=>'결제완료','cancelled'=>'취소','failed'=>'실패','expired'=>'만료'][$order->status] ?? $order->status }}</span>
 		</h3>
 		<div class="rsva-form-grid">
-			<div><label>주문자</label><div>{{ $order->orderer_name }} / {{ $order->orderer_phone }} @if($order->orderer_email)/ {{ $order->orderer_email }}@endif</div></div>
-			<div><label>결제 금액</label><div><strong>{{ number_format($order->payment_price) }}원</strong> (상품 {{ number_format($order->item_total) }} + 배송 {{ number_format($order->delivery_fee_total) }})</div></div>
+			<div><label>{{ lang('commerce.admin_order_view_1') }}</label><div>{{ $order->orderer_name }} / {{ $order->orderer_phone }} @if($order->orderer_email)/ {{ $order->orderer_email }}@endif</div></div>
+			<div><label>{{ lang('commerce.admin_order_view_2') }}</label><div><strong>{{ number_format($order->payment_price) }}원</strong> (상품 {{ number_format($order->item_total) }} + 배송 {{ number_format($order->delivery_fee_total) }})</div></div>
+			@if ($pay_order)
+			<div style="grid-column:1/-1">
+				<label>{{ lang('commerce.admin_order_view_3') }}</label>
+				<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispZittme_payAdminOrderView', 'order_srl', $pay_order->order_srl) }}" target="_blank"><strong>{{ $pay_order->order_code }}</strong></a>
+					<span class="rsva-st {{ $pay_order->status === 'paid' ? 'rsva-st-confirmed' : ($pay_order->status === 'pending' ? 'rsva-st-hold' : '') }}">{{ ['ready'=>'준비','pending'=>'입금대기','paid'=>'결제완료','cancelled'=>'취소','partial_cancelled'=>'부분취소','failed'=>'실패','expired'=>'만료'][$pay_order->status] ?? $pay_order->status }}</span>
+					<small style="color:#8b95a1">{{ $pay_order->gateway }}</small>
+					@if (in_array($pay_order->status, ['ready', 'pending'], true))
+					<form action="./" method="post" style="display:inline" onsubmit="return confirm('입금을 확인하셨습니까? 확인 처리하면 주문이 결제완료로 바뀝니다.')">
+						<input type="hidden" name="module" value="zittme_pay" />
+						<input type="hidden" name="act" value="procZittme_payAdminConfirmDeposit" />
+						<input type="hidden" name="order_srl" value="{{ $pay_order->order_srl }}" />
+						<input type="hidden" name="success_return_url" value="{{ $rsva_return }}" />
+						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-primary">{{ lang('commerce.admin_order_view_4') }}</button>
+					</form>
+					@endif
+				</div>
+			</div>
+			@endif
 			@if ($order_address)
-			<div style="grid-column:1/-1"><label>배송지</label><div>{{ $order_address->receiver_name }} / {{ $order_address->receiver_phone }} — [{{ $order_address->zipcode }}] {{ $order_address->address1 }} {{ $order_address->address2 }} @if($order_address->delivery_memo)<small style="color:#6b7684">({{ $order_address->delivery_memo }})</small>@endif</div></div>
+			<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_order_view_5') }}</label><div>{{ $order_address->receiver_name }} / {{ $order_address->receiver_phone }} — [{{ $order_address->zipcode }}] {{ $order_address->address1 }} {{ $order_address->address2 }} @if($order_address->delivery_memo)<small style="color:#6b7684">({{ $order_address->delivery_memo }})</small>@endif</div></div>
 			@endif
 		</div>
 	</div>
 
 	<div class="rsva-panel">
-		<h3>품목</h3>
+		<h3>{{ lang('commerce.admin_order_view_6') }}</h3>
 		<table class="rsva-table">
-			<thead><tr><th>상품</th><th>단가</th><th>수량</th><th>금액</th><th>클레임</th></tr></thead>
+			<thead><tr><th>{{ lang('commerce.admin_order_view_7') }}</th><th>{{ lang('commerce.admin_order_view_8') }}</th><th>{{ lang('commerce.admin_order_view_9') }}</th><th>{{ lang('commerce.admin_order_view_10') }}</th><th>{{ lang('commerce.admin_order_view_11') }}</th></tr></thead>
 			<tbody>
 				@foreach ($order_items as $oi)
 				<tr>
-					<td>{{ $oi->item_name }}@if($oi->option_name)<br /><small style="color:#6b7684">{{ $oi->option_name }}</small>@endif</td>
+					<td>{{ $oi->item_name }}@if(($oi->tax_type ?? 'taxable') === 'free') <span class="rsva-st">{{ lang('commerce.admin_order_view_12') }}</span>@endif@if($oi->option_name)<br /><small style="color:#6b7684">{{ $oi->option_name }}</small>@endif</td>
 					<td>{{ number_format($oi->price) }}</td>
 					<td>{{ $oi->qty }}</td>
 					<td>{{ number_format($oi->subtotal) }}</td>
@@ -36,7 +55,7 @@
 
 	@foreach ($order_sellers as $os)
 	<div class="rsva-panel">
-		<h3>배송 처리
+		<h3>{{ lang('commerce.admin_order_view_13') }}
 			<span class="rsva-st {{ in_array($os->status, ['shipping','delivered']) ? 'rsva-st-confirmed' : '' }}">{{ ['pending'=>'결제대기','paid'=>'발주 대기','preparing'=>'배송준비','shipping'=>'배송중','delivered'=>'배송완료','cancelled'=>'취소','refunded'=>'환불'][$os->status] ?? $os->status }}</span>
 			@if ($os->shipping_invoice)<small style="font-weight:500;color:#6b7684">{{ $os->shipping_company }} {{ $os->shipping_invoice }}</small>@endif
 		</h3>
@@ -46,18 +65,18 @@
 			<input type="hidden" name="order_srl" value="{{ $order->order_srl }}" />
 			<input type="hidden" name="success_return_url" value="{{ $rsva_return }}" />
 			@if ($os->status === 'paid')
-			<div><button type="submit" name="order_action" value="confirm" class="rsva-btn rsva-btn-primary">발주 확인 (배송준비)</button></div>
+			<div><button type="submit" name="order_action" value="confirm" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_order_view_14') }}</button></div>
 			@endif
 			@if (in_array($os->status, ['paid', 'preparing']))
-			<div><label>택배사</label><input type="text" name="shipping_company" placeholder="CJ대한통운" style="width:130px" /></div>
-			<div><label>송장번호</label><input type="text" name="shipping_invoice" style="width:160px" /></div>
-			<div><button type="submit" name="order_action" value="ship" class="rsva-btn">송장 등록 (배송중)</button></div>
+			<div><label>{{ lang('commerce.admin_order_view_15') }}</label><input type="text" name="shipping_company" placeholder="{{ lang('commerce.admin_order_view_31') }}" style="width:130px" /></div>
+			<div><label>{{ lang('commerce.admin_order_view_16') }}</label><input type="text" name="shipping_invoice" style="width:160px" /></div>
+			<div><button type="submit" name="order_action" value="ship" class="rsva-btn">{{ lang('commerce.admin_order_view_17') }}</button></div>
 			@endif
 			@if ($os->status === 'shipping')
-			<div><button type="submit" name="order_action" value="deliver" class="rsva-btn rsva-btn-primary">배송 완료</button></div>
+			<div><button type="submit" name="order_action" value="deliver" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_order_view_18') }}</button></div>
 			@endif
 			@if (in_array($order->status, ['pending', 'paid']))
-			<div><button type="submit" name="order_action" value="cancel" class="rsva-btn rsva-btn-danger" onclick="return confirm('주문을 전체 취소하고 환불·재입고 처리합니다. 계속할까요?')">전체 취소</button></div>
+			<div><button type="submit" name="order_action" value="cancel" class="rsva-btn rsva-btn-danger" onclick="return confirm('주문을 전체 취소하고 환불·재입고 처리합니다. 계속할까요?')">{{ lang('commerce.admin_order_view_19') }}</button></div>
 			@endif
 		</form>
 	</div>
@@ -65,9 +84,9 @@
 
 	@if (!empty($order_claims))
 	<div class="rsva-panel">
-		<h3>클레임</h3>
+		<h3>{{ lang('commerce.admin_order_view_11') }}</h3>
 		<table class="rsva-table">
-			<thead><tr><th>구분</th><th>사유</th><th>상태</th><th>환불액</th><th>일시</th></tr></thead>
+			<thead><tr><th>{{ lang('commerce.admin_order_view_20') }}</th><th>{{ lang('commerce.admin_order_view_21') }}</th><th>{{ lang('commerce.admin_order_view_22') }}</th><th>{{ lang('commerce.admin_order_view_23') }}</th><th>{{ lang('commerce.admin_order_view_24') }}</th></tr></thead>
 			<tbody>
 				@foreach ($order_claims as $c)
 				<tr>
@@ -80,21 +99,25 @@
 				@endforeach
 			</tbody>
 		</table>
-		<p style="margin:8px 0 0;font-size:13px"><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminClaims') }}" class="rsva-btn rsva-btn-sm">클레임 관리로 이동</a></p>
+		<p style="margin:8px 0 0;font-size:13px"><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminClaims') }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_order_view_25') }}</a></p>
 	</div>
 	@endif
 
 	@if (!empty($order_logs))
 	<div class="rsva-panel">
-		<h3>처리 이력</h3>
+		<h3>{{ lang('commerce.admin_order_view_26') }}</h3>
 		<table class="rsva-table">
-			<thead><tr><th>일시</th><th>동작</th><th>상태</th><th>메모</th></tr></thead>
+			<thead><tr><th>{{ lang('commerce.admin_order_view_24') }}</th><th>{{ lang('commerce.admin_order_view_27') }}</th><th>{{ lang('commerce.admin_order_view_22') }}</th><th>{{ lang('commerce.admin_order_view_28') }}</th></tr></thead>
 			<tbody>
+				@php
+				$zmc_act_labels = ['create' => '주문 접수', 'pay' => '결제', 'confirm' => '주문 확인', 'ship' => '발송', 'deliver' => '배송 완료', 'purchase_confirm' => '구매확정', 'cancel' => '취소', 'claim' => '클레임 접수', 'refund' => '환불', 'expire' => '기한 만료', 'stock' => '재고 조정'];
+				$zmc_st_labels = ['pending' => '결제 대기', 'paid' => '결제 완료', 'preparing' => '배송 준비', 'shipping' => '배송 중', 'delivered' => '배송 완료', 'confirmed' => '구매확정', 'cancelled' => '취소됨', 'failed' => '결제 실패', 'expired' => '기한 만료', 'requested' => '신청됨', 'approved' => '승인됨', 'rejected' => '반려됨', 'completed' => '처리 완료'];
+				@endphp
 				@foreach ($order_logs as $lg)
 				<tr>
 					<td><small>{{ zdate($lg->regdate, 'm.d H:i:s') }}</small></td>
-					<td>{{ $lg->action }}</td>
-					<td>{{ $lg->before_status }}@if($lg->after_status) → {{ $lg->after_status }}@endif</td>
+					<td>{{ $zmc_act_labels[$lg->action] ?? $lg->action }}</td>
+					<td>@if($lg->before_status){{ $zmc_st_labels[$lg->before_status] ?? $lg->before_status }}@endif @if($lg->after_status)→ {{ $zmc_st_labels[$lg->after_status] ?? $lg->after_status }}@endif</td>
 					<td>{{ $lg->memo ?: '-' }}</td>
 				</tr>
 				@endforeach
@@ -103,5 +126,6 @@
 	</div>
 	@endif
 
-	<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrders') }}" class="rsva-btn">주문 목록</a>
+	<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrders') }}" class="rsva-btn">{{ lang('commerce.admin_order_view_29') }}</a>
+	<a href="{{ getUrl('', 'mid', '', 'module', 'commerce', 'act', 'dispCommerceAdminOrderInvoice', 'order_srl', $order->order_srl) }}" class="rsva-btn rsva-btn-primary" target="_blank" rel="noopener" data-zmc-keep>{{ lang('commerce.admin_order_view_30') }}</a>
 </div>

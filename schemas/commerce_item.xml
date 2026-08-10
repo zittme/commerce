@@ -9,7 +9,7 @@
 	<column name="sale_price" type="bigint" notnull="notnull" default="0" />
 	<!--
 	  옵션 없는 상품의 재고. 옵션이 있으면(has_options=Y) 재고는 옵션 단위로만 관리하고
-	  이 값은 쓰지 않는다. 차감은 반드시 조건부 UPDATE (stock >= n) 원자 경로.
+	  차감은 조건부 UPDATE (stock >= n) 로 처리한다.
 	-->
 	<column name="stock" type="int" notnull="notnull" default="0" />
 	<column name="use_stock" type="char" size="1" notnull="notnull" default="Y" />
@@ -29,6 +29,10 @@
 	<!-- 성인 상품: 구매 시 본인인증 게이트 (member/identity 연동) -->
 	<column name="is_adult" type="char" size="1" notnull="notnull" default="N" />
 	<column name="has_options" type="char" size="1" notnull="notnull" default="N" />
+	<!-- 조합형 옵션 축 정의 (JSON: [{name, values[]}]) -->
+	<column name="option_axes" type="text" />
+	<!-- 기본 옵션 방식: single(직접 입력) / combo(축 조합) -->
+	<column name="option_mode" type="varchar" size="10" notnull="notnull" default="single" />
 	<!-- default(기본 정책) / free / fixed -->
 	<column name="ship_fee_type" type="varchar" size="10" notnull="notnull" default="default" />
 	<column name="ship_fee" type="bigint" notnull="notnull" default="0" />

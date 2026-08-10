@@ -6,6 +6,8 @@
 		<column name="option_srl" var="option_srl" notnull="notnull" />
 		<column name="item_srl" var="item_srl" notnull="notnull" />
 		<column name="option_label" var="option_label" notnull="notnull" />
+		<column name="option_type" var="option_type" default="basic" />
+		<column name="combo" var="combo" />
 		<column name="price_add" var="price_add" default="0" />
 		<column name="stock" var="stock" default="0" />
 		<column name="sku" var="sku" />

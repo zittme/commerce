@@ -1,0 +1,14 @@
+<table name="commerce_tracking">
+	<!-- 배송 조회 결과 저장 — 조회 API 를 주기 폴링해 상태·이력을 쌓는다 (추적 API 대체) -->
+	<column name="tracking_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="order_seller_srl" type="bigint" notnull="notnull" index="idx_order_seller_srl" />
+	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />
+	<column name="courier_code" type="varchar" size="10" />
+	<column name="invoice" type="varchar" size="60" />
+	<column name="level" type="int" notnull="notnull" default="0" />
+	<column name="status_name" type="varchar" size="60" />
+	<column name="complete" type="char" size="1" notnull="notnull" default="N" />
+	<column name="details" type="bigtext" />
+	<column name="regdate" type="char" size="14" />
+	<column name="last_update" type="char" size="14" index="idx_last_update" />
+</table>
