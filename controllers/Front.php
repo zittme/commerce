@@ -2,6 +2,7 @@
 
 namespace Zittme\Modules\Commerce\Controllers;
 
+use Zittme\Modules\Commerce\Models\Address as AddressModel;
 use Zittme\Modules\Commerce\Models\Badge as BadgeModel;
 use Zittme\Modules\Commerce\Models\Cart as CartModel;
 use Zittme\Modules\Commerce\Models\Item as ItemModel;
@@ -586,6 +587,10 @@ class Front extends Base
 		\Context::set('is_member', $logged_info && $logged_info->member_srl ? true : false);
 		\Context::set('pay_available', self::isPayAvailable());
 		\Context::set('shop_config', self::config());
+		\Context::set('shop_address_mode', AddressModel::mode());
+		\Context::set('shop_need_country', AddressModel::needsCountry());
+		\Context::set('shop_countries', AddressModel::countries());
+		\Context::set('shop_default_country', AddressModel::mode() === 'intl' ? '' : 'KR');
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('checkout');
 	}

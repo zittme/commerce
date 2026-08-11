@@ -40,6 +40,14 @@ class Install extends Base
 		// 세금 표기 (주문 시점 과세 구분 스냅샷 + 배송 국가)
 		['commerce_order_item', 'tax_type', 'varchar', 10],
 		['commerce_order_address', 'country', 'varchar', 2],
+		// 해외 배송지 입력
+		['commerce_order_address', 'phone_cc', 'varchar', 6],
+		['commerce_order_address', 'state', 'varchar', 80],
+		['commerce_order_address', 'city', 'varchar', 80],
+		['commerce_address', 'phone_cc', 'varchar', 6],
+		['commerce_address', 'country', 'varchar', 2],
+		['commerce_address', 'state', 'varchar', 80],
+		['commerce_address', 'city', 'varchar', 80],
 		// 적립금
 		['commerce_order', 'credit_used', 'bigint', null],
 		// 등급별 상품 할인 (정액/정률)

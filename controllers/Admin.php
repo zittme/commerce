@@ -27,7 +27,7 @@ class Admin extends Base
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
 		'privacy_text', 'privacy_version', 'retention_days',
 		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note',
-		'biz_tax_mode', 'vat_rate', 'price_includes_tax', 'allow_overseas',
+		'biz_tax_mode', 'vat_rate', 'price_includes_tax', 'allow_overseas', 'address_mode',
 		'notify_admin', 'notify_admin_email',
 	];
 
@@ -936,9 +936,9 @@ class Admin extends Base
 				(string)$order->orderer_phone,
 				(string)$order->orderer_email,
 				$address ? (string)$address->receiver_name : '',
-				$address ? (string)$address->receiver_phone : '',
+				$address ? ZittmeModulesCommerceModelsAddress::formatPhone($address) : '',
 				$address ? (string)$address->zipcode : '',
-				$address ? (string)$address->address1 : '',
+				$address ? trim((string)$address->address1 . (strtoupper((string)($address->country ?? 'KR')) !== 'KR' ? ' ' . trim((string)($address->city ?? '') . ' ' . (string)($address->state ?? '') . ' ' . ZittmeModulesCommerceModelsAddress::countryName((string)$address->country)) : '')) : '',
 				$address ? (string)$address->address2 : '',
 				$address ? (string)$address->delivery_memo : '',
 				implode(' / ', $names),

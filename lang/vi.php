@@ -784,3 +784,15 @@ $lang->admin_msg_6 = '만들 수 있는 조합이 없습니다.';
 $lang->admin_msg_7 = '추가 옵션의 추가금은 0원 이상이어야 합니다. 본품보다 싸게 파는 변형(예: 유통기한 임박 할인)은 "기본 옵션"으로 등록하면 선택 시 본품이 할인가로 교체됩니다.';
 $lang->admin_msg_8 = '조합 %d개를 준비했습니다. (새로 만든 조합 %d개%s)';
 $lang->admin_msg_9 = '리뷰가 등록되었습니다. 적립금 %s원이 지급되었습니다.';
+
+// v0.1.2 — 해외 배송지 입력
+$lang->shop_postal_code = 'Mã bưu chính';
+$lang->shop_city = 'Thành phố';
+$lang->shop_state = 'Bang / Tỉnh';
+$lang->shop_phone_cc = 'Mã quốc gia';
+$lang->msg_shop_need_city = 'Vui lòng nhập thành phố.';
+$lang->shop_address_mode = 'Cách nhập địa chỉ';
+$lang->shop_address_mode_kr = 'Kiểu Hàn Quốc (tra mã bưu chính)';
+$lang->shop_address_mode_intl = 'Quốc tế (nhập tay)';
+$lang->shop_address_mode_both = 'Cả hai (theo quốc gia)';
+$lang->about_shop_address_mode = 'Chọn cách thu thập địa chỉ giao hàng khi đặt hàng.';

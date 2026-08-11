@@ -156,7 +156,16 @@
 						<option value="Y" @if($shop_config->allow_overseas === 'Y') selected @endif>{{ lang('commerce.admin_config_79') }}</option>
 					</select>
 				</div>
+				<div>
+					<label>{{ lang('commerce.shop_address_mode') }}</label>
+					<select name="address_mode">
+						<option value="kr" @if(($shop_config->address_mode ?? 'kr') === 'kr') selected @endif>{{ lang('commerce.shop_address_mode_kr') }}</option>
+						<option value="intl" @if(($shop_config->address_mode ?? 'kr') === 'intl') selected @endif>{{ lang('commerce.shop_address_mode_intl') }}</option>
+						<option value="both" @if(($shop_config->address_mode ?? 'kr') === 'both') selected @endif>{{ lang('commerce.shop_address_mode_both') }}</option>
+					</select>
+				</div>
 			</div>
+			<p class="rsva-hint">{{ lang('commerce.about_shop_address_mode') }}</p>
 			<p class="rsva-hint">{{ lang('commerce.admin_config_80') }}</p>
 		</div>
 

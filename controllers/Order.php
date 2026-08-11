@@ -46,6 +46,13 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_need_fields');
 		}
 
+		// 해외 주소는 우편번호가 없는 국가가 있어 선택 입력이고, 대신 도시를 받는다
+		if (\Zittme\Modules\Commerce\Models\Address::isOverseasInput((string)\Context::get('country'))
+			&& trim((string)\Context::get('city')) === '')
+		{
+			return new \BaseObject(-1, 'msg_shop_need_city');
+		}
+
 		// 비회원 조회 비밀번호
 		$guest_password = '';
 		if ($member_srl <= 0)
@@ -261,7 +268,10 @@ class Order extends Base
 			'order_srl' => $order_srl,
 			'receiver_name' => mb_substr($receiver_name, 0, 80),
 			'receiver_phone' => mb_substr(trim((string)\Context::get('receiver_phone')) ?: $orderer_phone, 0, 30),
+			'phone_cc' => mb_substr(preg_replace('/[^0-9+]/', '', (string)\Context::get('phone_cc')), 0, 6),
 			'country' => self::filterCountry((string)\Context::get('country')),
+			'state' => mb_substr(trim((string)\Context::get('state')), 0, 80),
+			'city' => mb_substr(trim((string)\Context::get('city')), 0, 80),
 			'zipcode' => mb_substr(trim((string)\Context::get('zipcode')), 0, 10),
 			'address1' => mb_substr($address1, 0, 250),
 			'address2' => mb_substr(trim((string)\Context::get('address2')), 0, 250),
@@ -308,6 +318,10 @@ class Order extends Base
 					'title' => mb_substr(trim((string)\Context::get('address_title')), 0, 60),
 					'receiver_name' => mb_substr($receiver_name, 0, 80),
 					'receiver_phone' => mb_substr(trim((string)\Context::get('receiver_phone')) ?: $orderer_phone, 0, 30),
+					'phone_cc' => mb_substr(preg_replace('/[^0-9+]/', '', (string)\Context::get('phone_cc')), 0, 6),
+					'country' => self::filterCountry((string)\Context::get('country')),
+					'state' => mb_substr(trim((string)\Context::get('state')), 0, 80),
+					'city' => mb_substr(trim((string)\Context::get('city')), 0, 80),
 					'zipcode' => mb_substr(trim((string)\Context::get('zipcode')), 0, 10),
 					'address1' => mb_substr($address1, 0, 250),
 					'address2' => mb_substr(trim((string)\Context::get('address2')), 0, 250),

@@ -4,7 +4,7 @@
 	<title xml:lang="en">Commerce</title>
 	<description xml:lang="ko">독립몰과 오픈마켓을 운영할 수 있는 쇼핑몰 모듈입니다. 상품·옵션·재고·장바구니·주문·배송·취소반품을 제공하며, 결제는 짓미 페이(zittme_pay)에 위임합니다. 1차 릴리즈는 독립몰이며 스키마는 처음부터 오픈마켓(판매자별 하위주문)을 전제로 설계되었습니다.</description>
 	<description xml:lang="en">A shop module for both standalone stores and open marketplaces. Items, options, stock, cart, orders, shipping, and claims are built in; payments are delegated to zittme_pay. The first release targets standalone stores while the schema is marketplace-ready from day one.</description>
-	<version>0.1.1</version>
+	<version>0.1.2</version>
 	<date>2026-08-10</date>
 	<category>service</category>
 	<author email_address="zittme-contact@zzan.me" link="https://zitt.me">

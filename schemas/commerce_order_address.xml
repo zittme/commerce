@@ -4,9 +4,14 @@
 	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />
 	<column name="receiver_name" type="varchar" size="80" notnull="notnull" />
 	<column name="receiver_phone" type="varchar" size="30" />
+	<!-- 국가번호 (해외 배송사가 별도로 요구한다) -->
+	<column name="phone_cc" type="varchar" size="6" />
 	<!-- 배송 국가 (ISO 2자리). KR 이 아니면 수출로 보아 영세율 적용 -->
 	<column name="country" type="varchar" size="2" notnull="notnull" default="KR" />
 	<column name="zipcode" type="varchar" size="10" />
+	<!-- 해외 주소용 (한국형 입력에서는 비어 있다) -->
+	<column name="state" type="varchar" size="80" />
+	<column name="city" type="varchar" size="80" />
 	<column name="address1" type="varchar" size="250" />
 	<column name="address2" type="varchar" size="250" />
 	<column name="delivery_memo" type="varchar" size="250" />

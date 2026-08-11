@@ -83,7 +83,7 @@
 						@endif
 						<tr><th>{{ lang('commerce.admin_invoice_17') }}</th><td>{{ $order_address->receiver_name }}</td></tr>
 						<tr><th>{{ lang('commerce.admin_invoice_13') }}</th><td>{{ $order_address->receiver_phone }}</td></tr>
-						<tr><th>{{ lang('commerce.admin_invoice_8') }}</th><td>[{{ $order_address->zipcode }}] {{ $order_address->address1 }} {{ $order_address->address2 }}</td></tr>
+						<tr><th>{{ lang('commerce.admin_invoice_8') }}</th><td>{{ ZittmeModulesCommerceModelsAddress::format($order_address) }}</td></tr>
 						<tr><th>{{ lang('commerce.admin_invoice_18') }}</th><td>{{ $order_address->delivery_memo }}</td></tr>
 						@else
 						<tr><td colspan="2">{{ lang('commerce.admin_invoice_19') }}</td></tr>

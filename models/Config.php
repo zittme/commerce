@@ -73,6 +73,8 @@ class Config
 		'price_includes_tax' => 'Y',
 		// 해외 배송 — 켜면 주문서에 배송 국가를 고르게 하고, 국외 주문은 영세율로 본다
 		'allow_overseas' => 'N',
+		// 배송지 입력 방식 — kr(우편번호 검색) / intl(자유 입력) / both(국가에 따라 전환)
+		'address_mode' => 'kr',
 	];
 
 	/**
