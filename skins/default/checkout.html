@@ -198,6 +198,9 @@
 				setVal('zipcode_intl', opt.getAttribute('data-zipcode'));
 				setVal('address1', opt.getAttribute('data-address1'));
 				setVal('address2', opt.getAttribute('data-address2'));
+				// 채워 넣은 값으로 배송비를 다시 계산하게 한다
+				var a1 = document.querySelector('[name="address1"]');
+				if (a1) a1.dispatchEvent(new Event('change', { bubbles: true }));
 			});
 		}
 
@@ -231,6 +234,11 @@
 			var region = addrEl ? normRegion(addrEl.value.trim().split(' ')[0]) : '';
 			var countryEl = document.querySelector('[name="country"]');
 			var country = (countryEl ? countryEl.value : 'KR').toUpperCase() || 'KR';
+			var stateEl = document.querySelector('input[name="state"]');
+			var cityEl = document.querySelector('input[name="city"]');
+			var intlRegions = [];
+			if (stateEl && stateEl.value.trim()) intlRegions.push(stateEl.value.trim().toLowerCase());
+			if (cityEl && cityEl.value.trim()) intlRegions.push(cityEl.value.trim().toLowerCase());
 
 			for (var i = 0; i < extraZones.length; i++) {
 				var fee = parseInt(extraZones[i].fee, 10) || 0;
@@ -240,10 +248,11 @@
 				if (zoneCountry !== country) continue;
 
 				var regions = String(extraZones[i].regions || '').split(',');
-				if (region) {
-					for (var r = 0; r < regions.length; r++) {
-						if (regions[r].trim() && normRegion(regions[r]) === region) return fee;
-					}
+				for (var r = 0; r < regions.length; r++) {
+					var zoneName = regions[r].trim();
+					if (!zoneName) continue;
+					if (region && normRegion(zoneName) === region) return fee;
+					if (intlRegions.indexOf(zoneName.toLowerCase()) !== -1) return fee;
 				}
 				if (country !== 'KR' && !String(extraZones[i].regions || '').trim() && !String(extraZones[i].zips || '').trim()) return fee;
 				if (!zip) continue;
@@ -294,7 +303,7 @@
 			if (btn) btn.textContent = total > 0 ? fmt(total) + '원 결제하기' : btn.textContent;
 		}
 		// 배송지가 바뀌면 지역 추가 배송비도 달라진다
-		['address1', 'zipcode', 'country'].forEach(function (name) {
+		['address1', 'zipcode', 'country', 'state', 'city'].forEach(function (name) {
 			var el = document.querySelector('[name="' + name + '"]');
 			if (!el) return;
 			el.addEventListener('change', recalc);

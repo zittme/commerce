@@ -118,7 +118,8 @@
 		$shp_rc_text = (int)($shop_config->review_credit_text ?? 0);
 		$shp_rc_photo = (int)($shop_config->review_credit_photo ?? 0);
 		@endphp
-		<form action="{{ getUrl('') }}" method="post" class="shp-qna-form" id="shpReviewForm">
+		<button type="button" class="shp-btn shp-btn-ghost shp-btn-sm" id="shpReviewOpen" onclick="document.getElementById('shpReviewForm').hidden = false; this.hidden = true;">{{ $lang->shop_write_review ?? '리뷰 작성' }}</button>
+		<form action="{{ getUrl('') }}" method="post" class="shp-qna-form" id="shpReviewForm" hidden>
 			<input type="hidden" name="act" value="procCommerceReviewInsert" />
 			<input type="hidden" name="mid" value="{{ $mid }}" />
 			<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
@@ -247,7 +248,8 @@
 		@endif
 
 		@if (!empty($is_logged))
-		<form action="{{ getUrl('') }}" method="post" class="shp-qna-form">
+		<button type="button" class="shp-btn shp-btn-ghost shp-btn-sm" id="shpInquiryOpen" onclick="document.getElementById('shpInquiryForm').hidden = false; this.hidden = true;">{{ $lang->shop_write_inquiry ?? '문의 작성' }}</button>
+		<form action="{{ getUrl('') }}" method="post" class="shp-qna-form" id="shpInquiryForm" hidden>
 			<input type="hidden" name="act" value="procCommerceInquiryInsert" />
 			<input type="hidden" name="mid" value="{{ $mid }}" />
 			<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />

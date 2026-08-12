@@ -94,7 +94,7 @@
 					<select class="shp-opt-add" data-opt-type="basic">
 						{{-- 기본값이 '선택 안 함' = 본품 — 자체 재고로 판매한다 --}}
 						<option value="0" data-price-add="0" data-label="" @if ($shp_base_soldout) disabled @endif>
-							{{ $lang->shop_option_base ?? '선택 안 함' }}
+							{{ $lang->shop_option_base ?? '옵션을 선택해주세요.' }}
 							@if ($shp_base_soldout)- {{ $lang->shop_soldout }}@endif
 						</option>
 						@foreach ($shp_basic_opts as $opt)

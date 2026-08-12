@@ -43,6 +43,7 @@
 							<input type="hidden" name="module" value="admin" />
 							<input type="hidden" name="act" value="procCommerceAdminDeleteBadge" />
 							<input type="hidden" name="badge_srl" value="{{ $b->badge_srl }}" />
+							<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
 							<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_badges_12') }}</button>
 						</form>
 					</td>

@@ -30,7 +30,7 @@
 			</div>
 			@endif
 			@if ($order_address)
-			<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_order_view_5') }}</label><div>{{ $order_address->receiver_name }} / {{ \Zittme\Modules\Commerce\Models\Address::formatPhone($order_address) }} — {{ \Zittme\Modules\Commerce\Models\Address::format($order_address) }} @if($order_address->delivery_memo)<small style="color:#6b7684">({{ $order_address->delivery_memo }})</small>@endif</div></div>
+			<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_order_view_5') }}</label><div>{{ $order_address->receiver_name }} / {{ $order_phone_text }} — {{ $order_address_text }} @if($order_address->delivery_memo)<small style="color:#6b7684">({{ $order_address->delivery_memo }})</small>@endif</div></div>
 			@endif
 		</div>
 	</div>

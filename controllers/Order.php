@@ -94,7 +94,9 @@ class Order extends Base
 		$delivery_fee += CartModel::extraShipFee(
 			(string)\Context::get('zipcode'),
 			(string)\Context::get('address1'),
-			self::filterCountry((string)\Context::get('country'))
+			self::filterCountry((string)\Context::get('country')),
+			(string)\Context::get('state'),
+			(string)\Context::get('city')
 		);
 
 		// 재고 원자 선점 — 실패 시 이미 선점한 것 전부 롤백

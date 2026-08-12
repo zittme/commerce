@@ -215,11 +215,13 @@ class Cart
 	 * @param string $country 배송 국가
 	 * @return int
 	 */
-	public static function extraShipFee(string $zipcode, string $address1 = '', string $country = 'KR'): int
+	public static function extraShipFee(string $zipcode, string $address1 = '', string $country = 'KR', string $state = '', string $city = ''): int
 	{
 		$zipcode = preg_replace('/[^0-9]/', '', $zipcode);
 		$country = strtoupper(trim($country)) ?: 'KR';
 		$region = $address1 !== '' ? Stats::normalizeRegion(explode(' ', trim($address1))[0]) : '';
+		// 해외형 입력은 시·도가 별도 칸으로 들어온다
+		$intl_regions = array_filter([mb_strtolower(trim($state)), mb_strtolower(trim($city))]);
 
 		$zones = json_decode((string)(Base::config()->ship_extra_zones ?? '[]'), true);
 		if (!is_array($zones))
@@ -242,14 +244,16 @@ class Cart
 				continue;
 			}
 
-			if ($region !== '')
+			foreach (array_filter(array_map('trim', explode(',', (string)($zone['regions'] ?? '')))) as $name)
 			{
-				foreach (array_filter(array_map('trim', explode(',', (string)($zone['regions'] ?? '')))) as $name)
+				if ($region !== '' && Stats::normalizeRegion($name) === $region)
 				{
-					if (Stats::normalizeRegion($name) === $region)
-					{
-						return $fee;
-					}
+					return $fee;
+				}
+				// 해외형: 규칙의 지역명이 주/도·도시 어느 쪽과든 일치하면 적용
+				if (count($intl_regions) && in_array(mb_strtolower($name), $intl_regions, true))
+				{
+					return $fee;
 				}
 			}
 

@@ -2,6 +2,7 @@
 
 namespace Zittme\Modules\Commerce\Controllers;
 
+use Zittme\Modules\Commerce\Models\Address as AddressModel;
 use Zittme\Modules\Commerce\Models\Badge as BadgeModel;
 use Zittme\Modules\Commerce\Models\Combo as ComboModel;
 use Zittme\Modules\Commerce\Models\Config as ConfigModel;
@@ -693,7 +694,9 @@ class Admin extends Base
 		executeQuery('commerce.deleteBadge', (object)['badge_srl' => $badge_srl]);
 
 		$this->setMessage('success_deleted');
-		$this->setRedirectUrl(getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminBadges'));
+		// 뱃지 화면은 관리자와 전용 콘솔 두 곳에서 쓰인다 — 지운 자리로 돌아간다
+		$return = trim((string)\Context::get('success_return_url'));
+		$this->setRedirectUrl($return !== '' ? $return : getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminBadges', 'badge_srl', ''));
 	}
 
 	/**
@@ -780,7 +783,11 @@ class Admin extends Base
 		\Context::set('order', $order);
 		\Context::set('order_items', OrderModel::getItems($order_srl));
 		\Context::set('order_sellers', OrderModel::getSellerOrders($order_srl));
-		\Context::set('order_address', count($to_array($address_output)) ? $to_array($address_output)[0] : null);
+		$order_address = count($to_array($address_output)) ? $to_array($address_output)[0] : null;
+		\Context::set('order_address', $order_address);
+		// 템플릿에서 클래스를 직접 부르면 컴파일 시 네임스페이스 구분자가 유실된다 (pitfall #110)
+		\Context::set('order_address_text', $order_address ? AddressModel::format($order_address) : '');
+		\Context::set('order_phone_text', $order_address ? AddressModel::formatPhone($order_address) : '');
 		\Context::set('order_logs', $to_array($logs_output));
 		\Context::set('order_claims', $to_array($claims_output));
 		$this->renderView('orders', 'order_view');
@@ -1032,6 +1039,9 @@ class Admin extends Base
 				'order' => $order,
 				'items' => $items,
 				'address' => $address,
+				'address_text' => $address ? AddressModel::format($address) : '',
+				'phone_text' => $address ? AddressModel::formatPhone($address) : '',
+				'country_name' => $address ? AddressModel::countryName((string)($address->country ?? 'KR')) : '',
 				'sellers' => OrderModel::getSellerOrders($srl),
 				'tax' => TaxModel::breakdown(
 					self::config(),

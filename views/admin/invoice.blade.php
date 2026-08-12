@@ -79,11 +79,11 @@
 					<tbody>
 						@if ($order_address)
 						@if (($order_address->country ?? 'KR') !== 'KR')
-						<tr><th>{{ lang('commerce.admin_invoice_16') }}</th><td>{{ $order_address->country }}</td></tr>
+						<tr><th>{{ lang('commerce.admin_invoice_16') }}</th><td>{{ $inv->country_name }}</td></tr>
 						@endif
 						<tr><th>{{ lang('commerce.admin_invoice_17') }}</th><td>{{ $order_address->receiver_name }}</td></tr>
-						<tr><th>{{ lang('commerce.admin_invoice_13') }}</th><td>{{ $order_address->receiver_phone }}</td></tr>
-						<tr><th>{{ lang('commerce.admin_invoice_8') }}</th><td>{{ ZittmeModulesCommerceModelsAddress::format($order_address) }}</td></tr>
+						<tr><th>{{ lang('commerce.admin_invoice_13') }}</th><td>{{ $inv->phone_text }}</td></tr>
+						<tr><th>{{ lang('commerce.admin_invoice_8') }}</th><td>{{ $inv->address_text }}</td></tr>
 						<tr><th>{{ lang('commerce.admin_invoice_18') }}</th><td>{{ $order_address->delivery_memo }}</td></tr>
 						@else
 						<tr><td colspan="2">{{ lang('commerce.admin_invoice_19') }}</td></tr>
