@@ -45,6 +45,8 @@ class Stats
 	 */
 	protected static function db()
 	{
+		// 통계는 관리 대시보드 첫 화면에서 돌므로, 컬럼이 없는 구버전 DB 를 먼저 치유한다
+		\Zittme\Modules\Commerce\Controllers\Base::ensureCurrencySchema();
 		return \Rhymix\Framework\DB::getInstance();
 	}
 

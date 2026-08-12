@@ -61,7 +61,51 @@ class Base extends \ModuleObject
 	 */
 	public static function config(): object
 	{
+		self::ensureCurrencySchema();
 		return ConfigModel::getConfig();
+	}
+
+	/**
+	 * 다통화 컬럼 자가 치유 (0.2.0 → 0.2.1 핫픽스).
+	 *
+	 * 0.2.0 배포본이 업데이트 목록에 currency 컬럼을 등록하지 않아, 파일만 교체된
+	 * 사이트는 컬럼이 없는 채로 currency 를 참조하는 쿼리가 전부 죽었다.
+	 * 관리자가 모듈 업데이트를 누르기 전에도 동작하도록 요청 경로에서 직접 붙인다.
+	 * 성공하면 캐시에 표시해 이후 요청에서는 검사하지 않는다.
+	 *
+	 * @return void
+	 */
+	public static function ensureCurrencySchema(): void
+	{
+		static $checked = false;
+		if ($checked || \Zittme\Framework\Cache::get('commerce_currency_schema_ok'))
+		{
+			$checked = true;
+			return;
+		}
+		$checked = true;
+
+		try
+		{
+			$oDB = \DB::getInstance();
+			if (!$oDB->isColumnExists('commerce_order', 'currency'))
+			{
+				$oDB->addColumn('commerce_order', 'currency', 'varchar', 8, 'KRW', true);
+			}
+			if (!$oDB->isColumnExists('commerce_order', 'exchange_rate'))
+			{
+				$oDB->addColumn('commerce_order', 'exchange_rate', 'varchar', 16);
+			}
+			if (!$oDB->isTableExists('commerce_item_price'))
+			{
+				$oDB->createTableByXmlFile(\RX_BASEDIR . 'modules/commerce/schemas/commerce_item_price.xml');
+			}
+			\Zittme\Framework\Cache::set('commerce_currency_schema_ok', true, 86400);
+		}
+		catch (\Throwable $e)
+		{
+			// 실패해도 화면을 죽이지 않는다. 다음 요청이나 모듈 업데이트에서 다시 시도된다.
+		}
 	}
 
 	/**

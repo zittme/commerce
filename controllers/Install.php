@@ -53,6 +53,9 @@ class Install extends Base
 		// 등급별 상품 할인 (정액/정률)
 		['commerce_grade', 'discount_type', 'varchar', 10],
 		['commerce_grade', 'discount_value', 'float', null],
+		// 다통화 — 주문 통화와 체결 시점 환율 (0.2.0)
+		['commerce_order', 'currency', 'varchar', 8],
+		['commerce_order', 'exchange_rate', 'varchar', 16],
 	];
 
 	/**
@@ -129,7 +132,7 @@ class Install extends Base
 		}
 
 		// 뒤에 추가된 테이블
-		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade', 'commerce_stock_log', 'commerce_review', 'commerce_inquiry', 'commerce_address', 'commerce_tracking', 'commerce_promotion', 'commerce_promotion_item', 'commerce_badge'] as $table)
+		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade', 'commerce_stock_log', 'commerce_review', 'commerce_inquiry', 'commerce_address', 'commerce_tracking', 'commerce_promotion', 'commerce_promotion_item', 'commerce_badge', 'commerce_item_price'] as $table)
 		{
 			if (!$oDB->isTableExists($table))
 			{
