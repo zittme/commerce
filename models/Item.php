@@ -58,6 +58,88 @@ class Item
 	}
 
 	/**
+	 * 상품의 외화 가격 행들. ['USD' => (object)['price'=>..., 'sale_price'=>...], ...]
+	 * 금액은 통화 최소단위 정수.
+	 *
+	 * @param int $item_srl
+	 * @return array<string, object>
+	 */
+	public static function getPrices(int $item_srl): array
+	{
+		$output = executeQueryArray('commerce.getItemPrices', (object)['item_srl' => $item_srl]);
+		$result = [];
+		foreach (($output->toBool() ? ($output->data ?: []) : []) as $row)
+		{
+			if (!empty($row->currency))
+			{
+				$result[strtoupper((string)$row->currency)] = $row;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * 외화 가격 저장. 넘긴 맵으로 전체를 갈아끼운다.
+	 *
+	 * @param int $item_srl
+	 * @param array $prices ['USD' => ['price' => 1234, 'sale_price' => 0], ...] 최소단위 정수
+	 * @return void
+	 */
+	public static function setPrices(int $item_srl, array $prices): void
+	{
+		executeQuery('commerce.deleteItemPrices', (object)['item_srl' => $item_srl]);
+		foreach ($prices as $currency => $row)
+		{
+			$currency = strtoupper(trim((string)$currency));
+			$price = max(0, (int)($row['price'] ?? 0));
+			$sale = max(0, (int)($row['sale_price'] ?? 0));
+			if (!preg_match('/^[A-Z]{3}$/', $currency) || $currency === 'KRW' || ($price <= 0 && $sale <= 0))
+			{
+				continue;
+			}
+			executeQuery('commerce.insertItemPrice', (object)[
+				'item_srl' => $item_srl,
+				'currency' => $currency,
+				'price' => $price,
+				'sale_price' => $sale,
+			]);
+		}
+	}
+
+	/**
+	 * 특정 통화의 실제 판매가 (최소단위 정수).
+	 *
+	 * 우선순위: 등록된 통화별 가격 → (설정이 convert 면) KRW 가격 환산 → -1 (판매 불가).
+	 *
+	 * @param object $item
+	 * @param string $currency
+	 * @param ?array $prices getPrices() 결과를 이미 들고 있으면 넘겨서 재조회를 피한다
+	 * @return int -1 이면 이 통화로 팔 수 없다
+	 */
+	public static function effectivePriceIn(object $item, string $currency, ?array $prices = null): int
+	{
+		$currency = strtoupper(trim($currency));
+		if ($currency === '' || $currency === 'KRW')
+		{
+			return self::effectivePrice($item);
+		}
+
+		$prices = $prices ?? self::getPrices((int)$item->item_srl);
+		if (isset($prices[$currency]))
+		{
+			$row = $prices[$currency];
+			$sale = (int)($row->sale_price ?? 0);
+			return $sale > 0 ? $sale : (int)($row->price ?? 0);
+		}
+
+		if ((Config::getConfig()->currency_fallback ?? 'convert') !== 'convert')
+		{
+			return -1;
+		}
+		return Money::convertMinor(self::effectivePrice($item), $currency);
+	}
+
+	/**
 	 * 지금 판매 가능한가 — 상태 + 판매기간 + 재고까지 종합 판정.
 	 *
 	 * @param object $item

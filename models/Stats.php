@@ -23,6 +23,24 @@ class Stats
 	protected const PAID = "'paid'";
 
 	/**
+	 * 결제금액을 KRW 로 환산하는 SQL 식.
+	 *
+	 * 통계 원장은 KRW 기준이다. 외화 주문은 결제 시점에 박제한 환율(exchange_rate)로
+	 * 되돌린다. 금액이 통화 최소단위 정수라 2자리 소수 통화는 100 으로 나눈다.
+	 *
+	 * @param string $col 금액 컬럼 (예: 'payment_price', 'o.payment_price', 'oi.subtotal')
+	 * @param string $alias 주문 테이블 별칭 ('' 이면 별칭 없음)
+	 * @return string
+	 */
+	protected static function krwExpr(string $col, string $alias = ''): string
+	{
+		$p = $alias !== '' ? $alias . '.' : '';
+		return "(CASE WHEN {$p}currency IS NULL OR {$p}currency = '' OR {$p}currency = 'KRW' THEN {$col}"
+			. " ELSE ROUND({$col} * CAST(NULLIF({$p}exchange_rate, '') AS DECIMAL(16,4))"
+			. " / (CASE WHEN {$p}currency IN ('JPY', 'TWD', 'HUF', 'VND') THEN 1 ELSE 100 END)) END)";
+	}
+
+	/**
 	 * @return \Rhymix\Framework\Helpers\DBHelper|\Rhymix\Framework\DB
 	 */
 	protected static function db()
@@ -57,13 +75,13 @@ class Stats
 		$t = self::bound($to, true);
 
 		$row = self::db()->query(
-			'SELECT COUNT(*) AS cnt, COALESCE(SUM(payment_price), 0) AS amount
+			'SELECT COUNT(*) AS cnt, COALESCE(SUM(' . self::krwExpr('payment_price') . '), 0) AS amount
 			 FROM commerce_order WHERE status = ? AND paid_date BETWEEN ? AND ?',
 			'paid', $f, $t
 		)->fetchObject();
 
 		$cancelled = self::db()->query(
-			'SELECT COUNT(*) AS cnt, COALESCE(SUM(payment_price), 0) AS amount
+			'SELECT COUNT(*) AS cnt, COALESCE(SUM(' . self::krwExpr('payment_price') . '), 0) AS amount
 			 FROM commerce_order WHERE status = ? AND cancelled_date BETWEEN ? AND ?',
 			'cancelled', $f, $t
 		)->fetchObject();
@@ -106,7 +124,7 @@ class Stats
 		}
 
 		$stmt = self::db()->query(
-			'SELECT ' . $expr . ' AS bucket, COUNT(*) AS cnt, COALESCE(SUM(payment_price), 0) AS amount
+			'SELECT ' . $expr . ' AS bucket, COUNT(*) AS cnt, COALESCE(SUM(' . self::krwExpr('payment_price') . '), 0) AS amount
 			 FROM commerce_order WHERE status = ? AND paid_date BETWEEN ? AND ?
 			 GROUP BY bucket ORDER BY bucket ASC',
 			'paid', self::bound($from), self::bound($to, true)
@@ -162,7 +180,7 @@ class Stats
 		$limit = max(1, min(1000, $limit));
 		$stmt = self::db()->query(
 			'SELECT oi.item_srl, MIN(oi.item_name) AS item_name,
-			        SUM(oi.qty) AS qty, SUM(oi.subtotal) AS sales, COUNT(DISTINCT oi.order_srl) AS orders
+			        SUM(oi.qty) AS qty, SUM(' . self::krwExpr('oi.subtotal', 'o') . ') AS sales, COUNT(DISTINCT oi.order_srl) AS orders
 			 FROM commerce_order_item AS oi
 			 INNER JOIN commerce_order AS o ON o.order_srl = oi.order_srl
 			 WHERE o.status = ? AND o.paid_date BETWEEN ? AND ?
@@ -195,7 +213,7 @@ class Stats
 	{
 		$stmt = self::db()->query(
 			'SELECT SUBSTRING_INDEX(TRIM(a.address1), " ", 1) AS region,
-			        COUNT(*) AS cnt, COALESCE(SUM(o.payment_price), 0) AS amount
+			        COUNT(*) AS cnt, COALESCE(SUM(' . self::krwExpr('o.payment_price', 'o') . '), 0) AS amount
 			 FROM commerce_order AS o
 			 INNER JOIN commerce_order_address AS a ON a.order_srl = o.order_srl
 			 WHERE o.status = ? AND o.paid_date BETWEEN ? AND ?

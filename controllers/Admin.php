@@ -8,6 +8,7 @@ use Zittme\Modules\Commerce\Models\Combo as ComboModel;
 use Zittme\Modules\Commerce\Models\Config as ConfigModel;
 use Zittme\Modules\Commerce\Models\Item as ItemModel;
 use Zittme\Modules\Commerce\Models\Lang as LangModel;
+use Zittme\Modules\Commerce\Models\Money as MoneyModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
 use Zittme\Modules\Commerce\Models\Stats as StatsModel;
 use Zittme\Modules\Commerce\Models\Tax as TaxModel;
@@ -29,6 +30,7 @@ class Admin extends Base
 		'privacy_text', 'privacy_version', 'retention_days',
 		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note',
 		'biz_tax_mode', 'vat_rate', 'price_includes_tax', 'allow_overseas', 'address_mode',
+		'currencies', 'currency_fallback',
 		'notify_admin', 'notify_admin_email',
 	];
 
@@ -527,6 +529,27 @@ class Admin extends Base
 			}
 			$options = ItemModel::getOptions($item_srl);
 		}
+
+		// 다통화 판매 — 통화 목록과 이 상품의 외화 가격 (화면 표기용 소수 값으로 변환)
+		$fx_currencies = array_values(array_diff(MoneyModel::currencies(), ['KRW']));
+		$fx_values = [];
+		if (count($fx_currencies) && $item_srl > 0)
+		{
+			$currency_class = '\\Zittme\\Modules\\Zittme_pay\\Models\\Currency';
+			foreach (ItemModel::getPrices($item_srl) as $fx_code => $fx_row)
+			{
+				if (!class_exists($currency_class))
+				{
+					break;
+				}
+				$fx_values[$fx_code] = [
+					'price' => (int)$fx_row->price > 0 ? $currency_class::fromMinor((int)$fx_row->price, $fx_code) : '',
+					'sale_price' => (int)$fx_row->sale_price > 0 ? $currency_class::fromMinor((int)$fx_row->sale_price, $fx_code) : '',
+				];
+			}
+		}
+		\Context::set('fx_currencies', $fx_currencies);
+		\Context::set('fx_values', $fx_values);
 
 		// 기획전 노출 체크박스 (개설된 기획전 + 이 상품의 소속)
 		\Context::set('item_promotions', \Zittme\Modules\Commerce\Models\Promotion::listAll());
@@ -1541,16 +1564,20 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		$sanitize = function($v) { return preg_replace('/[^A-Za-z0-9_\-.\/]/', '', (string)$v); };
+		// 테마 결합명('테마|@|스킨')도 저장할 수 있어야 한다
+		$sanitize = function($v) { return preg_replace('/[^A-Za-z0-9_\-.\/|@]/', '', (string)$v); };
 		$skin = $sanitize(\Context::get('skin'));
 		$mskin = $sanitize(\Context::get('mskin'));
 		if ($skin !== '')
 		{
 			$module_info->skin = $skin;
+			// is_skin_fix 가 N 이면 코어가 저장된 스킨을 무시하고 기본 디자인을 따른다
+			$module_info->is_skin_fix = ($skin === '/USE_DEFAULT/') ? 'N' : 'Y';
 		}
 		if ($mskin !== '')
 		{
 			$module_info->mskin = $mskin;
+			$module_info->is_mskin_fix = ($mskin === '/USE_DEFAULT/' || $mskin === '/USE_RESPONSIVE/') ? 'N' : 'Y';
 		}
 		$module_info->isMenuCreate = false;
 
@@ -1940,6 +1967,37 @@ class Admin extends Base
 		if (!$output->toBool())
 		{
 			return $output;
+		}
+
+		// 통화별 외화 가격. 화면 입력은 통화 단위 소수(12.34)라 최소단위 정수로 바꿔 담는다.
+		// 다통화가 꺼져 있으면 저장을 건드리지 않는다 — 잠시 껐다 켜도 등록해 둔 외화 가격이 남아야 한다.
+		$fx_currencies_on = MoneyModel::currencies();
+		if (count($fx_currencies_on) > 1)
+		{
+		$fx_prices = [];
+		$fx_price_input = (array)\Context::get('fx_price');
+		$fx_sale_input = (array)\Context::get('fx_sale_price');
+		foreach ($fx_currencies_on as $fx_currency)
+		{
+			if ($fx_currency === 'KRW')
+			{
+				continue;
+			}
+			$to_minor = function($raw) use ($fx_currency) {
+				$raw = trim((string)$raw);
+				if ($raw === '' || !is_numeric($raw))
+				{
+					return 0;
+				}
+				$class = '\\Zittme\\Modules\\Zittme_pay\\Models\\Currency';
+				return class_exists($class) ? max(0, $class::toMinor((float)$raw, $fx_currency)) : 0;
+			};
+			$fx_prices[$fx_currency] = [
+				'price' => $to_minor($fx_price_input[$fx_currency] ?? ''),
+				'sale_price' => $to_minor($fx_sale_input[$fx_currency] ?? ''),
+			];
+		}
+		ItemModel::setPrices($item_srl, $fx_prices);
 		}
 
 		// 에디터에서 업로드한 첨부(상세 이미지 등)를 상품에 귀속·유효화
@@ -2363,6 +2421,23 @@ class Admin extends Base
 			elseif ($key === 'category_layout')
 			{
 				$value = $value === 'side' ? 'side' : 'top';
+			}
+			elseif ($key === 'currencies')
+			{
+				// 쉼표 구분 통화 코드 (예: USD, JPY). KRW 는 기본이라 뺀다
+				$codes = [];
+				foreach (preg_split('/[\s,]+/', strtoupper((string)$value)) as $code)
+				{
+					if (preg_match('/^[A-Z]{3}$/', $code) && $code !== 'KRW' && !in_array($code, $codes, true))
+					{
+						$codes[] = $code;
+					}
+				}
+				$value = $codes;
+			}
+			elseif ($key === 'currency_fallback')
+			{
+				$value = $value === 'none' ? 'none' : 'convert';
 			}
 			elseif ($key === 'home_banners' || $key === 'ship_extra_zones')
 			{

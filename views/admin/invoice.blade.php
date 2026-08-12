@@ -120,12 +120,12 @@
 						@if ($oi->option_name)<span class="zmi-opt">{{ $oi->option_name }}</span>@endif
 					</td>
 					<td class="zmi-c">{{ $oi->qty }}</td>
-					<td class="zmi-r">{{ number_format($oi->price) }}</td>
+					<td class="zmi-r">{{ shop_money_in($oi->price, $order->currency ?? 'KRW') }}</td>
 					@if ($show_tax)
-					<td class="zmi-r">{{ number_format($tax->lines[$i]->supply) }}</td>
-					<td class="zmi-r">{{ $tax->lines[$i]->free ? '-' : number_format($tax->lines[$i]->vat) }}</td>
+					<td class="zmi-r">{{ shop_money_in($tax->lines[$i]->supply, $order->currency ?? 'KRW') }}</td>
+					<td class="zmi-r">{{ $tax->lines[$i]->free ? '-' : shop_money_in($tax->lines[$i]->vat, $order->currency ?? 'KRW') }}</td>
 					@endif
-					<td class="zmi-r">{{ number_format($oi->subtotal) }}</td>
+					<td class="zmi-r">{{ shop_money_in($oi->subtotal, $order->currency ?? 'KRW') }}</td>
 				</tr>
 				@endforeach
 			</tbody>
@@ -134,23 +134,23 @@
 		<table class="zmi-tbl zmi-sum">
 			<tbody>
 				@if ($show_tax)
-				<tr><th>{{ lang('commerce.admin_invoice_29') }}</th><td class="zmi-r">{{ number_format($tax->taxable_supply) }}원</td></tr>
+				<tr><th>{{ lang('commerce.admin_invoice_29') }}</th><td class="zmi-r">{{ shop_money_in($tax->taxable_supply, $order->currency ?? 'KRW') }}</td></tr>
 				@if ($tax->free_supply > 0)
-				<tr><th>{{ $tax->zero_rated ? '영세율 공급가액' : '면세 공급가액' }}</th><td class="zmi-r">{{ number_format($tax->free_supply) }}원</td></tr>
+				<tr><th>{{ $tax->zero_rated ? '영세율 공급가액' : '면세 공급가액' }}</th><td class="zmi-r">{{ shop_money_in($tax->free_supply, $order->currency ?? 'KRW') }}</td></tr>
 				@endif
-				<tr><th>{{ lang('commerce.admin_invoice_30') }}</th><td class="zmi-r">{{ number_format($tax->delivery_supply) }}원</td></tr>
-				<tr><th>{{ lang('commerce.admin_invoice_31') }}</th><td class="zmi-r">{{ number_format($tax->total_vat) }}원</td></tr>
+				<tr><th>{{ lang('commerce.admin_invoice_30') }}</th><td class="zmi-r">{{ shop_money_in($tax->delivery_supply, $order->currency ?? 'KRW') }}</td></tr>
+				<tr><th>{{ lang('commerce.admin_invoice_31') }}</th><td class="zmi-r">{{ shop_money_in($tax->total_vat, $order->currency ?? 'KRW') }}</td></tr>
 				@else
-				<tr><th>{{ lang('commerce.admin_invoice_32') }}</th><td class="zmi-r">{{ number_format($order->item_total) }}원</td></tr>
-				<tr><th>{{ lang('commerce.admin_invoice_33') }}</th><td class="zmi-r">{{ number_format($order->delivery_fee_total) }}원</td></tr>
+				<tr><th>{{ lang('commerce.admin_invoice_32') }}</th><td class="zmi-r">{{ shop_money_in($order->item_total, $order->currency ?? 'KRW') }}</td></tr>
+				<tr><th>{{ lang('commerce.admin_invoice_33') }}</th><td class="zmi-r">{{ shop_money_in($order->delivery_fee_total, $order->currency ?? 'KRW') }}</td></tr>
 				@endif
 				@if ($discount > 0)
-				<tr><th>{{ lang('commerce.admin_invoice_34') }}</th><td class="zmi-r">-{{ number_format($discount) }}원</td></tr>
+				<tr><th>{{ lang('commerce.admin_invoice_34') }}</th><td class="zmi-r">-{{ shop_money_in($discount, $order->currency ?? 'KRW') }}</td></tr>
 				@endif
 				@if ($credit > 0)
-				<tr><th>{{ lang('commerce.admin_invoice_35') }}</th><td class="zmi-r">-{{ number_format($credit) }}원</td></tr>
+				<tr><th>{{ lang('commerce.admin_invoice_35') }}</th><td class="zmi-r">-{{ shop_money_in($credit, $order->currency ?? 'KRW') }}</td></tr>
 				@endif
-				<tr class="zmi-total"><th>{{ lang('commerce.admin_invoice_36') }}</th><td class="zmi-r">{{ number_format($order->payment_price) }}원</td></tr>
+				<tr class="zmi-total"><th>{{ lang('commerce.admin_invoice_36') }}</th><td class="zmi-r">{{ shop_money_in($order->payment_price, $order->currency ?? 'KRW') }}</td></tr>
 			</tbody>
 		</table>
 		@if ($show_tax && !$tax->zero_rated)

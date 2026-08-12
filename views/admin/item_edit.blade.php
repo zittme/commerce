@@ -148,6 +148,14 @@
 					<span class="ie-discount" id="ieDiscountBadge"></span>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_21') }}</span>
 				</div>
+				@foreach ($fx_currencies as $fx_code)
+				<div>
+					<label>{{ sprintf(lang('commerce.shop_fx_price_label'), $fx_code) }}</label>
+					<div class="ie-suffix" data-suffix="{{ $fx_code }}"><input type="number" name="fx_price[{{ $fx_code }}]" min="0" step="any" value="{{ $fx_values[$fx_code]['price'] ?? '' }}" placeholder="{{ lang('commerce.shop_fx_price_auto') }}" /></div>
+					<div class="ie-suffix" data-suffix="{{ $fx_code }}"><input type="number" name="fx_sale_price[{{ $fx_code }}]" min="0" step="any" value="{{ $fx_values[$fx_code]['sale_price'] ?? '' }}" placeholder="{{ lang('commerce.admin_item_edit_145') }}" /></div>
+					<span class="ie-help">{{ lang('commerce.shop_fx_price_help') }}</span>
+				</div>
+				@endforeach
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_22') }}</label>
 					<div class="ie-pills">

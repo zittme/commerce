@@ -164,8 +164,20 @@
 						<option value="both" @if(($shop_config->address_mode ?? 'kr') === 'both') selected @endif>{{ lang('commerce.shop_address_mode_both') }}</option>
 					</select>
 				</div>
+				<div>
+					<label>{{ lang('commerce.shop_currencies') }}</label>
+					<input type="text" name="currencies" value="{{ implode(', ', is_array($shop_config->currencies ?? null) ? $shop_config->currencies : []) }}" placeholder="USD, JPY" />
+				</div>
+				<div>
+					<label>{{ lang('commerce.shop_currency_fallback') }}</label>
+					<select name="currency_fallback">
+						<option value="convert" @if(($shop_config->currency_fallback ?? 'convert') === 'convert') selected @endif>{{ lang('commerce.shop_currency_fallback_convert') }}</option>
+						<option value="none" @if(($shop_config->currency_fallback ?? '') === 'none') selected @endif>{{ lang('commerce.shop_currency_fallback_none') }}</option>
+					</select>
+				</div>
 			</div>
 			<p class="rsva-hint">{{ lang('commerce.about_shop_address_mode') }}</p>
+			<p class="rsva-hint">{{ lang('commerce.about_shop_currencies') }}</p>
 			<p class="rsva-hint">{{ lang('commerce.admin_config_80') }}</p>
 		</div>
 

@@ -126,8 +126,8 @@
 			<input type="hidden" name="images" id="shpReviewImages" value="" />
 			@if ($shp_rc_text > 0 || $shp_rc_photo > 0)
 			<p class="shp-review-reward">
-				@if ($shp_rc_text > 0)리뷰 작성 시 <strong>{{ number_format($shp_rc_text) }}원</strong>@endif
-				@if ($shp_rc_photo > 0)@if ($shp_rc_text > 0), @endif사진·영상 첨부 시 <strong>{{ number_format($shp_rc_photo) }}원</strong>@endif
+				@if ($shp_rc_text > 0)리뷰 작성 시 <strong>{{ shop_money($shp_rc_text) }}</strong>@endif
+				@if ($shp_rc_photo > 0)@if ($shp_rc_text > 0), @endif사진·영상 첨부 시 <strong>{{ shop_money($shp_rc_photo) }}</strong>@endif
 				적립 (상품당 첫 리뷰 1회)
 			</p>
 			@endif

@@ -34,7 +34,7 @@
 				<td style="text-align:center"><input type="checkbox" class="zmi-pick" value="{{ $o->order_srl }}" /></td>
 				<td><strong>{{ $o->order_code }}</strong></td>
 				<td>{{ $o->orderer_name }}<br /><small style="color:#9aa1ab">{{ $o->orderer_phone }}</small></td>
-				<td>{{ number_format($o->payment_price) }}원</td>
+				<td>{{ shop_money_in($o->payment_price, $o->currency ?? 'KRW') }}</td>
 				<td><span class="rsva-st {{ $o->status === 'paid' ? 'rsva-st-confirmed' : ($o->status === 'pending' ? 'rsva-st-hold' : 'rsva-st-cancelled') }}">{{ ['pending'=>'결제대기','paid'=>'결제완료','cancelled'=>'취소','failed'=>'실패','expired'=>'만료'][$o->status] ?? $o->status }}</span></td>
 				<td>{{ $os ? (['pending'=>'-','paid'=>'발주 대기','preparing'=>'배송준비','shipping'=>'배송중','delivered'=>'배송완료','cancelled'=>'취소','refunded'=>'환불'][$os->status] ?? $os->status) : '-' }}</td>
 				<td><small>{{ zdate($o->regdate, 'm.d H:i') }}</small></td>

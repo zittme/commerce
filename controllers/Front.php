@@ -581,6 +581,48 @@ class Front extends Base
 		\Context::set('my_coupons', \Zittme\Modules\Commerce\Models\Coupon::listUsableForMember($member_srl, $resolved->item_total));
 		\Context::set('credit_balance', \Zittme\Modules\Commerce\Models\Credit::balanceOf($member_srl));
 
+		// 표시 통화 — 외화면 주문 생성(procCommerceOrder)과 같은 규칙으로 금액을 재계산한다.
+		// 통화별 등록가 우선, 배송비는 환산. 외화에서는 쿠폰·적립금을 쓸 수 없어 화면에서 숨긴다.
+		$fx_currency = \Zittme\Modules\Commerce\Models\Money::current();
+		$fx_rate = \Zittme\Modules\Commerce\Models\Money::rate($fx_currency);
+		if ($fx_currency !== 'KRW' && $fx_rate > 0)
+		{
+			$fx_item_total = 0;
+			$fx_ok = true;
+			foreach ($valid as $entry)
+			{
+				$fx_unit = \Zittme\Modules\Commerce\Models\Item::effectivePriceIn($entry->item, $fx_currency);
+				$fx_add = $entry->option ? \Zittme\Modules\Commerce\Models\Money::convertMinor(max(0, (int)($entry->option->price_add ?? 0)), $fx_currency) : 0;
+				if ($fx_unit < 0 || $fx_add < 0)
+				{
+					$fx_ok = false;
+					break;
+				}
+				$entry->subtotal = ($fx_unit + $fx_add) * $entry->qty;
+			}
+			if ($fx_ok)
+			{
+				foreach ($valid as $entry)
+				{
+					$fx_item_total += (int)$entry->subtotal;
+				}
+				$resolved->item_total = $fx_item_total;
+				$ship_fee = max(0, \Zittme\Modules\Commerce\Models\Money::convertMinor($ship_fee, $fx_currency));
+			}
+			else
+			{
+				// 외화로 팔 수 없는 상품이 있으면 이 주문서는 KRW 로 되돌린다
+				$fx_currency = 'KRW';
+			}
+		}
+		else
+		{
+			$fx_currency = 'KRW';
+		}
+		\Context::set('shp_currency', $fx_currency);
+		\Context::set('shp_fx_rate', $fx_currency === 'KRW' ? 1 : $fx_rate);
+		\Context::set('shp_fx_zero_decimal', $fx_currency === 'KRW' ? true : \Zittme\Modules\Commerce\Models\Money::currencies() && class_exists('\\Zittme\\Modules\\Zittme_pay\\Models\\Currency') && \Zittme\Modules\Zittme_pay\Models\Currency::isZeroDecimal($fx_currency));
+
 		\Context::set('cart', $resolved);
 		\Context::set('ship_fee', $ship_fee);
 		\Context::set('payment_price', $resolved->item_total + $ship_fee);

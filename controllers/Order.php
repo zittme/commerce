@@ -121,6 +121,26 @@ class Order extends Base
 
 		$order_srl = getNextSequence();
 
+		// 주문 통화 — 표시 통화로 결제한다. 외화 주문은 KRW 원장 기반의 쿠폰·적립금을
+		// 지원하지 않으므로 입력을 무시한다 (주문서 화면도 외화에서는 해당 칸을 숨긴다)
+		$order_currency = \Zittme\Modules\Commerce\Models\Money::current();
+		$exchange_rate = 1.0;
+		if ($order_currency !== 'KRW')
+		{
+			$exchange_rate = \Zittme\Modules\Commerce\Models\Money::rate($order_currency);
+			if ($exchange_rate <= 0)
+			{
+				foreach ($reserved as $r)
+				{
+					Stock::release($r[0], $r[1], $r[2]);
+				}
+				return new \BaseObject(-1, 'msg_shop_fx_unavailable');
+			}
+			\Context::set('coupon_issue_srl', 0);
+			\Context::set('coupon_code', '');
+			\Context::set('use_credit', 0);
+		}
+
 		// 쿠폰 (회원 전용) — 원자 점유. 이 아래에서 실패하면 재고와 함께 반환한다
 		$discount_total = 0;
 		$coupon_issue_srl = (int)\Context::get('coupon_issue_srl');
@@ -187,6 +207,33 @@ class Order extends Base
 			}
 		}
 
+		// 외화 주문 — 상품·배송비를 주문 통화(최소단위 정수)로 재계산한다.
+		// 통화별 등록가가 있으면 그 값을, 없으면 설정에 따라 환산가를 쓴다.
+		if ($order_currency !== 'KRW')
+		{
+			$fx_item_total = 0;
+			foreach ($entries as $entry)
+			{
+				$fx_unit = ItemModel::effectivePriceIn($entry->item, $order_currency);
+				$fx_add = $entry->option ? \Zittme\Modules\Commerce\Models\Money::convertMinor(max(0, (int)($entry->option->price_add ?? 0)), $order_currency) : 0;
+				if ($fx_unit < 0 || $fx_add < 0)
+				{
+					foreach ($reserved as $r)
+					{
+						Stock::release($r[0], $r[1], $r[2]);
+					}
+					return new \BaseObject(-1, sprintf(lang('commerce.msg_shop_fx_not_sellable'), (string)$entry->item->item_name));
+				}
+				// 품목 스냅샷(order_item)도 주문 통화로 남아야 한다. KRW 단가가 섞이면
+				// 명세서·환불 계산이 전부 어긋난다.
+				$entry->unit_price = $fx_unit + $fx_add;
+				$entry->subtotal = $entry->unit_price * $entry->qty;
+				$fx_item_total += $entry->subtotal;
+			}
+			$item_total = $fx_item_total;
+			$delivery_fee = max(0, \Zittme\Modules\Commerce\Models\Money::convertMinor($delivery_fee, $order_currency));
+		}
+
 		$payment_price = max(0, $item_total - $discount_total - $credit_used) + $delivery_fee;
 
 		// 주문 3계층 생성 (독립몰: order_seller 1건 — 분기하지 않는 규약)
@@ -208,6 +255,8 @@ class Order extends Base
 			'discount_total' => $discount_total,
 			'credit_used' => $credit_used,
 			'payment_price' => $payment_price,
+			'currency' => $order_currency,
+			'exchange_rate' => $order_currency === 'KRW' ? '' : (string)$exchange_rate,
 			'pay_order_srl' => 0,
 			'status' => self::ORDER_PENDING,
 			'memo' => '',
@@ -360,6 +409,7 @@ class Order extends Base
 				'source_code' => $order_code,
 				'member_srl' => $member_srl,
 				'amount' => $payment_price,
+				'currency' => $order_currency,
 				'title' => $first->item->item_name . (count($entries) > 1 ? ' 외 ' . (count($entries) - 1) . '건' : ''),
 				'payer' => ['name' => $orderer_name, 'phone' => $orderer_phone, 'email' => (string)\Context::get('orderer_email')],
 				'return_url' => $result_url,

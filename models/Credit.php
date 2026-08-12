@@ -133,6 +133,11 @@ class Credit
 		{
 			return;
 		}
+		// 적립금 원장은 KRW 전용 — 외화 주문은 적립하지 않는다
+		if (strtoupper((string)($order->currency ?? 'KRW')) !== 'KRW')
+		{
+			return;
+		}
 		// 등급별 적립률이 있으면 우선 적용
 		$rate = Grade::creditRateFor($member_srl);
 		if ($rate <= 0)

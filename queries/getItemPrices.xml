@@ -1,0 +1,11 @@
+<query id="getItemPrices" action="select">
+	<tables>
+		<table name="commerce_item_price" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="item_srl" var="item_srl" filter="number" notnull="notnull" />
+	</conditions>
+</query>

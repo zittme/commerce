@@ -9,7 +9,7 @@
 		</h3>
 		<div class="rsva-form-grid">
 			<div><label>{{ lang('commerce.admin_order_view_1') }}</label><div>{{ $order->orderer_name }} / {{ $order->orderer_phone }} @if($order->orderer_email)/ {{ $order->orderer_email }}@endif</div></div>
-			<div><label>{{ lang('commerce.admin_order_view_2') }}</label><div><strong>{{ number_format($order->payment_price) }}원</strong> (상품 {{ number_format($order->item_total) }} + 배송 {{ number_format($order->delivery_fee_total) }})</div></div>
+			<div><label>{{ lang('commerce.admin_order_view_2') }}</label><div><strong>{{ shop_money_in($order->payment_price, $order->currency ?? 'KRW') }}</strong> (상품 {{ shop_money_in($order->item_total, $order->currency ?? 'KRW') }} + 배송 {{ shop_money_in($order->delivery_fee_total, $order->currency ?? 'KRW') }})</div></div>
 			@if ($pay_order)
 			<div style="grid-column:1/-1">
 				<label>{{ lang('commerce.admin_order_view_3') }}</label>
@@ -43,9 +43,9 @@
 				@foreach ($order_items as $oi)
 				<tr>
 					<td>{{ $oi->item_name }}@if(($oi->tax_type ?? 'taxable') === 'free') <span class="rsva-st">{{ lang('commerce.admin_order_view_12') }}</span>@endif@if($oi->option_name)<br /><small style="color:#6b7684">{{ $oi->option_name }}</small>@endif</td>
-					<td>{{ number_format($oi->price) }}</td>
+					<td>{{ shop_money_in($oi->price, $order->currency ?? 'KRW') }}</td>
 					<td>{{ $oi->qty }}</td>
-					<td>{{ number_format($oi->subtotal) }}</td>
+					<td>{{ shop_money_in($oi->subtotal, $order->currency ?? 'KRW') }}</td>
 					<td>{{ ['none'=>'-','requested'=>'신청됨','done'=>'처리완료'][$oi->claim_status] ?? $oi->claim_status }}</td>
 				</tr>
 				@endforeach
@@ -93,7 +93,7 @@
 					<td>{{ ['cancel'=>'취소','return'=>'반품','exchange'=>'교환'][$c->claim_type] ?? $c->claim_type }}</td>
 					<td>{{ $c->reason ?: '-' }}</td>
 					<td><span class="rsva-st">{{ ['requested'=>'신청','approved'=>'승인','rejected'=>'거절','done'=>'완료'][$c->status] ?? $c->status }}</span></td>
-					<td>{{ $c->refund_amount > 0 ? number_format($c->refund_amount) : '-' }}</td>
+					<td>{{ $c->refund_amount > 0 ? shop_money_in($c->refund_amount, $order->currency ?? 'KRW') : '-' }}</td>
 					<td><small>{{ zdate($c->regdate, 'm.d H:i') }}</small></td>
 				</tr>
 				@endforeach

@@ -21,6 +21,9 @@
 	<!-- 적립금 사용액 (자체 원장, 코어 point 아님) -->
 	<column name="credit_used" type="bigint" notnull="notnull" default="0" />
 	<column name="payment_price" type="bigint" notnull="notnull" default="0" />
+	<!-- 주문 통화. 외화 주문 금액은 통화 최소단위 정수이고 환율은 체결 시점 값을 박제한다 -->
+	<column name="currency" type="varchar" size="8" notnull="notnull" default="KRW" />
+	<column name="exchange_rate" type="varchar" size="16" default="" />
 	<column name="pay_order_srl" type="bigint" notnull="notnull" default="0" index="idx_pay_order_srl" />
 	<!-- pending(결제 대기) / paid / cancelled / failed / expired -->
 	<column name="status" type="varchar" size="20" notnull="notnull" default="pending" index="idx_status" />

@@ -618,3 +618,6 @@ html { scroll-behavior: smooth; }
 .shp-phone-row input[name="phone_cc"] { flex: 0 0 84px; }
 .shp-phone-row input[type="tel"] { flex: 1; min-width: 0; }
 .shp-intl-only[hidden], .shp-kr-only[hidden] { display: none !important; }
+
+.shp-currency { margin-left: auto; padding: 7px 10px; border: 1px solid var(--shp-border); border-radius: 9px; background: var(--shp-card); color: var(--shp-text); font-size: 13px; font-family: inherit; }
+.shp-currency + .shp-cart-link { margin-left: 0; }

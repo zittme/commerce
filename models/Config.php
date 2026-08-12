@@ -75,6 +75,10 @@ class Config
 		'allow_overseas' => 'N',
 		// 배송지 입력 방식 — kr(우편번호 검색) / intl(자유 입력) / both(국가에 따라 전환)
 		'address_mode' => 'kr',
+		// 다통화 판매 — KRW 외 판매 통화 목록 (예: ['USD', 'JPY']). 환율은 짓미페이 공용 환율을 쓴다
+		'currencies' => [],
+		// 외화 가격 미등록 상품 처리 — convert(환율 자동 환산) / none(그 통화로 판매 안 함)
+		'currency_fallback' => 'convert',
 	];
 
 	/**

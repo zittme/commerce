@@ -1,0 +1,11 @@
+<query id="insertItemPrice" action="insert">
+	<tables>
+		<table name="commerce_item_price" />
+	</tables>
+	<columns>
+		<column name="item_srl" var="item_srl" filter="number" notnull="notnull" />
+		<column name="currency" var="currency" notnull="notnull" />
+		<column name="price" var="price" filter="number" default="0" />
+		<column name="sale_price" var="sale_price" filter="number" default="0" />
+	</columns>
+</query>

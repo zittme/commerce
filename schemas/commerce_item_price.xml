@@ -1,0 +1,8 @@
+<table name="commerce_item_price">
+	<!-- 상품의 통화별 가격. KRW 가격은 commerce_item 의 price/sale_price 가 원본이고,
+	     여기에는 외화 가격만 담는다. 금액은 통화 최소단위 정수(USD 는 센트, JPY 는 엔). -->
+	<column name="item_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="currency" type="varchar" size="8" notnull="notnull" primarykey="primarykey" />
+	<column name="price" type="bigint" notnull="notnull" default="0" />
+	<column name="sale_price" type="bigint" notnull="notnull" default="0" />
+</table>

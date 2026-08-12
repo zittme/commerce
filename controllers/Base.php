@@ -4,6 +4,8 @@ namespace Zittme\Modules\Commerce\Controllers;
 
 use Zittme\Modules\Commerce\Models\Config as ConfigModel;
 
+require_once __DIR__ . '/../helpers.php';
+
 /**
  * 커머스 모듈.
  *
