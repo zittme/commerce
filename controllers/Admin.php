@@ -277,7 +277,7 @@ class Admin extends Base
 		}
 
 		$args = (object)[
-			'title' => $title,
+			'title' => self::langValue('title', $title),
 			'slug' => $slug,
 			'banner' => is_array($banner) ? json_encode($banner, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES) : '',
 			'description' => self::langValue('description', trim((string)\Context::get('description'))),
