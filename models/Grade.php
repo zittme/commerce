@@ -57,6 +57,7 @@ class Grade
 		if ($stmt && $stmt->execute([$member_srl]))
 		{
 			$row = $stmt->fetchObject() ?: null;
+			$stmt->closeCursor();
 		}
 		return ($row && !empty($row->grade_srl) && !empty($row->title)) ? $row : null;
 	}
@@ -81,23 +82,25 @@ class Grade
 			return;
 		}
 
-		// 누적 구매액은 KRW 기준이다. 외화 주문은 결제 시점에 박제한 환율로 환산해 더한다.
+		// 누적 구매액은 기준 통화 기준이다. 외화 병행 판매 주문은 결제 시점에 박제한 환율로 환산해 더한다.
 		$db = \Rhymix\Framework\DB::getInstance();
 		$stmt = $db->query(
 			'SELECT payment_price, currency, exchange_rate FROM commerce_order WHERE member_srl = ? AND status = ?',
 			$member_srl, Base::ORDER_PAID
 		);
+		// 코어는 버퍼링 없는 쿼리를 쓴다. 커서를 연 채 환산(설정 조회)을 호출하면 죽으므로 먼저 다 읽는다
+		$rows = $stmt ? ($stmt->fetchAll(\PDO::FETCH_OBJ) ?: []) : [];
 		$total = 0;
-		while ($stmt && ($row = $stmt->fetchObject()))
+		foreach ($rows as $row)
 		{
-			$row_currency = strtoupper((string)($row->currency ?? 'KRW')) ?: 'KRW';
-			if ($row_currency === 'KRW')
+			$row_currency = strtoupper((string)($row->currency ?? '')) ?: Money::base();
+			if ($row_currency === Money::base())
 			{
 				$total += (int)$row->payment_price;
 			}
 			else
 			{
-				$total += Money::minorToKRW((int)$row->payment_price, $row_currency, (float)($row->exchange_rate ?? 0));
+				$total += Money::minorToBase((int)$row->payment_price, $row_currency, (float)($row->exchange_rate ?? 0));
 			}
 		}
 

@@ -9,6 +9,7 @@
 		<column name="item_code" var="item_code" />
 		<column name="price" var="price" />
 		<column name="sale_price" var="sale_price" />
+		<column name="effective_price" var="effective_price" />
 		<column name="stock" var="stock" />
 		<column name="use_stock" var="use_stock" />
 		<column name="summary" var="summary" />

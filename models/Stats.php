@@ -23,10 +23,11 @@ class Stats
 	protected const PAID = "'paid'";
 
 	/**
-	 * 결제금액을 KRW 로 환산하는 SQL 식.
+	 * 결제금액을 기준 통화로 환산하는 SQL 식.
 	 *
-	 * 통계 원장은 KRW 기준이다. 외화 주문은 결제 시점에 박제한 환율(exchange_rate)로
-	 * 되돌린다. 금액이 통화 최소단위 정수라 2자리 소수 통화는 100 으로 나눈다.
+	 * 통계 원장은 기준 통화 기준이다. 기준 통화 주문은 그대로 더하고, 외화 병행 판매
+	 * 주문(기준 KRW 상점만 존재)은 결제 시점에 박제한 환율(exchange_rate)로 되돌린다.
+	 * 금액이 통화 최소단위 정수라 2자리 소수 통화는 100 으로 나눈다.
 	 *
 	 * @param string $col 금액 컬럼 (예: 'payment_price', 'o.payment_price', 'oi.subtotal')
 	 * @param string $alias 주문 테이블 별칭 ('' 이면 별칭 없음)
@@ -35,9 +36,13 @@ class Stats
 	protected static function krwExpr(string $col, string $alias = ''): string
 	{
 		$p = $alias !== '' ? $alias . '.' : '';
-		return "(CASE WHEN {$p}currency IS NULL OR {$p}currency = '' OR {$p}currency = 'KRW' THEN {$col}"
-			. " ELSE ROUND({$col} * CAST(NULLIF({$p}exchange_rate, '') AS DECIMAL(16,4))"
-			. " / (CASE WHEN {$p}currency IN ('JPY', 'TWD', 'HUF', 'VND') THEN 1 ELSE 100 END)) END)";
+		$base = preg_replace('/[^A-Z]/', '', Money::base()) ?: 'KRW';
+		// 주문에 박제한 exchange_rate 는 "1 주문통화당 기준 통화" 교차 환율이다.
+		// 최소단위 보정: 주문 통화 최소단위 → 값 (÷100), 기준 통화 값 → 최소단위 (×100)
+		$base_factor = Money::isZeroDecimal($base) ? 1 : 100;
+		return "(CASE WHEN {$p}currency IS NULL OR {$p}currency = '' OR {$p}currency = '{$base}' THEN {$col}"
+			. " ELSE ROUND({$col} * CAST(NULLIF({$p}exchange_rate, '') AS DECIMAL(16,4)) * {$base_factor}"
+			. " / (CASE WHEN {$p}currency IN ('KRW', 'JPY', 'TWD', 'HUF', 'VND') THEN 1 ELSE 100 END)) END)";
 	}
 
 	/**
@@ -247,6 +252,14 @@ class Stats
 	 * @param string $region
 	 * @return string
 	 */
+	/**
+	 * 국내 시·도. 화면의 선택 목록과 통계 집계가 같은 값을 쓰도록 한곳에 둔다.
+	 */
+	public const KR_REGIONS = [
+		'서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종',
+		'강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
+	];
+
 	public static function normalizeRegion(string $region): string
 	{
 		$region = trim($region);

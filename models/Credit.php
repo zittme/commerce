@@ -133,8 +133,8 @@ class Credit
 		{
 			return;
 		}
-		// 적립금 원장은 KRW 전용 — 외화 주문은 적립하지 않는다
-		if (strtoupper((string)($order->currency ?? 'KRW')) !== 'KRW')
+		// 적립금 원장은 기준 통화 전용 — 외화 병행 판매 주문은 적립하지 않는다
+		if (strtoupper((string)($order->currency ?? Money::base())) !== Money::base())
 		{
 			return;
 		}

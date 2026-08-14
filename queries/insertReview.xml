@@ -6,6 +6,7 @@
 		<column name="review_srl" var="review_srl" filter="number" notnull="notnull" />
 		<column name="item_srl" var="item_srl" filter="number" notnull="notnull" />
 		<column name="member_srl" var="member_srl" filter="number" default="0" />
+		<column name="order_srl" var="order_srl" filter="number" default="0" />
 		<column name="nick_name" var="nick_name" />
 		<column name="rating" var="rating" filter="number" default="5" />
 		<column name="content" var="content" notnull="notnull" />

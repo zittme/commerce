@@ -66,19 +66,17 @@ class Base extends \ModuleObject
 	}
 
 	/**
-	 * 다통화 컬럼 자가 치유 (0.2.0 → 0.2.1 핫픽스).
+	 * 스키마 자가 치유.
 	 *
-	 * 0.2.0 배포본이 업데이트 목록에 currency 컬럼을 등록하지 않아, 파일만 교체된
-	 * 사이트는 컬럼이 없는 채로 currency 를 참조하는 쿼리가 전부 죽었다.
-	 * 관리자가 모듈 업데이트를 누르기 전에도 동작하도록 요청 경로에서 직접 붙인다.
-	 * 성공하면 캐시에 표시해 이후 요청에서는 검사하지 않는다.
+	 * 파일만 교체된 사이트에서도 동작하도록, 모듈 업데이트와 별개로 요청 경로에서
+	 * 누락 컬럼을 직접 붙인다. 성공하면 캐시에 표시해 이후 요청에서는 검사하지 않는다.
 	 *
 	 * @return void
 	 */
 	public static function ensureCurrencySchema(): void
 	{
 		static $checked = false;
-		if ($checked || \Zittme\Framework\Cache::get('commerce_currency_schema_ok'))
+		if ($checked || \Zittme\Framework\Cache::get('commerce_schema_ok_v6'))
 		{
 			$checked = true;
 			return;
@@ -100,11 +98,71 @@ class Base extends \ModuleObject
 			{
 				$oDB->createTableByXmlFile(\RX_BASEDIR . 'modules/commerce/schemas/commerce_item_price.xml');
 			}
-			\Zittme\Framework\Cache::set('commerce_currency_schema_ok', true, 86400);
+			// 가격순 정렬 전용 실판매가
+			if (!$oDB->isColumnExists('commerce_item', 'effective_price'))
+			{
+				$oDB->addColumn('commerce_item', 'effective_price', 'bigint', null, 0, true);
+				\Rhymix\Framework\DB::getInstance()->getHandle()
+					->exec('UPDATE `' . \Zittme\Modules\Commerce\Controllers\Install::dbPrefix() . 'commerce_item` SET effective_price = CASE WHEN sale_price > 0 THEN sale_price ELSE price END');
+			}
+			// 주문 시점 SKU 스냅샷
+			if (!$oDB->isColumnExists('commerce_order_item', 'sku'))
+			{
+				$oDB->addColumn('commerce_order_item', 'sku', 'varchar', 100);
+			}
+			// 리뷰는 주문건 단위. 나중에 붙이는 컬럼은 기본값·notnull 을 함께 지정한다
+			if (!$oDB->isColumnExists('commerce_review', 'order_srl'))
+			{
+				$oDB->addColumn('commerce_review', 'order_srl', 'bigint', null, 0, true);
+			}
+			// 연결이 비어 있는 리뷰는 상품 단위(0)로 취급되므로 컬럼 추가 여부와 무관하게 보정한다
+			self::backfillReviewOrders();
+			// 진열 순서 규약: 최신이 앞, list_order = -srl. 미정렬(0)과 등록순 값(+srl)을 맞춘다
+			\Rhymix\Framework\DB::getInstance()->getHandle()
+				->exec('UPDATE `' . \Zittme\Modules\Commerce\Controllers\Install::dbPrefix() . 'commerce_item` SET list_order = -item_srl WHERE list_order = 0 OR list_order = item_srl');
+			\Zittme\Framework\Cache::set('commerce_schema_ok_v6', true, 86400);
 		}
 		catch (\Throwable $e)
 		{
 			// 실패해도 화면을 죽이지 않는다. 다음 요청이나 모듈 업데이트에서 다시 시도된다.
+		}
+	}
+
+	/**
+	 * 주문 연결이 비어 있는 리뷰에 확정 주문을 채운다.
+	 *
+	 * @return void
+	 */
+	public static function backfillReviewOrders(): void
+	{
+		try
+		{
+			$p = Install::dbPrefix();
+			$handle = \Rhymix\Framework\DB::getInstance()->getHandle();
+			// 컬럼을 나중에 붙인 사이트는 기존 행이 NULL 일 수 있다. 0 과 NULL 을 함께 본다
+			$stmt = $handle->query('SELECT 1 FROM `' . $p . 'commerce_review` WHERE (order_srl = 0 OR order_srl IS NULL) AND member_srl > 0 LIMIT 1');
+			// 코어는 버퍼링 없는 쿼리를 쓴다. 다음 쿼리 전에 커서를 닫는다
+			$pending = false;
+			if ($stmt)
+			{
+				$pending = (bool)$stmt->fetchColumn();
+				$stmt->closeCursor();
+			}
+			if (!$pending)
+			{
+				return;
+			}
+			$handle->exec(
+				'UPDATE `' . $p . 'commerce_review` AS r SET r.order_srl = COALESCE((' .
+				'SELECT MIN(o.order_srl) FROM `' . $p . 'commerce_order_item` AS oi' .
+				' JOIN `' . $p . 'commerce_order` AS o ON o.order_srl = oi.order_srl' .
+				' JOIN `' . $p . 'commerce_order_seller` AS os ON os.order_seller_srl = oi.order_seller_srl' .
+				" WHERE o.member_srl = r.member_srl AND oi.item_srl = r.item_srl AND o.status = 'paid' AND os.status = 'confirmed'" .
+				'), 0) WHERE (r.order_srl = 0 OR r.order_srl IS NULL) AND r.member_srl > 0'
+			);
+		}
+		catch (\Throwable $e)
+		{
 		}
 	}
 

@@ -112,6 +112,8 @@
 		<eventHandler after="zittme_pay.approved" class="Controllers\Trigger" method="triggerPayApproved" />
 		<eventHandler after="zittme_pay.cancelled" class="Controllers\Trigger" method="triggerPayCancelled" />
 		<eventHandler after="menu.getModuleListInSitemap" class="Controllers\Trigger" method="triggerModuleListInSitemap" />
+		<eventHandler after="member.doLogin" class="Controllers\Trigger" method="triggerAfterLogin" />
+		<eventHandler after="member.doAutoLogin" class="Controllers\Trigger" method="triggerAfterLogin" />
 	</eventHandlers>
 
 </module>

@@ -12,25 +12,25 @@
 			<tbody>
 				@foreach ($promotions as $pm)
 				@php
-				$pm_state = '진행 중';
-				if (($pm->status ?? 'Y') !== 'Y') $pm_state = '숨김';
-				elseif (!empty($pm->start_date) && $promo_now < $pm->start_date) $pm_state = '예정';
-				elseif (!empty($pm->end_date) && $promo_now > $pm->end_date) $pm_state = '종료';
+				$pm_state = 'running';
+				if (($pm->status ?? 'Y') !== 'Y') $pm_state = 'hidden';
+				elseif (!empty($pm->start_date) && $promo_now < $pm->start_date) $pm_state = 'upcoming';
+				elseif (!empty($pm->end_date) && $promo_now > $pm->end_date) $pm_state = 'ended';
 				@endphp
 				<tr>
 					<td><strong>{{ $pm->title }}</strong></td>
 					<td><small>?v=promo&amp;p={{ $pm->slug }}</small></td>
 					<td><small>{{ $pm->start_date ? zdate($pm->start_date, 'Y.m.d') : '' }} ~ {{ $pm->end_date ? zdate($pm->end_date, 'Y.m.d') : '' }}</small></td>
 					<td>
-						@if ($pm_state === '진행 중')<span class="rsva-st rsva-st-confirmed">{{ lang('commerce.admin_promotions_8') }}</span>
-						@elseif ($pm_state === '예정')<span class="rsva-st rsva-st-pending">{{ lang('commerce.admin_promotions_9') }}</span>
-						@elseif ($pm_state === '종료')<span class="rsva-st rsva-st-cancelled">{{ lang('commerce.admin_promotions_10') }}</span>
+						@if ($pm_state === 'running')<span class="rsva-st rsva-st-confirmed">{{ lang('commerce.admin_promotions_8') }}</span>
+						@elseif ($pm_state === 'upcoming')<span class="rsva-st rsva-st-pending">{{ lang('commerce.admin_promotions_9') }}</span>
+						@elseif ($pm_state === 'ended')<span class="rsva-st rsva-st-cancelled">{{ lang('commerce.admin_promotions_10') }}</span>
 						@else<span class="rsva-st">{{ lang('commerce.admin_promotions_11') }}</span>@endif
 					</td>
-					<td>{{ count(\Zittme\Modules\Commerce\Models\Promotion::itemSrlsOf((int)$pm->promo_srl)) }}개</td>
+					<td>{{ sprintf(lang('commerce.st_unit_ea'), count(\Zittme\Modules\Commerce\Models\Promotion::itemSrlsOf((int)$pm->promo_srl))) }}</td>
 					<td style="white-space:nowrap">
 						<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminPromotions', 'promo_srl', $pm->promo_srl) }}">{{ lang('commerce.admin_promotions_12') }}</a>
-						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('기획전을 삭제하시겠습니까? 상품 자체는 삭제되지 않습니다.')">
+						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_promo_delete_ask') }}')">
 							<input type="hidden" name="module" value="admin" />
 							<input type="hidden" name="act" value="procCommerceAdminDeletePromotion" />
 							<input type="hidden" name="promo_srl" value="{{ $pm->promo_srl }}" />
@@ -45,7 +45,7 @@
 	</div>
 
 	<div class="rsva-panel">
-		<h3>{{ $promo_edit ? '기획전 수정: ' . $promo_edit->title : '새 기획전 만들기' }}
+		<h3>{{ $promo_edit ? sprintf(lang('commerce.adm_promo_edit'), $promo_edit->title) : lang('commerce.adm_promo_new') }}
 			@if ($promo_edit)
 			<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminPromotions') }}" style="margin-left:10px">{{ lang('commerce.admin_promotions_14') }}</a>
 			@endif
@@ -150,13 +150,13 @@
 					<label data-name="{{ $pi->item_name }}">
 						<input type="checkbox" class="zmc-pm-item" value="{{ $pi->item_srl }}" @if (in_array((int)$pi->item_srl, $promo_edit_items ?? [], true)) checked @endif />
 						<span class="zmcpm-name">{{ $pi->item_name }}</span>
-						<small>{{ number_format($pi->sale_price > 0 && $pi->sale_price < $pi->price ? $pi->sale_price : $pi->price) }}원 · {{ $pi->status === 'soldout' ? '품절' : '판매중' }}</small>
+						<small>{{ shop_money_base($pi->sale_price > 0 && $pi->sale_price < $pi->price ? $pi->sale_price : $pi->price) }} · {{ $pi->status === 'soldout' ? lang('commerce.st_item_soldout') : lang('commerce.st_item_sale') }}</small>
 					</label>
 					@endforeach
 				</div>
 			</div>
 
-			<button type="submit" class="rsva-btn rsva-btn-primary" style="margin-top:16px">{{ $promo_edit ? '변경사항 저장' : '기획전 만들기' }}</button>
+			<button type="submit" class="rsva-btn rsva-btn-primary" style="margin-top:16px">{{ $promo_edit ? lang('commerce.admin_item_edit_159') : lang('commerce.adm_promo_create') }}</button>
 		</form>
 	</div>
 </div>
@@ -187,9 +187,9 @@
 					if (res && !res.error && res.url) {
 						document.getElementById(input.getAttribute('data-up')).value = res.url;
 						fileLabel(input.getAttribute('data-up'));
-					} else alert(res && res.message ? res.message : '업로드에 실패했습니다.');
+					} else alert(res && res.message ? res.message : {!! json_encode(lang('commerce.msg_shop_upload_failed')) !!});
 				})
-				.catch(function () { alert('업로드에 실패했습니다.'); });
+				.catch(function () { alert({!! json_encode(lang('commerce.msg_shop_upload_failed')) !!}); });
 		});
 	});
 	['zmcPmImg', 'zmcPmPoint', 'zmcPmLogo'].forEach(fileLabel);
@@ -227,7 +227,7 @@
 		var logo = document.getElementById('zmcPmLogo').value.trim();
 		if (main && !logo) {
 			e.preventDefault();
-			alert('메인 노출을 켜려면 기획전 로고(1:1)를 먼저 첨부해주세요.');
+			alert({!! json_encode(lang('commerce.adm_promo_logo_first')) !!});
 			return;
 		}
 		document.getElementById('zmcPromoItems').value = JSON.stringify(order);

@@ -9,8 +9,13 @@
 .ie-sec-desc { margin: -10px 0 16px; font-size: 13px; color: #6b7684; }
 .ie-help { display: block; margin-top: 6px; font-size: 12.5px; color: #8b95a1; font-weight: 400; }
 .ie-req { color: #e5484d; font-weight: 700; }
-.ie-axis { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-.ie-axis input[data-a="name"] { flex: 0 0 180px; }
+.ie-axis { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.ie-axis > .zlf-row-wrap { flex: 0 0 226px; }
+/* 값 칩은 축 한 줄 아래로 내려 붙인다 */
+.ie-axis-vals { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; padding-left: 2px; }
+.ie-vchip input[data-v="text"] { width: 130px; }
+.ie-vhint { color: #8b95a1; font-size: 12px; }
+.ie-axis input[data-a="name"] { flex: 1; min-width: 0; }
 .ie-axis input[data-a="values"] { flex: 1; min-width: 0; }
 .ie-axis select[data-a="style"] { flex: 0 0 110px; padding: 8px 10px; border: 1px solid #dde3ec; border-radius: 8px; font-size: 13px; font-family: inherit; }
 .ie-axes input[type="text"] { padding: 8px 10px; border: 1px solid #dde3ec; border-radius: 8px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
@@ -60,12 +65,15 @@
 <div class="rsva">
 	<div class="ie-head">
 		<div>
-			<h2>{{ $item ? '상품 편집' : (Context::get('clone_from') ? '상품 복제' : '새 상품 등록') }}</h2>
+			<h2>{{ $item ? lang('commerce.admin_item_edit_151') : (Context::get('clone_from') ? lang('commerce.admin_item_edit_152') : lang('commerce.admin_item_edit_153')) }}</h2>
 			<p>{{ lang('commerce.admin_item_edit_1') }}<span class="ie-req">*</span>{{ lang('commerce.admin_item_edit_2') }}</p>
 		</div>
-		<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}" class="rsva-btn">{{ lang('commerce.admin_item_edit_3') }}</a>
+		<a href="{{ \Context::get('act') === 'dispCommerceConsole' ? getUrl('', 'act', 'dispCommerceConsole', 'p', 'items') : getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}" class="rsva-btn">{{ lang('commerce.admin_item_edit_3') }}</a>
 	</div>
 
+	{{-- 콘솔에서 열렸으면 저장 후에도 콘솔 주소로 돌아간다 --}}
+	@php $ie_console = \Context::get('act') === 'dispCommerceConsole'; @endphp
+	@php $ie_return = $item ? ($ie_console ? getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'item_edit', 'item_srl', $item->item_srl) : getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item->item_srl)) : ''; @endphp
 	<form action="{{ getUrl('') }}" method="post" enctype="multipart/form-data" id="ieForm">
 		<input type="hidden" name="module" value="admin" />
 		<input type="hidden" name="act" value="procCommerceAdminInsertItem" />
@@ -140,11 +148,11 @@
 			<div class="rsva-form-grid">
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_19') }} <span class="ie-req">*</span></label>
-					<div class="ie-suffix" data-suffix="원"><input type="number" name="price" min="0" required id="iePrice" value="{{ $item->price ?? '' }}" placeholder="0" /></div>
+					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="price" min="0" step="any" required id="iePrice" value="{{ isset($item->price) ? \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$item->price) : '' }}" placeholder="0" /></div>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_20') }}</label>
-					<div class="ie-suffix" data-suffix="원"><input type="number" name="sale_price" min="0" id="ieSalePrice" value="{{ ($item->sale_price ?? 0) > 0 ? $item->sale_price : '' }}" placeholder="{{ lang('commerce.admin_item_edit_145') }}" /></div>
+					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="sale_price" min="0" step="any" id="ieSalePrice" value="{{ ($item->sale_price ?? 0) > 0 ? \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$item->sale_price) : '' }}" placeholder="{{ lang('commerce.admin_item_edit_145') }}" /></div>
 					<span class="ie-discount" id="ieDiscountBadge"></span>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_21') }}</span>
 				</div>
@@ -180,15 +188,15 @@
 				</div>
 				<div id="ieStockField">
 					<label>{{ lang('commerce.admin_item_edit_30') }}</label>
-					<div style="padding:10px 0;font-size:15px;font-weight:700">{{ number_format((int)($item->stock ?? 0)) }}개</div>
+					<div style="padding:10px 0;font-size:15px;font-weight:700">{{ number_format((int)($item->stock ?? 0)) }}{{ lang('commerce.admin_item_edit_154') }}</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_31') }} <a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminStock') }}">{{ lang('commerce.admin_item_edit_27') }}</a> {{ lang('commerce.admin_item_edit_32') }}</span>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_33') }}</label>
 					<div style="display:flex;gap:8px;align-items:center">
-						<div class="ie-suffix" data-suffix="개" style="flex:1"><input type="number" name="min_qty" min="0" value="{{ $item->min_qty ?? 0 }}" placeholder="{{ lang('commerce.admin_item_edit_146') }}" /></div>
+						<div class="ie-suffix" data-suffix="{{ lang('commerce.admin_item_edit_154') }}" style="flex:1"><input type="number" name="min_qty" min="0" value="{{ $item->min_qty ?? 0 }}" placeholder="{{ lang('commerce.admin_item_edit_146') }}" /></div>
 						<span style="color:#8b95a1">~</span>
-						<div class="ie-suffix" data-suffix="개" style="flex:1"><input type="number" name="max_qty" min="0" value="{{ $item->max_qty ?? 0 }}" placeholder="{{ lang('commerce.admin_item_edit_147') }}" /></div>
+						<div class="ie-suffix" data-suffix="{{ lang('commerce.admin_item_edit_154') }}" style="flex:1"><input type="number" name="max_qty" min="0" value="{{ $item->max_qty ?? 0 }}" placeholder="{{ lang('commerce.admin_item_edit_147') }}" /></div>
 					</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_34') }}</span>
 				</div>
@@ -202,7 +210,7 @@
 				<div style="grid-column:1/-1">
 					<label>{{ lang('commerce.admin_item_edit_36') }}</label>
 					<div class="ie-pills">
-						<label><input type="radio" name="ship_fee_type" value="default" @if(($item->ship_fee_type ?? 'default') === 'default') checked @endif /> 기본 정책 ({{ number_format((int)($shop_config->default_ship_fee ?? 0)) }}원@if ((int)($shop_config->free_ship_over ?? 0) > 0), {{ number_format((int)$shop_config->free_ship_over) }}원 이상 무료@endif)</label>
+						<label><input type="radio" name="ship_fee_type" value="default" @if(($item->ship_fee_type ?? 'default') === 'default') checked @endif /> {{ sprintf(lang('commerce.admin_item_edit_155'), shop_money_base((int)($shop_config->default_ship_fee ?? 0)) . ((int)($shop_config->free_ship_over ?? 0) > 0 ? sprintf(lang('commerce.admin_item_edit_156'), shop_money_base((int)$shop_config->free_ship_over)) : '')) }}</label>
 						<label><input type="radio" name="ship_fee_type" value="free" @if(($item->ship_fee_type ?? '') === 'free') checked @endif /> {{ lang('commerce.admin_item_edit_37') }}</label>
 						<label><input type="radio" name="ship_fee_type" value="fixed" @if(($item->ship_fee_type ?? '') === 'fixed') checked @endif /> {{ lang('commerce.admin_item_edit_38') }}</label>
 					</div>
@@ -210,7 +218,7 @@
 				</div>
 				<div id="ieShipFeeField">
 					<label>{{ lang('commerce.admin_item_edit_42') }}</label>
-					<div class="ie-suffix" data-suffix="원"><input type="number" name="ship_fee" min="0" value="{{ $item->ship_fee ?? 0 }}" /></div>
+					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="ship_fee" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($item->ship_fee ?? 0)) }}" /></div>
 				</div>
 			</div>
 		</div>
@@ -325,12 +333,8 @@
 		</script>
 		@endif
 
-		<div class="ie-savebar is-stuck" id="ieSavebar">
-			<button type="submit" class="rsva-btn rsva-btn-primary">{{ $item ? '변경사항 저장' : '상품 등록' }}</button>
-			<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}" class="rsva-btn">{{ lang('commerce.admin_item_edit_68') }}</a>
-			<small>{{ lang('commerce.admin_item_edit_69') }}</small>
-		</div>
-		<div id="ieSaveSentinel" style="height:1px"></div>
+		<input type="hidden" name="from_console" value="{{ \Context::get('act') === 'dispCommerceConsole' ? 'Y' : 'N' }}" />
+		<input type="hidden" name="options_json" id="ieOptionsJson" value="" />
 	</form>
 
 	{{-- 옵션 --}}
@@ -420,7 +424,7 @@
 		<form id="optEdit{{ $opt->option_srl }}" action="{{ getUrl('') }}" method="post">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminUpdateOption" />
-			<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item->item_srl) }}#ieOptions" />
+			<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
 			<input type="hidden" name="option_srl" value="{{ $opt->option_srl }}" />
 			<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
 			<input type="hidden" name="option_type" value="{{ ($opt->option_type ?? 'basic') === 'extra' ? 'extra' : 'basic' }}" />
@@ -438,7 +442,41 @@
 		</div>
 
 		{{-- ── 조합형 옵션 축 (색상 × 사이즈) ── --}}
-		@php $ie_axes = Zittme\Modules\Commerce\Models\Combo::axes($item->option_axes ?? ''); @endphp
+		@php
+		$ie_axes = Zittme\Modules\Commerce\Models\Combo::axes($item->option_axes ?? '');
+		// 축 이름·값에 연결한 다국어 코드를 편집 화면용으로 풀어 둔다 (칸에는 현재 언어 문구를 보여준다)
+		$ie_axes_init = [];
+		foreach ($ie_axes as $ie_ax)
+		{
+			$ie_name_code = Zittme\Modules\Commerce\Models\Lang::codeOf($ie_ax->name);
+			$ie_vals = [];
+			foreach ($ie_ax->values as $ie_raw)
+			{
+				$ie_color = '';
+				$ie_text = $ie_raw;
+				if (strpos($ie_raw, '|') !== false)
+				{
+					$ie_pair = array_map('trim', explode('|', $ie_raw, 2));
+					$ie_text = $ie_pair[0];
+					$ie_color = $ie_pair[1];
+				}
+				$ie_code = Zittme\Modules\Commerce\Models\Lang::codeOf($ie_text);
+				$ie_vals[] = [
+					'text' => $ie_code !== '' ? Zittme\Modules\Commerce\Models\Lang::display($ie_code) : $ie_text,
+					'code' => $ie_code,
+					'color' => $ie_color,
+				];
+			}
+			$ie_axes_init[] = [
+				'name' => $ie_name_code !== '' ? Zittme\Modules\Commerce\Models\Lang::display($ie_name_code) : $ie_ax->name,
+				'name_code' => $ie_name_code,
+				'values' => $ie_vals,
+				'style' => $ie_ax->style,
+			];
+		}
+		// 출력식 안에서 상수를 '|' 로 묶으면 템플릿이 필터 문법으로 읽는다. 여기서 미리 만든다
+		$ie_axes_json = json_encode($ie_axes_init, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+		@endphp
 		<div class="ie-axes" data-mode-only="combo" style="margin-bottom:22px">
 			<b style="display:block;margin-bottom:4px;font-size:14px">{{ lang('commerce.admin_item_edit_113') }} <small style="font-weight:500;color:#8b95a1">{{ lang('commerce.admin_item_edit_114') }}</small></b>
 			<p class="ie-help" style="margin:0 0 10px">{{ lang('commerce.admin_item_edit_115') }} <b>{{ lang('commerce.admin_item_edit_116') }}</b>{{ lang('commerce.admin_item_edit_117') }} <b>{{ lang('commerce.admin_item_edit_118') }}</b>{{ lang('commerce.admin_item_edit_119') }} <code>{{ lang('commerce.admin_item_edit_120') }}</code> {{ lang('commerce.admin_item_edit_121') }}</p>
@@ -449,7 +487,7 @@
 				<small style="color:#8b95a1">{{ lang('commerce.admin_item_edit_123') }}</small>
 			</div>
 			<input type="hidden" name="option_axes" id="ieAxesJson" value="{{ $item->option_axes ?? '' }}" form="ieForm" />
-			<script type="application/json" id="ieAxesInit">{!! json_encode($ie_axes, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+			<script type="application/json" id="ieAxesInit">{!! $ie_axes_json !!}</script>
 		</div>
 
 		{{-- ── 기본 옵션 (상품 변형) ── --}}
@@ -459,7 +497,7 @@
 			</div>
 			@if (count($ie_opt_hidden))
 			<div class="ie-opt-hidden">
-				숨긴 기본 옵션 {{ count($ie_opt_hidden) }}개가 있습니다 —
+				{{ sprintf(lang('commerce.admin_item_edit_157'), count($ie_opt_hidden)) }} -
 				@foreach ($ie_opt_hidden as $ie_hid)<span>{{ $ie_hid->option_label }}</span>@endforeach
 				<small>{{ lang('commerce.admin_item_edit_127') }}</small>
 			</div>
@@ -471,16 +509,29 @@
 				<tbody>
 					@foreach ($ie_opt_shown as $opt)
 					<tr @if (empty($opt->combo)) class="ie-opt-manual" @endif>
-						<td><input type="text" name="option_label" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->option_label }}" required style="width:100%;min-width:180px" /></td>
+						<td>
+							@if (empty($opt->combo))
+							<div class="zlf-row-wrap" style="min-width:180px">
+								<input type="text" name="option_label" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->option_label }}" required style="width:100%" />
+								@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => $opt->option_label_raw ?? $opt->option_label, 'lf_key' => 'opt' . $opt->option_srl, 'lf_form' => 'optEdit' . $opt->option_srl])
+							</div>
+							@else
+							{{-- 조합 옵션 이름은 축 값에서 나오는 파생값이다. 여기서 따로 고치면 축과 어긋난다 --}}
+							<div style="min-width:180px">
+								<input type="text" value="{{ $opt->option_label }}" style="width:100%;background:#f4f6f9;color:#4e5968" readonly />
+								<input type="hidden" name="option_label" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->option_label_raw ?? $opt->option_label }}" />
+							</div>
+							@endif
+						</td>
 						<td><input type="number" name="price_add" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->price_add }}" style="width:110px" /></td>
 						<td><input type="number" name="stock" form="optEdit{{ $opt->option_srl }}" min="0" value="{{ $opt->stock }}" style="width:80px" /></td>
 						<td><input type="text" name="sku" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->sku }}" style="width:110px" /></td>
 						<td style="white-space:nowrap">
 							<button type="submit" form="optEdit{{ $opt->option_srl }}" class="rsva-btn rsva-btn-sm rsva-btn-primary">{{ lang('commerce.admin_item_edit_131') }}</button>
-							<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('옵션을 삭제하시겠습니까?')">
+							<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.admin_item_edit_158') }}')">
 								<input type="hidden" name="module" value="admin" />
 								<input type="hidden" name="act" value="procCommerceAdminDeleteOption" />
-								<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item->item_srl) }}#ieOptions" />
+								<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
 								<input type="hidden" name="option_srl" value="{{ $opt->option_srl }}" />
 								<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
 								<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_item_edit_132') }}</button>
@@ -494,11 +545,11 @@
 			<form action="{{ getUrl('') }}" method="post" data-mode-only="single">
 				<input type="hidden" name="module" value="admin" />
 				<input type="hidden" name="act" value="procCommerceAdminInsertOption" />
-				<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item->item_srl) }}#ieOptions" />
+				<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
 				<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
 				<input type="hidden" name="option_type" value="basic" />
 				<div class="rsva-inline">
-					<div style="min-width:240px"><label>{{ lang('commerce.admin_item_edit_128') }}</label><input type="text" name="option_label" required placeholder="{{ lang('commerce.admin_item_edit_149') }}" style="width:100%" /></div>
+					<div style="min-width:240px"><label>{{ lang('commerce.admin_item_edit_128') }}</label><div class="zlf-row-wrap"><input type="text" name="option_label" required placeholder="{{ lang('commerce.admin_item_edit_149') }}" style="width:100%" />@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => '', 'lf_key' => 'optnewbasic'])</div></div>
 					<div><label>{{ lang('commerce.admin_item_edit_129') }}</label><input type="number" name="price_add" value="0" style="width:110px" /></div>
 					<div><label>{{ lang('commerce.admin_item_edit_133') }}</label><input type="number" name="stock" min="0" value="0" style="width:90px" /></div>
 					<div><label>SKU</label><input type="text" name="sku" style="width:120px" /></div>
@@ -516,16 +567,21 @@
 				<tbody>
 					@foreach ($ie_opt_extra as $opt)
 					<tr>
-						<td><input type="text" name="option_label" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->option_label }}" required style="width:100%;min-width:180px" /></td>
+						<td>
+							<div class="zlf-row-wrap" style="min-width:180px">
+								<input type="text" name="option_label" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->option_label }}" required style="width:100%" />
+								@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => $opt->option_label_raw ?? $opt->option_label, 'lf_key' => 'opt' . $opt->option_srl, 'lf_form' => 'optEdit' . $opt->option_srl])
+							</div>
+						</td>
 						<td><input type="number" name="price_add" form="optEdit{{ $opt->option_srl }}" min="0" value="{{ $opt->price_add }}" style="width:110px" /></td>
 						<td><input type="number" name="stock" form="optEdit{{ $opt->option_srl }}" min="0" value="{{ $opt->stock }}" style="width:80px" /></td>
 						<td><input type="text" name="sku" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->sku }}" style="width:110px" /></td>
 						<td style="white-space:nowrap">
 							<button type="submit" form="optEdit{{ $opt->option_srl }}" class="rsva-btn rsva-btn-sm rsva-btn-primary">{{ lang('commerce.admin_item_edit_131') }}</button>
-							<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('옵션을 삭제하시겠습니까?')">
+							<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.admin_item_edit_158') }}')">
 								<input type="hidden" name="module" value="admin" />
 								<input type="hidden" name="act" value="procCommerceAdminDeleteOption" />
-								<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item->item_srl) }}#ieOptions" />
+								<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
 								<input type="hidden" name="option_srl" value="{{ $opt->option_srl }}" />
 								<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
 								<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_item_edit_132') }}</button>
@@ -539,11 +595,11 @@
 			<form action="{{ getUrl('') }}" method="post">
 				<input type="hidden" name="module" value="admin" />
 				<input type="hidden" name="act" value="procCommerceAdminInsertOption" />
-				<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item->item_srl) }}#ieOptions" />
+				<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
 				<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
 				<input type="hidden" name="option_type" value="extra" />
 				<div class="rsva-inline">
-					<div style="min-width:240px"><label>{{ lang('commerce.admin_item_edit_128') }}</label><input type="text" name="option_label" required placeholder="{{ lang('commerce.admin_item_edit_150') }}" style="width:100%" /></div>
+					<div style="min-width:240px"><label>{{ lang('commerce.admin_item_edit_128') }}</label><div class="zlf-row-wrap"><input type="text" name="option_label" required placeholder="{{ lang('commerce.admin_item_edit_150') }}" style="width:100%" />@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => '', 'lf_key' => 'optnewextra'])</div></div>
 					<div><label>{{ lang('commerce.admin_item_edit_137') }}</label><input type="number" name="price_add" min="0" value="0" style="width:130px" /></div>
 					<div><label>{{ lang('commerce.admin_item_edit_133') }}</label><input type="number" name="stock" min="0" value="0" style="width:90px" /></div>
 					<div><label>SKU</label><input type="text" name="sku" style="width:120px" /></div>
@@ -553,9 +609,42 @@
 		</div>
 		@endif
 	</div>
+
+	{{-- 저장 바 - 옵션까지 훑은 뒤 저장하도록 옵션 영역 아래에 둔다. 버튼은 form 속성으로 상단 폼을 제출한다 --}}
+	<div class="ie-savebar is-stuck" id="ieSavebar">
+		<button type="submit" form="ieForm" class="rsva-btn rsva-btn-primary">{{ $item ? lang('commerce.admin_item_edit_159') : lang('commerce.admin_item_edit_160') }}</button>
+		<a href="{{ \Context::get('act') === 'dispCommerceConsole' ? getUrl('', 'act', 'dispCommerceConsole', 'p', 'items') : getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}" class="rsva-btn">{{ lang('commerce.admin_item_edit_68') }}</a>
+		<small>{{ lang('commerce.admin_item_edit_69') }} {{ lang('commerce.admin_item_edit_161') }}</small>
+	</div>
+	<div id="ieSaveSentinel" style="height:1px"></div>
 </div>
 
 <script>
+(function () {
+	// 변경사항 저장 시 옵션 행들도 한 번에 저장한다 - 행별 수정 폼의 값을 JSON 으로 모아 본 폼에 싣는다
+	var ieForm = document.getElementById('ieForm');
+	var jsonEl = document.getElementById('ieOptionsJson');
+	if (ieForm && jsonEl) {
+		ieForm.addEventListener('submit', function () {
+			var rows = [];
+			document.querySelectorAll('form').forEach(function (f) {
+				var act = f.querySelector('[name=act]');
+				var srl = f.querySelector('[name=option_srl]');
+				if (!act || act.value !== 'procCommerceAdminUpdateOption' || !srl) return;
+				var pick = function (n) { var el = f.querySelector('[name=' + n + ']'); return el ? el.value : ''; };
+				rows.push({
+					option_srl: srl.value,
+					option_label: pick('option_label'),
+					option_type: pick('option_type'),
+					price_add: pick('price_add'),
+					stock: pick('stock'),
+					sku: pick('sku')
+				});
+			});
+			jsonEl.value = JSON.stringify(rows);
+		});
+	}
+})();
 (function () {
 	// ── 옵션을 저장·삭제한 뒤 보던 자리로 되돌리기 ──
 	// 폼 제출 → 리다이렉트 → 새로 그리기 라서, 위치를 기억해 두었다가 복원한다
@@ -602,36 +691,122 @@
 	if (axesEl && axesJson) {
 		var MAX_AXES = 3;
 
+		// 위젯 스크립트가 아직 안 올라왔으면 문서 준비 후에 잇는다
+		var lfPending = [];
+		function bindLang(button) {
+			if (window.zlfBind) { window.zlfBind(button); return; }
+			lfPending.push(button);
+		}
+		document.addEventListener('DOMContentLoaded', function () {
+			if (!window.zlfBind) return;
+			lfPending.forEach(window.zlfBind);
+			lfPending = [];
+		});
+
+		// 다국어 버튼 한 벌. 패널은 _langfield_assets 의 것을 함께 쓴다
+		function langBtn() {
+			return '<input type="hidden" data-lf-code value="" />' +
+				'<button type="button" class="zlf-btn" data-lf-open data-lf-display="" title="' + {!! json_encode(lang('commerce.admin_item_edit_162')) !!} + '">' +
+				'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.3 2.6 2.3 14.4 0 17"/><path d="M12 3.5c-2.3 2.6-2.3 14.4 0 17"/></svg>' +
+				'</button>';
+		}
+
+		// 값 하나를 칩으로 그린다. 칩마다 문구를 따로 연결할 수 있다
+		function valueChip(text, code, color) {
+			var chip = document.createElement('span');
+			chip.className = 'zlf-row-wrap ie-vchip';
+			chip.innerHTML = '<input type="text" data-v="text" size="10" />' + langBtn();
+			chip.setAttribute('data-color', color || '');
+			var input = chip.querySelector('[data-v=text]');
+			var hidden = chip.querySelector('[data-lf-code]');
+			var button = chip.querySelector('[data-lf-open]');
+			input.value = text || '';
+			hidden.value = code || '';
+			if (code) { button.setAttribute('data-lf-display', text || ''); }
+			input.addEventListener('input', sync);
+			hidden.addEventListener('change', sync);
+			bindLang(button);
+			return chip;
+		}
+
+		// 쉼표 입력을 칩 목록으로 옮겨 담는다. 이미 연결한 문구는 글자가 같으면 그대로 따라온다
+		function rebuildChips(row) {
+			var box = row.querySelector('[data-a=chips]');
+			var kept = {};
+			box.querySelectorAll('.ie-vchip').forEach(function (chip) {
+				var t = chip.querySelector('[data-v=text]').value.trim();
+				if (t) kept[t] = { code: chip.querySelector('[data-lf-code]').value, color: chip.getAttribute('data-color') };
+			});
+			var texts = row.querySelector('[data-a=values]').value.split(',').map(function (v) { return v.trim(); }).filter(Boolean);
+			box.innerHTML = '';
+			texts.forEach(function (t) {
+				// 색상칩 축은 '블루미스트|#7ec8e3' 처럼 색을 함께 적는다
+				var color = '';
+				var cut = t.indexOf('|');
+				if (cut > -1) { color = t.slice(cut + 1).trim(); t = t.slice(0, cut).trim(); }
+				if (!t) return;
+				var had = kept[t] || {};
+				box.appendChild(valueChip(t, had.code || '', color || had.color || ''));
+			});
+			box.hidden = false;
+			if (!texts.length) { box.innerHTML = '<small class="ie-vhint">' + {!! json_encode(lang('commerce.admin_item_edit_163')) !!} + '</small>'; }
+		}
+
 		function axisRow(data) {
 			data = data || {};
+			var values = data.values || [];
 			var row = document.createElement('div');
 			row.className = 'ie-axis';
 			row.innerHTML =
-				'<input type="text" data-a="name" placeholder="축 이름 (예: 색상)" />' +
-				'<input type="text" data-a="values" placeholder="값 (쉼표로 구분 — 블랙, 화이트)" />' +
-				'<select data-a="style" title="구매 화면 표시 방식">' +
-					'<option value="select">셀렉트</option>' +
-					'<option value="button">버튼</option>' +
-					'<option value="color">색상칩</option>' +
+				'<span class="zlf-row-wrap"><input type="text" data-a="name" placeholder="' + {!! json_encode(lang('commerce.admin_item_edit_164')) !!} + '" />' + langBtn() + '</span>' +
+				'<input type="text" data-a="values" placeholder="' + {!! json_encode(lang('commerce.admin_item_edit_165')) !!} + '" />' +
+				'<select data-a="style" title="' + {!! json_encode(lang('commerce.admin_item_edit_166')) !!} + '">' +
+					'<option value="select">' + {!! json_encode(lang('commerce.admin_item_edit_167')) !!} + '</option>' +
+					'<option value="button">' + {!! json_encode(lang('commerce.admin_item_edit_168')) !!} + '</option>' +
+					'<option value="color">' + {!! json_encode(lang('commerce.admin_item_edit_169')) !!} + '</option>' +
 				'</select>' +
-				'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger" data-adel>삭제</button>';
+				'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger" data-adel>' + {!! json_encode(lang('commerce.admin_item_edit_170')) !!} + '</button>' +
+				'<div class="ie-axis-vals" data-a="chips"></div>';
 			row.querySelector('[data-a=name]').value = data.name || '';
-			row.querySelector('[data-a=values]').value = (data.values || []).join(', ');
+			row.querySelector('[data-a=values]').value = values.map(function (v) { return v.text; }).join(', ');
 			row.querySelector('[data-a=style]').value = data.style || 'select';
+			var nameHidden = row.querySelector('[data-lf-code]');
+			var nameButton = row.querySelector('[data-lf-open]');
+			nameHidden.value = data.name_code || '';
+			if (data.name_code) { nameButton.setAttribute('data-lf-display', data.name || ''); }
+			bindLang(nameButton);
+			nameHidden.addEventListener('change', sync);
 			row.querySelector('[data-a=style]').addEventListener('change', sync);
 			row.querySelector('[data-adel]').addEventListener('click', function () { row.remove(); sync(); });
-			row.querySelectorAll('input').forEach(function (el) { el.addEventListener('input', sync); });
+			row.querySelector('[data-a=name]').addEventListener('input', sync);
+			row.querySelector('[data-a=values]').addEventListener('input', function () { rebuildChips(row); sync(); });
 			axesEl.appendChild(row);
+			var box = row.querySelector('[data-a=chips]');
+			values.forEach(function (v) { box.appendChild(valueChip(v.text, v.code, v.color)); });
+			box.hidden = false;
+			if (!values.length) { box.innerHTML = '<small class="ie-vhint">' + {!! json_encode(lang('commerce.admin_item_edit_163')) !!} + '</small>'; }
+		}
+
+		// 문구를 연결했으면 코어 규약값을, 아니면 입력한 글자를 돌려준다
+		function token(text, code, color) {
+			var value = code ? '$user_lang->' + code : text;
+			return color ? value + '|' + color : value;
 		}
 
 		// 화면의 축을 hidden JSON 으로 옮겨 담는다 (상품 저장 때 함께 실려 간다)
 		function sync() {
 			var out = [];
 			axesEl.querySelectorAll('.ie-axis').forEach(function (row) {
-				var name = row.querySelector('[data-a=name]').value.trim();
-				var values = row.querySelector('[data-a=values]').value.split(',').map(function (v) { return v.trim(); }).filter(Boolean);
+				var nameText = row.querySelector('[data-a=name]').value.trim();
+				var name = token(nameText, row.querySelector('[data-a=name]').parentNode.querySelector('[data-lf-code]').value, '');
+				var values = [];
+				row.querySelectorAll('.ie-vchip').forEach(function (chip) {
+					var text = chip.querySelector('[data-v=text]').value.trim();
+					if (!text) return;
+					values.push(token(text, chip.querySelector('[data-lf-code]').value, chip.getAttribute('data-color')));
+				});
 				var style = row.querySelector('[data-a=style]').value;
-				if (name && values.length) out.push({ name: name, values: values, style: style });
+				if (nameText && values.length) out.push({ name: name, values: values, style: style });
 			});
 			axesJson.value = out.length ? JSON.stringify(out) : '';
 			return out;
@@ -644,27 +819,27 @@
 		if (!initAxes.length) axisRow();
 
 		document.getElementById('ieAxisAdd').addEventListener('click', function () {
-			if (axesEl.querySelectorAll('.ie-axis').length >= MAX_AXES) { alert('축은 최대 ' + MAX_AXES + '개까지 만들 수 있습니다.'); return; }
+			if (axesEl.querySelectorAll('.ie-axis').length >= MAX_AXES) { alert({!! json_encode(lang('commerce.admin_item_edit_171')) !!}.replace('%d', MAX_AXES)); return; }
 			axisRow();
 		});
 
 		var buildBtn = document.getElementById('ieComboBuild');
 		buildBtn.addEventListener('click', function () {
 			var itemSrl = parseInt(buildBtn.getAttribute('data-item'), 10) || 0;
-			if (!itemSrl) { alert('상품을 먼저 저장한 뒤 조합을 만들 수 있습니다.'); return; }
+			if (!itemSrl) { alert({!! json_encode(lang('commerce.admin_item_edit_172')) !!}); return; }
 			var axes = sync();
-			if (!axes.length) { alert('축 이름과 값을 입력해 주세요.'); return; }
+			if (!axes.length) { alert({!! json_encode(lang('commerce.admin_item_edit_173')) !!}); return; }
 			var total = axes.reduce(function (n, a) { return n * a.values.length; }, 1);
-			if (total > 100) { alert('조합이 ' + total + '개라 너무 많습니다. 100개 이하로 줄여 주세요.'); return; }
-			if (!confirm('조합 ' + total + '개를 준비합니다. 이미 있는 조합의 추가금·재고는 그대로 둡니다.')) return;
+			if (total > 100) { alert({!! json_encode(lang('commerce.admin_item_edit_174')) !!}.replace('%d', total)); return; }
+			if (!confirm({!! json_encode(lang('commerce.admin_item_edit_175')) !!}.replace('%d', total))) return;
 
 			buildBtn.disabled = true;
 			exec_json('commerce.procCommerceAdminBuildCombos', { item_srl: itemSrl, option_axes: axesJson.value }, function (ret) {
-				alert((ret && ret.message) || '조합을 준비했습니다.');
+				alert((ret && ret.message) || {!! json_encode(lang('commerce.admin_item_edit_176')) !!});
 				location.reload();
 			}, function (ret) {
 				buildBtn.disabled = false;
-				alert((ret && ret.message) || '조합을 만들지 못했습니다.');
+				alert((ret && ret.message) || {!! json_encode(lang('commerce.admin_item_edit_177')) !!});
 			});
 		});
 	}
@@ -699,7 +874,7 @@
 			if (i === 0) {
 				var badge = document.createElement('span');
 				badge.className = 'ie-img-badge';
-				badge.textContent = '대표';
+				badge.textContent = {!! json_encode(lang('commerce.admin_item_edit_178')) !!};
 				d.appendChild(badge);
 			}
 			var acts = document.createElement('div');
@@ -707,7 +882,7 @@
 			if (i !== 0) {
 				var mainBtn = document.createElement('button');
 				mainBtn.type = 'button';
-				mainBtn.textContent = '대표로';
+				mainBtn.textContent = {!! json_encode(lang('commerce.admin_item_edit_179')) !!};
 				mainBtn.addEventListener('click', function () {
 					imgs.splice(i, 1);
 					imgs.unshift(src);
@@ -719,7 +894,7 @@
 			var delBtn = document.createElement('button');
 			delBtn.type = 'button';
 			delBtn.className = 'ie-img-del';
-			delBtn.textContent = '삭제';
+			delBtn.textContent = {!! json_encode(lang('commerce.admin_item_edit_170')) !!};
 			delBtn.addEventListener('click', function () {
 				imgs.splice(i, 1);
 				syncImgs();
@@ -742,7 +917,7 @@
 			pb.style.fontSize = '11.5px';
 			pb.style.color = '#2677e3';
 			pb.style.fontWeight = '700';
-			pb.textContent = '올리는 중…';
+			pb.textContent = {!! json_encode(lang('commerce.admin_item_edit_180')) !!};
 			pd.appendChild(pb);
 			imgsWrap.appendChild(pd);
 		}
@@ -750,7 +925,7 @@
 		if (imgs.length + pendingCount < MAX_IMGS) {
 			var add = document.createElement('div');
 			add.className = 'ie-img-add';
-			add.innerHTML = '<b>+</b><span>사진 추가</span>';
+			add.innerHTML = '<b>+</b><span>' + {!! json_encode(lang('commerce.admin_item_edit_181')) !!} + '</span>';
 			add.addEventListener('click', function () { imgFile.click(); });
 			imgsWrap.appendChild(add);
 		}
@@ -761,7 +936,7 @@
 		var remain = MAX_IMGS - imgs.length;
 		if (!imgFile.files.length) return;
 		if (imgFile.files.length > remain) {
-			alert('이미지는 최대 ' + MAX_IMGS + '장까지 등록할 수 있어요. (' + remain + '장 더 가능)');
+			alert({!! json_encode(lang('commerce.admin_item_edit_182')) !!}.replace('%d', MAX_IMGS).replace('%d', remain));
 		}
 		var take = Math.min(imgFile.files.length, remain);
 		if (take <= 0) { imgFile.value = ''; return; }
@@ -790,7 +965,7 @@
 				});
 				persistImgs();
 			} else {
-				alert((res && res.message) || '사진을 올리지 못했어요.');
+				alert((res && res.message) || {!! json_encode(lang('commerce.admin_item_edit_183')) !!});
 			}
 			imgFile.value = '';
 			syncImgs();
@@ -798,12 +973,13 @@
 			pendingCount = 0;
 			imgFile.value = '';
 			syncImgs();
-			alert('사진을 올리지 못했어요. 잠시 후 다시 시도해주세요.');
+			alert({!! json_encode(lang('commerce.admin_item_edit_184')) !!});
 		});
 	});
 	syncImgs();
 
 	// 할인율 실시간 표시
+	var shpUnit = '{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}';
 	var price = document.getElementById('iePrice');
 	var sale = document.getElementById('ieSalePrice');
 	var badge = document.getElementById('ieDiscountBadge');
@@ -812,10 +988,10 @@
 		var s = parseInt(sale.value, 10) || 0;
 		if (p > 0 && s > 0 && s < p) {
 			badge.style.display = 'block';
-			badge.textContent = Math.round((1 - s / p) * 100) + '% 할인 — ' + s.toLocaleString() + '원에 판매됩니다';
+			badge.textContent = {!! json_encode(lang('commerce.admin_item_edit_185')) !!}.replace('%d', Math.round((1 - s / p) * 100)).replace('%s', s.toLocaleString() + shpUnit);
 		} else if (s > 0 && p > 0 && s >= p) {
 			badge.style.display = 'block';
-			badge.textContent = '판매가가 정가보다 높거나 같아요. 확인해주세요.';
+			badge.textContent = {!! json_encode(lang('commerce.admin_item_edit_186')) !!};
 		} else {
 			badge.style.display = 'none';
 		}
@@ -901,14 +1077,14 @@
 		if (!box) return;
 		var row = document.createElement('div');
 		row.className = 'ie-newopt-row';
-		var priceLabel = type === 'basic' ? '추가금' : '가격';
+		var priceLabel = type === 'basic' ? {!! json_encode(lang('commerce.admin_item_edit_187')) !!} : {!! json_encode(lang('commerce.admin_item_edit_188')) !!};
 		row.innerHTML =
 			'<input type="text" name="new_option_label_' + type + '[]" placeholder="' +
-				(type === 'basic' ? '예: 색상: 블랙 / 사이즈: L' : '예: 선물 포장 / 보냉백') + '" />' +
+				(type === 'basic' ? {!! json_encode(lang('commerce.admin_item_edit_189')) !!} : {!! json_encode(lang('commerce.admin_item_edit_190')) !!}) + '" />' +
 			'<input type="number" name="new_option_price_' + type + '[]" placeholder="' + priceLabel + '" ' +
 				(type === 'extra' ? 'min="0" ' : '') + 'value="0" />' +
-			'<input type="number" name="new_option_stock_' + type + '[]" placeholder="재고" min="0" value="0" />' +
-			'<button type="button" class="ie-newopt-del" aria-label="줄 삭제">&times;</button>';
+			'<input type="number" name="new_option_stock_' + type + '[]" placeholder="' + {!! json_encode(lang('commerce.admin_item_edit_192')) !!} + '" min="0" value="0" />' +
+			'<button type="button" class="ie-newopt-del" aria-label="' + {!! json_encode(lang('commerce.admin_item_edit_191')) !!} + '">&times;</button>';
 		row.querySelector('.ie-newopt-del').addEventListener('click', function () { row.remove(); });
 		box.appendChild(row);
 	}

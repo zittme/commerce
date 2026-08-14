@@ -35,7 +35,7 @@
 				@foreach ($stock_items as $si)
 				@php $st_fid = 'stAdj' . $si->item_srl . '_0'; @endphp
 				<tr>
-					<td><strong>{{ $si->item_name }}</strong><br /><small style="color:#8b95a1">{{ ($si->use_stock ?? 'Y') === 'Y' ? '재고 관리' : '무제한 판매' }}</small></td>
+					<td><strong>{{ $si->item_name }}</strong><br /><small style="color:#8b95a1">{{ ($si->use_stock ?? 'Y') === 'Y' ? lang('commerce.st_item_stock_managed') : lang('commerce.st_item_unlimited_sale') }}</small></td>
 					<td>{{ lang('commerce.admin_stock_9') }}</td>
 					<td style="text-align:right;font-weight:700">{{ number_format((int)$si->stock) }}</td>
 					<td style="white-space:nowrap">
@@ -79,7 +79,7 @@
 	</div>
 
 	<div class="rsva-panel">
-		<h3>이동 기록 @if ($stock_log_item)<small>{{ lang('commerce.admin_stock_17') }}</small> <a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminStock') }}">{{ lang('commerce.admin_stock_18') }}</a>@endif</h3>
+		<h3>{{ lang('commerce.adm_stock_log') }} @if ($stock_log_item)<small>{{ lang('commerce.admin_stock_17') }}</small> <a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminStock') }}">{{ lang('commerce.admin_stock_18') }}</a>@endif</h3>
 		@if (count($stock_logs))
 		<table class="rsva-table">
 			<thead><tr><th>{{ lang('commerce.admin_stock_19') }}</th><th>{{ lang('commerce.admin_stock_20') }}</th><th>{{ lang('commerce.admin_stock_5') }}</th><th style="text-align:right">{{ lang('commerce.admin_stock_21') }}</th><th style="text-align:right">{{ lang('commerce.admin_stock_22') }}</th><th>{{ lang('commerce.admin_stock_8') }}</th></tr></thead>
@@ -87,7 +87,7 @@
 				@foreach ($stock_logs as $lg)
 				<tr>
 					<td>{{ zdate($lg->regdate, 'Y.m.d H:i') }}</td>
-					<td>#{{ $lg->item_srl }}@if ((int)$lg->option_srl > 0) / 옵션 {{ $lg->option_srl }}@endif</td>
+					<td>#{{ $lg->item_srl }}@if ((int)$lg->option_srl > 0) / {{ lang('commerce.adm_stock_option') }} {{ $lg->option_srl }}@endif</td>
 					<td>
 						@if ($lg->type === 'in')<span class="rsva-st rsva-st-confirmed">{{ lang('commerce.admin_stock_23') }}</span>
 						@elseif ($lg->type === 'out')<span class="rsva-st">{{ lang('commerce.admin_stock_24') }}</span>

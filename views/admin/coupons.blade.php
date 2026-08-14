@@ -33,14 +33,14 @@
 				<td style="font-weight:700">{{ $c->title }}</td>
 				<td>{{ $c->code ?: '-' }}</td>
 				<td>
-					{{ $c->discount_type === 'percent' ? $c->discount_value . '%' : number_format($c->discount_value) . '원' }}
-					@if ($c->discount_type === 'percent' && $c->max_discount > 0)<br /><small style="color:#9aa1ab">최대 {{ number_format($c->max_discount) }}원</small>@endif
+					{{ $c->discount_type === 'percent' ? $c->discount_value . '%' : shop_money_base($c->discount_value) }}
+					@if ($c->discount_type === 'percent' && $c->max_discount > 0)<br /><small style="color:#9aa1ab">{{ sprintf(lang('commerce.adm_coupon_max'), shop_money_base($c->max_discount)) }}</small>@endif
 				</td>
-				<td>{{ $c->min_order > 0 ? number_format($c->min_order) . '원 이상' : '-' }}<br /><small style="color:#9aa1ab">1인 {{ $c->per_member }}회</small></td>
+				<td>{{ $c->min_order > 0 ? sprintf(lang('commerce.adm_coupon_min_order'), shop_money_base($c->min_order)) : '-' }}<br /><small style="color:#9aa1ab">{{ sprintf(lang('commerce.adm_coupon_per_member'), $c->per_member) }}</small></td>
 				<td><small>{{ $c->use_start ? zdate($c->use_start, 'Y.m.d') : '' }} ~ {{ $c->use_end ? zdate($c->use_end, 'Y.m.d') : '' }}</small></td>
 				<td>{{ number_format($c->used_count) }} / {{ $c->total_limit > 0 ? number_format($c->total_limit) : '∞' }}
-					<br /><small style="color:#9aa1ab">발급 {{ number_format($issue_counts[(int)$c->coupon_srl] ?? 0) }}</small></td>
-				<td><span class="rsva-st {{ $c->status === 'Y' ? 'rsva-st-confirmed' : '' }}">{{ $c->status === 'Y' ? '활성' : '중지' }}</span></td>
+					<br /><small style="color:#9aa1ab">{{ sprintf(lang('commerce.adm_coupon_issued'), number_format($issue_counts[(int)$c->coupon_srl] ?? 0)) }}</small></td>
+				<td><span class="rsva-st {{ $c->status === 'Y' ? 'rsva-st-confirmed' : '' }}">{{ $c->status === 'Y' ? lang('commerce.adm_coupon_active') : lang('commerce.adm_coupon_stopped') }}</span></td>
 				<td>
 					<form action="{{ getUrl('') }}" method="post" class="rsva-inline">
 						<input type="hidden" name="module" value="admin" />
@@ -49,7 +49,7 @@
 						<div><input type="text" name="target" placeholder="{{ lang('commerce.admin_coupons_26') }}" style="width:140px" /></div>
 						<div><button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_coupons_24') }}</button></div>
 					</form>
-					<form action="{{ getUrl('') }}" method="post" style="display:inline-block;margin-top:4px" onsubmit="return confirm('쿠폰을 삭제할까요? 발급 이력은 남습니다.')">
+					<form action="{{ getUrl('') }}" method="post" style="display:inline-block;margin-top:4px" onsubmit="return confirm('{{ lang('commerce.adm_coupon_delete_ask') }}')">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminDeleteCoupon" />
 						<input type="hidden" name="coupon_srl" value="{{ $c->coupon_srl }}" />

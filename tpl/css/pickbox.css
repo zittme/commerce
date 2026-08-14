@@ -1,0 +1,24 @@
+/* 검색형 선택 상자 — 관리 화면과 주문서가 함께 쓴다 */
+.zmc-pick { position: relative; display: inline-block; }
+/* 주문서 폼은 라벨이 inline 이라 폭을 채워야 아래로 내려간다 */
+.shp-row .zmc-pick { display: block; width: 100%; }
+.zmc-pick > input[type="text"] { width: 100%; box-sizing: border-box; }
+.zmc-pick-list {
+	position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 2px);
+	max-height: 260px; overflow-y: auto;
+	border: 1px solid var(--shp-border, #d5dae1); border-radius: 10px;
+	background: var(--shp-card, #fff);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+.zmc-pick-item { padding: 8px 12px; font-size: 13.5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zmc-pick-item:hover, .zmc-pick-item.is-on { background: var(--shp-brand-soft, rgba(38, 119, 227, .08)); }
+.zmc-pick-empty { padding: 10px 12px; font-size: 13px; color: var(--shp-sub, #8b95a1); }
+
+:root[data-theme="dark"] .zmc-pick-list {
+	border-color: #333a45; background: #1c212a; box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) .zmc-pick-list {
+		border-color: #333a45; background: #1c212a; box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+	}
+}

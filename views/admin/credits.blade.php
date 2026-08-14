@@ -13,7 +13,7 @@
 		@if ($f_target !== '' && !$credit_member)
 		<p class="rsva-empty">{{ lang('commerce.admin_credits_4') }}</p>
 		@elseif ($credit_member)
-		<p style="margin:0 0 10px;font-size:14px"><strong>{{ $credit_member->nick_name }}</strong> ({{ $credit_member->user_id ?: $credit_member->email_address }}) — 잔액 <strong style="color:#2677e3">{{ number_format($credit_balance) }}원</strong></p>
+		<p style="margin:0 0 10px;font-size:14px"><strong>{{ $credit_member->nick_name }}</strong> ({{ $credit_member->user_id ?: $credit_member->email_address }}) / <strong style="color:#2677e3">{{ sprintf(lang('commerce.adm_credit_balance'), shop_money_base($credit_balance)) }}</strong></p>
 		<form action="{{ getUrl('') }}" method="post" class="rsva-inline">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminAdjustCredit" />
@@ -32,7 +32,7 @@
 					<td><small>{{ zdate($cl->regdate, 'Y.m.d H:i') }}</small></td>
 					<td style="{{ $cl->amount >= 0 ? 'color:#2677e3' : 'color:#c0392b' }};font-weight:600">{{ $cl->amount >= 0 ? '+' : '' }}{{ number_format($cl->amount) }}</td>
 					<td>{{ number_format($cl->balance_after) }}</td>
-					<td>{{ ['earn'=>'적립','spend'=>'사용','refund'=>'환불','earn_cancel'=>'적립 회수','admin'=>'관리자'][$cl->type] ?? $cl->type }}</td>
+					<td>{{ ['earn'=>lang('commerce.adm_credit_earn'),'spend'=>lang('commerce.adm_credit_spend'),'refund'=>lang('commerce.adm_credit_refund'),'earn_cancel'=>lang('commerce.adm_credit_earn_cancel'),'admin'=>lang('commerce.adm_credit_admin')][$cl->type] ?? $cl->type }}</td>
 					<td>{{ $cl->order_srl > 0 ? $cl->order_srl : '-' }}</td>
 					<td>{{ $cl->memo ?: '-' }}</td>
 				</tr>
@@ -60,7 +60,7 @@
 				</td>
 					<td style="{{ $cl->amount >= 0 ? 'color:#2677e3' : 'color:#c0392b' }};font-weight:600">{{ $cl->amount >= 0 ? '+' : '' }}{{ number_format($cl->amount) }}</td>
 					<td>{{ number_format($cl->balance_after) }}</td>
-					<td>{{ ['earn'=>'적립','spend'=>'사용','refund'=>'환불','earn_cancel'=>'적립 회수','admin'=>'관리자'][$cl->type] ?? $cl->type }}</td>
+					<td>{{ ['earn'=>lang('commerce.adm_credit_earn'),'spend'=>lang('commerce.adm_credit_spend'),'refund'=>lang('commerce.adm_credit_refund'),'earn_cancel'=>lang('commerce.adm_credit_earn_cancel'),'admin'=>lang('commerce.adm_credit_admin')][$cl->type] ?? $cl->type }}</td>
 				</tr>
 				@endforeach
 			</tbody>

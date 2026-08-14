@@ -58,7 +58,8 @@ class Combo
 				$value = trim((string)$value);
 				if ($value !== '' && !in_array($value, $values, true))
 				{
-					$values[] = mb_substr($value, 0, 60);
+					// 다국어를 연결한 값은 '$user_lang->코드' 로 저장되므로 접두어만큼 여유를 둔다
+					$values[] = mb_substr($value, 0, 120);
 				}
 			}
 			if ($name === '' || !count($values))
@@ -185,6 +186,73 @@ class Combo
 	}
 
 	/**
+	 * 조합 옵션 하나의 표시 이름. 축 값에서 현재 언어로 만든다.
+	 *
+	 * 축이 없거나 조합이 축에서 빠졌으면 저장해 둔 이름을 그대로 쓴다.
+	 *
+	 * @param mixed $item 상품 (option_axes 를 가진 객체)
+	 * @param mixed $option 옵션 (combo, option_label)
+	 * @return string
+	 */
+	public static function optionLabel($item, $option): string
+	{
+		$saved = trim((string)($option->option_label ?? $option->option_name ?? ''));
+		if (empty($option->combo))
+		{
+			return $saved;
+		}
+		$axes = self::axes($item->option_axes ?? '');
+		if (!count($axes))
+		{
+			return $saved;
+		}
+		foreach ($axes as $axis)
+		{
+			foreach ($axis->items as $axis_item)
+			{
+				$axis_item->value = Lang::text($axis_item->value);
+			}
+		}
+		$label = self::labelFromKey($axes, self::indexKey($axes, $option->combo));
+		return $label !== '' ? $label : $saved;
+	}
+
+	/**
+	 * 자리 번호 열쇠(indexKey)로 지금 축 값에서 이름을 다시 만든다.
+	 *
+	 * 저장된 이름은 조합을 만든 시점의 글자로 굳으므로, 그 뒤에 축 값에
+	 * 다국어 코드를 연결해도 따라오지 않는다. 화면에 낼 때마다 다시 만든다.
+	 *
+	 * @param array $axes 축 정의 (값이 이미 풀린 상태여도 된다)
+	 * @param string $key '0=0|1=3' 형태
+	 * @return string 만들 수 없으면 빈 문자열
+	 */
+	public static function labelFromKey(array $axes, string $key): string
+	{
+		if ($key === '')
+		{
+			return '';
+		}
+		$parts = [];
+		foreach (explode('|', $key) as $pair)
+		{
+			$pos = strpos($pair, '=');
+			if ($pos === false)
+			{
+				return '';
+			}
+			$ai = (int)substr($pair, 0, $pos);
+			$vi = (int)substr($pair, $pos + 1);
+			if (!isset($axes[$ai]->items[$vi]))
+			{
+				return '';
+			}
+			$parts[] = (string)$axes[$ai]->items[$vi]->value;
+		}
+		return mb_substr(implode(self::SEPARATOR, $parts), 0, 250);
+	}
+
+	/**
 	 * 조합 비교용 열쇠. 축 차례를 그대로 따른다.
 	 *
 	 * @param mixed $combo 배열 또는 JSON
@@ -204,6 +272,83 @@ class Combo
 		foreach ($combo as $name => $value)
 		{
 			$parts[] = $name . '=' . $value;
+		}
+		return implode('|', $parts);
+	}
+
+	/**
+	 * 구매 화면 대조용 열쇠. 축·값의 자리 번호만 쓴다. ("0=1|1=0")
+	 *
+	 * 화면에 나가는 글자는 코어가 다국어 코드를 치환하므로 값이 언어마다 달라진다.
+	 * 자리 번호는 치환 대상이 아니므로 어떤 언어에서도 같은 열쇠가 나온다.
+	 *
+	 * @param array<int, object> $axes axes() 결과
+	 * @param mixed $combo 배열 또는 JSON
+	 * @return string 축을 하나라도 못 찾으면 빈 문자열
+	 */
+	public static function indexKey(array $axes, $combo): string
+	{
+		if (is_string($combo))
+		{
+			$combo = json_decode($combo, true);
+		}
+		if (!is_array($combo) || !count($axes))
+		{
+			return '';
+		}
+
+		// 축 이름·값에 다국어 문구를 연결하면 저장된 조합은 옛 표기를 들고 있을 수 있다.
+		// 원문이 어긋나면 현재 언어로 푼 글자끼리 한 번 더 맞춰 본다.
+		$same = function($a, $b) {
+			if ((string)$a === (string)$b)
+			{
+				return true;
+			}
+			return Lang::text((string)$a) === Lang::text((string)$b);
+		};
+
+		$combo_values = [];
+		foreach ($combo as $combo_name => $combo_value)
+		{
+			$combo_values[] = [$combo_name, $combo_value];
+		}
+
+		$parts = [];
+		foreach ($axes as $ai => $axis)
+		{
+			$value = null;
+			foreach ($combo_values as $pair)
+			{
+				if ($same($pair[0], $axis->name))
+				{
+					$value = $pair[1];
+					break;
+				}
+			}
+			// 이름조차 못 찾으면 자리 순서로 본다 (조합은 축 차례대로 만들어진다)
+			if ($value === null && isset($combo_values[$ai]))
+			{
+				$value = $combo_values[$ai][1];
+			}
+			if ($value === null)
+			{
+				return '';
+			}
+
+			$vi = -1;
+			foreach ($axis->items as $index => $item)
+			{
+				if ($same($item->value, $value))
+				{
+					$vi = $index;
+					break;
+				}
+			}
+			if ($vi < 0)
+			{
+				return '';
+			}
+			$parts[] = $ai . '=' . $vi;
 		}
 		return implode('|', $parts);
 	}

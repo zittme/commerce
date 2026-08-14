@@ -2,6 +2,7 @@
 @load('css/shop.css')
 
 <div class="shp">
+	@include('_currency')
 	@php
 	// 상품 이미지 목록: images(json 배열)가 있으면 갤러리, 없으면 대표 이미지 한 장
 	$shp_images = [];
@@ -26,7 +27,7 @@
 	@endphp
 
 	<nav class="shp-breadcrumb">
-		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_all ?? '전체' }}</a>
+		<a href="{{ getUrl('', 'mid', $mid, 'v', 'list') }}">{{ $lang->shop_all ?? '전체' }}</a>
 		@foreach ($breadcrumb ?? [] as $bc)
 		<span class="shp-bc-sep">&gt;</span>
 		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList', 'category', $bc->category_srl) }}">{{ $bc->title }}</a>
@@ -126,24 +127,18 @@
 			<input type="hidden" name="images" id="shpReviewImages" value="" />
 			@if ($shp_rc_text > 0 || $shp_rc_photo > 0)
 			<p class="shp-review-reward">
-				@if ($shp_rc_text > 0)리뷰 작성 시 <strong>{{ shop_money($shp_rc_text) }}</strong>@endif
-				@if ($shp_rc_photo > 0)@if ($shp_rc_text > 0), @endif사진·영상 첨부 시 <strong>{{ shop_money($shp_rc_photo) }}</strong>@endif
-				적립 (상품당 첫 리뷰 1회)
+				@if ($shp_rc_text > 0){!! sprintf(escape($lang->shop_review_reward_note), '<strong>' . escape(shop_money($shp_rc_text)) . '</strong>') !!}@endif
+				@if ($shp_rc_photo > 0)@if ($shp_rc_text > 0), @endif{!! sprintf(escape($lang->shop_review_reward_photo), '<strong>' . escape(shop_money($shp_rc_photo)) . '</strong>') !!}@endif
+				({{ $lang->shop_review_reward_once }})
 			</p>
 			@endif
 			<div class="shp-qna-form-row">
 				<label>{{ $lang->shop_rating ?? '평점' }}</label>
-				<select name="rating">
-					<option value="5">5</option>
-					<option value="4">4</option>
-					<option value="3">3</option>
-					<option value="2">2</option>
-					<option value="1">1</option>
-				</select>
+				<span class="shp-starpick">@foreach ([5, 4, 3, 2, 1] as $shp_star_v)<input type="radio" id="shpStarItem{{ $shp_star_v }}" name="rating" value="{{ $shp_star_v }}" @if ($shp_star_v === 5) checked @endif /><label for="shpStarItem{{ $shp_star_v }}" aria-label="{{ $shp_star_v }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 5.9 6.5 1-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5L2.6 9.4l6.5-1z"/></svg></label>@endforeach</span>
 			</div>
 			<textarea name="content" rows="3" required placeholder="{{ $lang->shop_write_review ?? '리뷰 작성' }}"></textarea>
 			<div class="shp-qna-form-row">
-				<label>사진·영상 (최대 5개)</label>
+				<label>{{ $lang->shop_review_media_label }}</label>
 				<input type="file" id="shpReviewFile" accept="image/*,video/mp4,video/quicktime,video/webm" multiple />
 			</div>
 			<div id="shpReviewPreview" class="shp-review-media"></div>
@@ -166,7 +161,7 @@
 					wrap.innerHTML = (/\.(mp4|mov|webm)$/i.test(u)
 						? '<video src="' + u + '" preload="metadata"></video>'
 						: '<img src="' + u + '" alt="" />')
-						+ '<button type="button" aria-label="삭제">&times;</button>';
+						+ '<button type="button" aria-label="{{ $lang->shop_delete }}">&times;</button>';
 					wrap.querySelector('button').addEventListener('click', function () {
 						urls.splice(i, 1);
 						render();
@@ -184,9 +179,9 @@
 						.then(function (r) { return r.json(); })
 						.then(function (res) {
 							if (res && !res.error && res.url) { urls.push(res.url); render(); }
-							else alert(res && res.message ? res.message : '업로드에 실패했습니다.');
+							else alert(res && res.message ? res.message : {!! json_encode($lang->msg_shop_upload_failed) !!});
 						})
-						.catch(function () { alert('업로드에 실패했습니다.'); });
+						.catch(function () { alert({!! json_encode($lang->msg_shop_upload_failed) !!}); });
 				});
 				fileEl.value = '';
 			});
@@ -332,40 +327,44 @@
 				if (basicRow) basicRow.style.display = 'none';
 
 				// 조합 -> option 요소 지도
+				// 열쇠는 축·값의 자리 번호다. 표시 글자는 언어마다 달라지므로 대조에 쓰지 않는다
 				var comboMap = {};
 				Array.prototype.forEach.call(basicSel.options, function (op) {
-					var raw = op.getAttribute('data-combo');
-					if (!raw) return;
-					try { comboMap[comboKey(JSON.parse(raw))] = op; } catch (e) {}
+					var key = op.getAttribute('data-combokey');
+					if (key) comboMap[key] = op;
 				});
 
-				function comboKey(obj) {
-					var parts = [];
-					for (var k in obj) { parts.push(k + '=' + obj[k]); }
-					return parts.join('|');
-				}
-
 				// 값 하나가 들어간 조합이 모두 품절이면 그 값은 고를 수 없다
-				function soldout(axisName, value) {
+				function soldout(axisIndex, valueIndex) {
+					var want = axisIndex + '=' + valueIndex;
 					var any = false;
 					for (var key in comboMap) {
-						if (key.indexOf(axisName + '=' + value) < 0) continue;
+						if (key.split('|').indexOf(want) < 0) continue;
 						if (!comboMap[key].disabled) return false;
 						any = true;
 					}
 					return any;
 				}
 
+				// 자리 번호로 고른 값의 표시 글자를 찾는다
+				function labelOf(row, index) {
+					var chip = row.querySelector('[data-chip="' + index + '"]');
+					if (chip) return chip.getAttribute('data-label') || '';
+					var sel = row.querySelector('select.shp-axis');
+					if (sel && sel.selectedIndex >= 0) return sel.options[sel.selectedIndex].textContent.trim();
+					return '';
+				}
+
 				function refreshChips() {
 					axesWrap.querySelectorAll('[data-axis-row]').forEach(function (row) {
-						var name = row.getAttribute('data-axis-row');
+						var axisIndex = row.getAttribute('data-axis-row');
 						var sel = row.querySelector('.shp-axis');
 						var picked = row.querySelector('[data-picked]');
-						if (picked) picked.textContent = sel && sel.value ? ' : ' + sel.value : '';
+						if (picked) picked.textContent = sel && sel.value !== '' ? ' : ' + labelOf(row, sel.value) : '';
 						row.querySelectorAll('[data-chip]').forEach(function (chip) {
 							var value = chip.getAttribute('data-chip');
 							chip.classList.toggle('is-on', !!sel && sel.value === value);
-							var out = soldout(name, value);
+							var out = soldout(axisIndex, value);
 							chip.classList.toggle('is-soldout', out);
 							chip.disabled = out;
 						});
@@ -387,8 +386,8 @@
 					refreshChips();
 					if (!done) return;
 					var op = comboMap[parts.join('|')];
-					if (!op) { alert('고르신 조합은 준비되어 있지 않습니다.'); reset(); return; }
-					if (op.disabled) { alert('고르신 조합은 품절입니다.'); reset(); return; }
+					if (!op) { alert({!! json_encode($lang->msg_shop_combo_unavailable) !!}); reset(); return; }
+					if (op.disabled) { alert({!! json_encode($lang->msg_shop_combo_soldout) !!}); reset(); return; }
 					basicSel.value = op.value;
 					basicSel.dispatchEvent(new Event('change', { bubbles: true }));
 					reset();
@@ -411,7 +410,25 @@
 		var buyBtn = document.getElementById('shpBuyBtn');
 		var cartBtn = document.getElementById('shpCartBtn');
 
+		var shpUnit = '{{ $shp_unit_label }}';
+		var shpZero = {{ $shp_base_zero ? 'true' : 'false' }};
+		{{-- 표시 통화 - 서버 렌더(shop_money)와 같은 통화·환율로 JS 합계도 환산한다 --}}
+		var shpDisp = '{{ $shp_currency }}';
+		var shpDispZero = {{ $shp_currency_zero ? 'true' : 'false' }};
+		var shpDispSym = '{{ $shp_currency_symbol }}';
+		var shpWon = {{ $shp_won_suffix ? 'true' : 'false' }};
+		var shpDispRate = {{ $shp_currency_rate }};
 		function fmt(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+		// 금액은 기준 통화 최소단위 정수. 표시 통화로 환산해 서버 표기와 같은 모양으로 맞춘다: 12,000원 / MXN 89.00
+		function smoney(minor) {
+			var major = (shpZero ? minor : minor / 100) / shpDispRate;
+			// KRW 는 한국어 화면에서만 접미사 '원' 을 쓴다 (서버 표기와 맞춘다)
+			if (shpDisp === 'KRW') return shpWon ? fmt(Math.round(major)) + '원' : 'KRW ' + fmt(Math.round(major));
+			var pre = shpDispSym || (shpDisp + ' ');
+			if (shpDispZero) return pre + fmt(Math.round(major));
+			var cents = Math.round(major * 100);
+			return pre + fmt(Math.floor(cents / 100)) + '.' + ('0' + (cents % 100)).slice(-2);
+		}
 		function clampQty(q) {
 			if (isNaN(q) || q < 1) q = 1;
 			if (maxQty > 0 && q > maxQty) q = maxQty;
@@ -425,12 +442,12 @@
 			row.innerHTML =
 				'<span class="shp-select-name"></span>' +
 				'<div class="shp-stepper">' +
-					'<button type="button" class="shp-step" data-step="-1" aria-label="수량 줄이기">&minus;</button>' +
+					'<button type="button" class="shp-step" data-step="-1" aria-label="{{ $lang->shop_qty_down }}">&minus;</button>' +
 					'<input class="shp-qty" type="number" value="' + qty + '" min="1"' + (maxQty > 0 ? ' max="' + maxQty + '"' : '') + ' />' +
-					'<button type="button" class="shp-step" data-step="1" aria-label="수량 늘리기">+</button>' +
+					'<button type="button" class="shp-step" data-step="1" aria-label="{{ $lang->shop_qty_up }}">+</button>' +
 				'</div>' +
 				'<span class="shp-select-price"></span>' +
-				(removable ? '<button type="button" class="shp-row-del" aria-label="삭제"><svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>' : '') +
+				(removable ? '<button type="button" class="shp-row-del" aria-label="{{ $lang->shop_delete }}"><svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>' : '') +
 				'<input type="hidden" name="option_srls[]" value="' + optSrl + '" />' +
 				'<input type="hidden" name="qtys[]" value="' + qty + '" />';
 			row.querySelector('.shp-select-name').textContent = label;
@@ -447,17 +464,17 @@
 				qtyInput.value = q;
 				row.querySelector('input[name="qtys[]"]').value = q;
 				var unit = parseInt(row.getAttribute('data-unit'), 10) || 0;
-				row.querySelector('.shp-select-price').textContent = fmt(unit * q) + '원';
+				row.querySelector('.shp-select-price').textContent = smoney(unit * q);
 				totalQty += q;
 				totalPrice += unit * q;
 			});
-			totalQtyEl.textContent = '총 ' + totalQty + '개';
-			totalEl.textContent = fmt(totalPrice) + '원';
+			totalQtyEl.textContent = {!! json_encode($lang->shop_total_qty) !!}.replace('%d', totalQty);
+			totalEl.textContent = smoney(totalPrice);
 			// 적립 혜택: 현재 선택 기준 예상 적립금
 			var creditEl = document.getElementById('shpCreditEarn');
 			if (creditEl) {
 				var creditRate = parseFloat(creditEl.getAttribute('data-credit-rate')) || 0;
-				creditEl.textContent = creditRate > 0 && totalPrice > 0 ? '(예상 ' + fmt(Math.floor(totalPrice * creditRate / 100)) + '원)' : '';
+				creditEl.textContent = creditRate > 0 && totalPrice > 0 ? {!! json_encode($lang->shop_credit_estimate) !!}.replace('%s', smoney(Math.floor(totalPrice * creditRate / 100))) : '';
 			}
 			var empty = rows.length === 0;
 			if (buyBtn) buyBtn.disabled = empty;

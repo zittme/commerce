@@ -6,7 +6,7 @@
 		<input type="hidden" name="act" value="dispCommerceAdminOrders" />
 		<select name="f_status">
 			<option value="">{{ lang('commerce.admin_orders_1') }}</option>
-			@foreach (['pending'=>'결제 대기','paid'=>'결제 완료','cancelled'=>'취소','expired'=>'만료'] as $key => $label)
+			@foreach (['pending'=>lang('commerce.st_log_pending'),'paid'=>lang('commerce.st_log_paid'),'cancelled'=>lang('commerce.st_order_cancelled'),'expired'=>lang('commerce.st_order_expired')] as $key => $label)
 			<option value="{{ $key }}" @if($filters->status === $key) selected @endif>{{ $label }}</option>
 			@endforeach
 		</select>
@@ -35,8 +35,8 @@
 				<td><strong>{{ $o->order_code }}</strong></td>
 				<td>{{ $o->orderer_name }}<br /><small style="color:#9aa1ab">{{ $o->orderer_phone }}</small></td>
 				<td>{{ shop_money_in($o->payment_price, $o->currency ?? 'KRW') }}</td>
-				<td><span class="rsva-st {{ $o->status === 'paid' ? 'rsva-st-confirmed' : ($o->status === 'pending' ? 'rsva-st-hold' : 'rsva-st-cancelled') }}">{{ ['pending'=>'결제대기','paid'=>'결제완료','cancelled'=>'취소','failed'=>'실패','expired'=>'만료'][$o->status] ?? $o->status }}</span></td>
-				<td>{{ $os ? (['pending'=>'-','paid'=>'발주 대기','preparing'=>'배송준비','shipping'=>'배송중','delivered'=>'배송완료','cancelled'=>'취소','refunded'=>'환불'][$os->status] ?? $os->status) : '-' }}</td>
+				<td><span class="rsva-st {{ $o->status === 'paid' ? 'rsva-st-confirmed' : ($o->status === 'pending' ? 'rsva-st-hold' : 'rsva-st-cancelled') }}">{{ ['pending'=>lang('commerce.st_order_pending'),'paid'=>lang('commerce.st_order_paid'),'cancelled'=>lang('commerce.st_order_cancelled'),'failed'=>lang('commerce.st_order_failed'),'expired'=>lang('commerce.st_order_expired')][$o->status] ?? $o->status }}</span></td>
+				<td>{{ $os ? (['pending'=>'-','paid'=>lang('commerce.st_sel_paid'),'preparing'=>lang('commerce.st_sel_preparing'),'shipping'=>lang('commerce.st_sel_shipping'),'delivered'=>lang('commerce.st_sel_delivered'),'cancelled'=>lang('commerce.st_order_cancelled'),'refunded'=>lang('commerce.st_sel_refunded')][$os->status] ?? $os->status) : '-' }}</td>
 				<td><small>{{ zdate($o->regdate, 'm.d H:i') }}</small></td>
 				<td>
 					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $o->order_srl) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_orders_14') }}</a>
@@ -70,8 +70,8 @@
 	btn.addEventListener('click', function () {
 		var srls = [];
 		picks().forEach(function (el) { if (el.checked) srls.push(el.value); });
-		if (!srls.length) { alert('주문서를 출력할 주문을 선택하세요.'); return; }
-		if (srls.length > 50) { alert('한 번에 최대 50건까지 출력할 수 있습니다.'); return; }
+		if (!srls.length) { alert({!! json_encode(lang('commerce.adm_print_pick')) !!}); return; }
+		if (srls.length > 50) { alert({!! json_encode(lang('commerce.adm_print_limit')) !!}); return; }
 		var u = new URL(btn.getAttribute('data-url'), location.href);
 		u.searchParams.set('order_srls', srls.join(','));
 		window.open(u.toString(), '_blank', 'noopener');

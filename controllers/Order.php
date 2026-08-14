@@ -90,13 +90,14 @@ class Order extends Base
 
 		$item_total = $resolved->item_total;
 		$delivery_fee = CartModel::calcShipFee($resolved);
-		// 도서·산간 등 지역 추가 배송비 (우편번호 기준)
+		// 지역 추가 배송비. 지역별 면제 기준을 보므로 상품 금액도 함께 넘긴다
 		$delivery_fee += CartModel::extraShipFee(
 			(string)\Context::get('zipcode'),
 			(string)\Context::get('address1'),
 			self::filterCountry((string)\Context::get('country')),
 			(string)\Context::get('state'),
-			(string)\Context::get('city')
+			(string)\Context::get('city'),
+			(int)$item_total
 		);
 
 		// 재고 원자 선점 — 실패 시 이미 선점한 것 전부 롤백
@@ -121,11 +122,13 @@ class Order extends Base
 
 		$order_srl = getNextSequence();
 
-		// 주문 통화 — 표시 통화로 결제한다. 외화 주문은 KRW 원장 기반의 쿠폰·적립금을
-		// 지원하지 않으므로 입력을 무시한다 (주문서 화면도 외화에서는 해당 칸을 숨긴다)
+		// 주문 통화 — 표시 통화로 결제한다. 기준 통화 주문이 기본이고, 기준이 KRW 인
+		// 상점의 외화 병행 판매 주문만 환율이 붙는다. 병행 판매 주문은 기준 통화 원장의
+		// 쿠폰·적립금을 지원하지 않으므로 입력을 무시한다 (주문서 화면도 해당 칸을 숨긴다)
+		$base_currency = \Zittme\Modules\Commerce\Models\Money::base();
 		$order_currency = \Zittme\Modules\Commerce\Models\Money::current();
 		$exchange_rate = 1.0;
-		if ($order_currency !== 'KRW')
+		if ($order_currency !== $base_currency)
 		{
 			$exchange_rate = \Zittme\Modules\Commerce\Models\Money::rate($order_currency);
 			if ($exchange_rate <= 0)
@@ -207,9 +210,9 @@ class Order extends Base
 			}
 		}
 
-		// 외화 주문 — 상품·배송비를 주문 통화(최소단위 정수)로 재계산한다.
+		// 외화 병행 판매 주문 — 상품·배송비를 주문 통화(최소단위 정수)로 재계산한다.
 		// 통화별 등록가가 있으면 그 값을, 없으면 설정에 따라 환산가를 쓴다.
-		if ($order_currency !== 'KRW')
+		if ($order_currency !== $base_currency)
 		{
 			$fx_item_total = 0;
 			foreach ($entries as $entry)
@@ -256,7 +259,7 @@ class Order extends Base
 			'credit_used' => $credit_used,
 			'payment_price' => $payment_price,
 			'currency' => $order_currency,
-			'exchange_rate' => $order_currency === 'KRW' ? '' : (string)$exchange_rate,
+			'exchange_rate' => $order_currency === $base_currency ? '' : (string)$exchange_rate,
 			'pay_order_srl' => 0,
 			'status' => self::ORDER_PENDING,
 			'memo' => '',
@@ -302,6 +305,10 @@ class Order extends Base
 				'option_srl' => $entry->option ? (int)$entry->option->option_srl : 0,
 				'item_name' => (string)$entry->item->item_name,
 				'option_name' => $entry->option ? (string)$entry->option->option_label : '',
+				// 명세서·출고용 SKU 스냅샷 — 옵션 SKU 우선, 없으면 상품 코드
+				'sku' => $entry->option && trim((string)($entry->option->sku ?? '')) !== ''
+					? trim((string)$entry->option->sku)
+					: trim((string)($entry->item->item_code ?? '')),
 				'thumb' => (string)($entry->item->thumb ?? ''),
 				'price' => $entry->unit_price,
 				'qty' => $entry->qty,
@@ -520,11 +527,7 @@ class Order extends Base
 				$distinct[(int)$ci->item_srl] = true;
 			}
 		}
-		if ($member_srl > 0 && count($distinct) === 1)
-		{
-			$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', array_key_first($distinct), 'review', '1'));
-			return;
-		}
+		// 확정 후에는 주문 상세로 돌아가 확정 상태를 보여준다. 리뷰는 거기서 이어 쓴다
 		$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order->order_code, 'gp', (string)\Context::get('guest_password'), 'review', '1'));
 	}
 

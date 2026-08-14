@@ -36,26 +36,26 @@
 
 <div id="zlfPanel" aria-hidden="true">
 	<div class="zlf-tabs">
-		<button type="button" class="is-on" data-lf-tab="pick">등록된 문구</button>
-		<button type="button" data-lf-tab="new">새로 만들기</button>
+		<button type="button" class="is-on" data-lf-tab="pick">{{ lang('commerce.adm_lang_tab_pick') }}</button>
+		<button type="button" data-lf-tab="new">{{ lang('commerce.adm_lang_tab_new') }}</button>
 	</div>
 	<div data-lf-body="pick">
-		<input type="search" class="zlf-search" placeholder="문구 또는 코드 검색" id="zlfSearch" />
-		<ul class="zlf-list" id="zlfList"><li class="zlf-empty">불러오는 중…</li></ul>
+		<input type="search" class="zlf-search" placeholder="{{ lang('commerce.adm_lang_search') }}" id="zlfSearch" />
+		<ul class="zlf-list" id="zlfList"><li class="zlf-empty">{{ lang('commerce.adm_lang_loading') }}</li></ul>
 	</div>
 	<div data-lf-body="new" hidden>
 		@foreach (Zittme\Modules\Commerce\Models\Lang::languages() as $zlf_code => $zlf_label)
 		<label class="zlf-row"><span>{{ $zlf_label }}</span><input type="text" data-lf-input="{{ $zlf_code }}" /></label>
 		@endforeach
 		@if (count(Zittme\Modules\Commerce\Models\Lang::languages()) < 2)
-		<p class="zlf-hint">사이트에 켜둔 언어가 하나뿐입니다. 관리자 &gt; 기본 설정에서 언어를 더 켜면 여기에 함께 나옵니다.</p>
+		<p class="zlf-hint">{{ lang('commerce.adm_lang_one_only') }}</p>
 		@endif
-		<div class="zlf-foot"><button type="button" class="zlf-save" id="zlfSave">저장하고 사용</button></div>
+		<div class="zlf-foot"><button type="button" class="zlf-save" id="zlfSave">{{ lang('commerce.adm_lang_save_use') }}</button></div>
 	</div>
 	<div class="zlf-current" id="zlfCurrent" hidden>
-		<span>연결됨 <b id="zlfCodeName"></b></span>
-		<button type="button" id="zlfEdit">고치기</button>
-		<button type="button" id="zlfClear">연결 해제</button>
+		<span>{{ lang('commerce.adm_lang_linked') }} <b id="zlfCodeName"></b></span>
+		<button type="button" id="zlfEdit">{{ lang('commerce.adm_lang_edit') }}</button>
+		<button type="button" id="zlfClear">{{ lang('commerce.adm_lang_unlink') }}</button>
 	</div>
 </div>
 
@@ -101,11 +101,11 @@ jQuery(function ($) {
 	}
 
 	function loadList() {
-		listEl.innerHTML = '<li class="zlf-empty">불러오는 중…</li>';
+		listEl.innerHTML = '<li class="zlf-empty">' + {!! json_encode(lang('commerce.adm_lang_loading')) !!} + '</li>';
 		exec_json('commerce.procCommerceAdminGetLangCodes', { keyword: searchEl.value }, function (ret) {
 			var codes = ret.codes || [];
 			if (!codes.length) {
-				listEl.innerHTML = '<li class="zlf-empty">등록된 문구가 없습니다. 새로 만들어 주세요.</li>';
+				listEl.innerHTML = '<li class="zlf-empty">' + {!! json_encode(lang('commerce.adm_lang_empty')) !!} + '</li>';
 				return;
 			}
 			listEl.innerHTML = '';
@@ -118,7 +118,7 @@ jQuery(function ($) {
 				listEl.appendChild(li);
 			});
 		}, function () {
-			listEl.innerHTML = '<li class="zlf-empty">목록을 불러오지 못했습니다.</li>';
+			listEl.innerHTML = '<li class="zlf-empty">' + {!! json_encode(lang('commerce.adm_lang_list_failed')) !!} + '</li>';
 		});
 	}
 
@@ -159,7 +159,7 @@ jQuery(function ($) {
 		}, function (ret) {
 			apply(ret.code, ret.value);
 		}, function (ret) {
-			alert((ret && ret.message) || '저장하지 못했습니다.');
+			alert((ret && ret.message) || {!! json_encode(lang('commerce.adm_save_failed')) !!});
 		});
 	});
 

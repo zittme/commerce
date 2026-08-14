@@ -7,6 +7,8 @@
 	<column name="option_srl" type="bigint" notnull="notnull" default="0" />
 	<column name="item_name" type="varchar" size="250" notnull="notnull" />
 	<column name="option_name" type="varchar" size="250" />
+	<!-- 주문 시점 SKU 스냅샷 - 옵션 SKU 우선, 없으면 상품 코드 -->
+	<column name="sku" type="varchar" size="100" />
 	<column name="thumb" type="varchar" size="250" />
 	<!-- 단가(옵션가 포함) 스냅샷 -->
 	<column name="price" type="bigint" notnull="notnull" default="0" />

@@ -2,6 +2,7 @@
 
 namespace Zittme\Modules\Commerce\Controllers;
 
+use Zittme\Modules\Commerce\Models\Cart as CartModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
 
 /**
@@ -19,6 +20,32 @@ class Trigger extends Base
 	 * @param array $moduleList (참조)
 	 * @return void
 	 */
+	/**
+	 * 로그인하면 비회원으로 담아 둔 장바구니를 회원에게 넘긴다.
+	 *
+	 * 장바구니 소유자가 쿠키 키에서 회원 번호로 바뀌므로, 옮기지 않으면
+	 * 담아 둔 것이 사라진 것처럼 보인다.
+	 *
+	 * @param object $member_info
+	 * @return \BaseObject
+	 */
+	public function triggerAfterLogin($member_info)
+	{
+		$member_srl = (int)($member_info->member_srl ?? 0);
+		if ($member_srl > 0)
+		{
+			// 장바구니 이관이 실패해도 로그인 자체는 막지 않는다
+			try
+			{
+				CartModel::mergeGuestCart($member_srl);
+			}
+			catch (\Throwable $e)
+			{
+			}
+		}
+		return new \BaseObject();
+	}
+
 	public function triggerModuleListInSitemap(&$moduleList)
 	{
 		if (is_array($moduleList))

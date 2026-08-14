@@ -53,9 +53,15 @@ class Install extends Base
 		// 등급별 상품 할인 (정액/정률)
 		['commerce_grade', 'discount_type', 'varchar', 10],
 		['commerce_grade', 'discount_value', 'float', null],
-		// 다통화 — 주문 통화와 체결 시점 환율 (0.2.0)
+		// 다통화 - 주문 통화와 체결 시점 환율
 		['commerce_order', 'currency', 'varchar', 8],
 		['commerce_order', 'exchange_rate', 'varchar', 16],
+		// 가격순 정렬 전용 실판매가
+		['commerce_item', 'effective_price', 'bigint', null],
+		// 주문 시점 SKU 스냅샷
+		['commerce_order_item', 'sku', 'varchar', 100],
+		// 리뷰는 주문건 단위
+		['commerce_review', 'order_srl', 'bigint', null],
 	];
 
 	/**
@@ -176,9 +182,16 @@ class Install extends Base
 	{
 		try
 		{
+			// 0 = 미정렬, list_order = item_srl(양수) = 과거 등록순 보정값. 둘 다 최신-앞 규약(-srl)으로 바꿔야 한다
 			$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()
-				->query('SELECT COUNT(*) FROM `' . self::dbPrefix() . 'commerce_item` WHERE list_order = 0');
-			return $stmt ? ((int)$stmt->fetchColumn() > 0) : false;
+				->query('SELECT COUNT(*) FROM `' . self::dbPrefix() . 'commerce_item` WHERE list_order = 0 OR list_order = item_srl');
+			if (!$stmt)
+			{
+				return false;
+			}
+			$count = (int)$stmt->fetchColumn();
+			$stmt->closeCursor();
+			return $count > 0;
 		}
 		catch (\Throwable $e)
 		{
@@ -224,13 +237,29 @@ class Install extends Base
 			}
 		}
 
-		// 진열 순서가 비어 있는 상품은 번호를 그대로 넣어 등록순으로 맞춘다
+		// 진열 순서가 비어 있는 상품은 최신이 앞에 오도록 -번호를 넣는다
 		if ($oDB->isTableExists('commerce_item') && self::hasUnorderedItems())
 		{
 			try
 			{
 				\Rhymix\Framework\DB::getInstance()->getHandle()
-					->exec('UPDATE `' . self::dbPrefix() . 'commerce_item` SET list_order = item_srl WHERE list_order = 0');
+					->exec('UPDATE `' . self::dbPrefix() . 'commerce_item` SET list_order = -item_srl WHERE list_order = 0 OR list_order = item_srl');
+			}
+			catch (\Throwable $e)
+			{
+			}
+		}
+
+		// 연결이 비어 있는 리뷰에 확정 주문을 채운다
+		Base::backfillReviewOrders();
+
+		// 실판매가 채우기 - 신규 저장 시에는 저장 경로가 채운다
+		if ($oDB->isTableExists('commerce_item'))
+		{
+			try
+			{
+				\Rhymix\Framework\DB::getInstance()->getHandle()
+					->exec('UPDATE `' . self::dbPrefix() . 'commerce_item` SET effective_price = CASE WHEN sale_price > 0 THEN sale_price ELSE price END WHERE effective_price = 0 OR effective_price IS NULL');
 			}
 			catch (\Throwable $e)
 			{
@@ -252,7 +281,7 @@ class Install extends Base
 	 *
 	 * @return string
 	 */
-	protected static function dbPrefix(): string
+	public static function dbPrefix(): string
 	{
 		return (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
 	}
@@ -269,7 +298,13 @@ class Install extends Base
 		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->query(
 			'SHOW COLUMNS FROM `' . self::dbPrefix() . 'commerce_grade` LIKE \'credit_rate\''
 		);
-		$col = $stmt ? $stmt->fetchObject() : null;
+		$col = null;
+		if ($stmt)
+		{
+			$col = $stmt->fetchObject() ?: null;
+			// 뒤이어 ALTER 를 실행하므로 커서를 반드시 닫는다
+			$stmt->closeCursor();
+		}
 		return $col && stripos((string)$col->Type, 'int') !== false;
 	}
 

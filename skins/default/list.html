@@ -52,20 +52,13 @@
 				@endforeach
 			</nav>
 		</div>
-		@php $shp_currencies = \Zittme\Modules\Commerce\Models\Money::currencies(); @endphp
-		@if (count($shp_currencies) > 1)
-		<select class="shp-currency" aria-label="currency" onchange="document.cookie='shp_currency='+this.value+'; path=/; max-age=31536000'; location.reload();">
-			@foreach ($shp_currencies as $shp_cur)
-			<option value="{{ $shp_cur }}" @if (\Zittme\Modules\Commerce\Models\Money::current() === $shp_cur) selected @endif>{{ $shp_cur }}</option>
-			@endforeach
-		</select>
-		@endif
+		@include('_currency')
 		<a class="shp-cart-link" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceMyOrders') }}">
 			<svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="3.5" cy="6" r="1.4" fill="currentColor"/><circle cx="3.5" cy="12" r="1.4" fill="currentColor"/><circle cx="3.5" cy="18" r="1.4" fill="currentColor"/></svg>
 			{{ $lang->shop_my_orders }}
 		</a>
 		<a class="shp-cart-link" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceCart') }}">
-			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.4l.7 2H21l-2.4 8.4a2 2 0 0 1-1.9 1.6H8.5a2 2 0 0 1-2-1.5L4.2 6H3V4zm4.7 4 1.5 6h7.9l1.7-6H7.7zM9 19.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm8 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>
+			<svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20.5" r="1.5" fill="currentColor"/><circle cx="17.5" cy="20.5" r="1.5" fill="currentColor"/></svg>
 			{{ $lang->shop_cart }}
 			@if ($cart_count > 0)<span class="shp-cart-count">{{ $cart_count }}</span>@endif
 		</a>
@@ -145,7 +138,7 @@
 			<span class="shp-card-body">
 				<span class="shp-badges">
 					@if ($it->is_recommend === 'Y')<span class="shp-badge">{{ $lang->shop_badge_recommend }}</span>@endif
-					@foreach (\Zittme\Modules\Commerce\Models\Badge::ofItem($it, $shop_badge_map ?? []) as $shp_bg)
+					@foreach ($it->badge_list ?? [] as $shp_bg)
 					@php
 						$shp_bg_style = '';
 						if (!empty($shp_bg->bg_color)) { $shp_bg_style .= 'background:' . $shp_bg->bg_color . ';'; }
@@ -164,7 +157,10 @@
 				</span>
 				@endif
 				<span class="shp-price">
-					@if ($it->sale_price > 0 && $it->sale_price < $it->price)
+					@if (!empty($it->grade_price))
+					<s>{{ shop_money($it->sale_price > 0 && $it->sale_price < $it->price ? $it->sale_price : $it->price) }}</s>{{ shop_money($it->grade_price) }}
+					<em class="shp-grade-tag">{{ $lang->shop_grade ?? '회원 등급' }}</em>
+					@elseif ($it->sale_price > 0 && $it->sale_price < $it->price)
 					<s>{{ shop_money($it->price) }}</s>{{ shop_money($it->sale_price) }}
 					@else
 					{{ shop_money($it->price) }}

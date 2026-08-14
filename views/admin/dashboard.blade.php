@@ -15,32 +15,32 @@
 	<div class="zmd-cards">
 		<div class="zmd-card">
 			<span>{{ lang('commerce.admin_dashboard_1') }}</span>
-			<strong>{{ number_format($zs->today->sales) }}원</strong>
-			<small>{{ number_format($zs->today->orders) }}건 · 어제 {{ number_format($zs->yesterday->sales) }}원</small>
+			<strong>{{ shop_money_base($zs->today->sales) }}</strong>
+			<small>{{ sprintf(lang('commerce.st_unit_count'), number_format($zs->today->orders)) }} · {{ lang('commerce.adm_yesterday') }} {{ shop_money_base($zs->yesterday->sales) }}</small>
 		</div>
 		<div class="zmd-card">
 			<span>{{ lang('commerce.admin_dashboard_2') }}</span>
-			<strong>{{ number_format($zs->month->sales) }}원</strong>
-			<small>{{ number_format($zs->month->orders) }}건 · 지난달 {{ number_format($zs->last_month->sales) }}원</small>
+			<strong>{{ shop_money_base($zs->month->sales) }}</strong>
+			<small>{{ sprintf(lang('commerce.st_unit_count'), number_format($zs->month->orders)) }} · {{ lang('commerce.adm_last_month') }} {{ shop_money_base($zs->last_month->sales) }}</small>
 		</div>
 		<a class="zmd-card zmd-link" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrders', 'f_status', 'pending') }}">
 			<span>{{ lang('commerce.admin_dashboard_3') }}</span>
-			<strong>{{ number_format($zs->counts->pending) }}건</strong>
+			<strong>{{ sprintf(lang('commerce.st_unit_count'), number_format($zs->counts->pending)) }}</strong>
 			<small>{{ lang('commerce.admin_dashboard_4') }}</small>
 		</a>
 		<a class="zmd-card zmd-link {{ $zs->counts->to_ship > 0 ? 'is-alert' : '' }}" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrders', 'f_status', 'paid') }}">
 			<span>{{ lang('commerce.admin_dashboard_5') }}</span>
-			<strong>{{ number_format($zs->counts->to_ship) }}건</strong>
+			<strong>{{ sprintf(lang('commerce.st_unit_count'), number_format($zs->counts->to_ship)) }}</strong>
 			<small>{{ lang('commerce.admin_dashboard_6') }}</small>
 		</a>
 		<a class="zmd-card zmd-link" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrders') }}">
 			<span>{{ lang('commerce.admin_dashboard_7') }}</span>
-			<strong>{{ number_format($zs->counts->shipping) }}건</strong>
+			<strong>{{ sprintf(lang('commerce.st_unit_count'), number_format($zs->counts->shipping)) }}</strong>
 			<small>{{ lang('commerce.admin_dashboard_8') }}</small>
 		</a>
 		<a class="zmd-card zmd-link {{ $zs->counts->claims > 0 ? 'is-alert' : '' }}" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminClaims') }}">
 			<span>{{ lang('commerce.admin_dashboard_9') }}</span>
-			<strong>{{ number_format($zs->counts->claims) }}건</strong>
+			<strong>{{ sprintf(lang('commerce.st_unit_count'), number_format($zs->counts->claims)) }}</strong>
 			<small>{{ lang('commerce.admin_dashboard_10') }}</small>
 		</a>
 	</div>
@@ -53,7 +53,7 @@
 			@else
 			<div class="zmd-chart">
 				@foreach ($zs->series as $zs_row)
-				<div class="zmd-bar" title="{{ $zs_row->label }} · {{ number_format($zs_row->sales) }}원 · {{ $zs_row->orders }}건">
+				<div class="zmd-bar" title="{{ $zs_row->label }} · {{ shop_money_base($zs_row->sales) }} · {{ sprintf(lang('commerce.st_unit_count'), $zs_row->orders) }}">
 					<div class="zmd-bar-fill" style="height:{{ $zs_max > 0 ? max(2, (int)round($zs_row->sales / $zs_max * 100)) : 2 }}%"></div>
 				</div>
 				@endforeach
@@ -69,7 +69,7 @@
 				@foreach ($zs->top_items as $zs_item)
 				<li>
 					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $zs_item->item_srl) }}">{{ $zs_item->item_name }}</a>
-					<span>{{ number_format($zs_item->qty) }}개 · {{ number_format($zs_item->sales) }}원</span>
+					<span>{{ sprintf(lang('commerce.st_unit_ea'), number_format($zs_item->qty)) }} · {{ shop_money_base($zs_item->sales) }}</span>
 				</li>
 				@endforeach
 			</ol>
@@ -79,7 +79,7 @@
 
 	<div class="rsva-panel">
 		<h3 style="display:flex;align-items:center;gap:10px">{{ lang('commerce.admin_dashboard_17') }}
-			<span style="font-size:12.5px;font-weight:600;color:#6b7684">{{ $zmc_done }}/{{ count($zmc_cl) }} 완료</span>
+			<span style="font-size:12.5px;font-weight:600;color:#6b7684">{{ sprintf(lang('commerce.adm_checklist_done'), $zmc_done, count($zmc_cl)) }}</span>
 		</h3>
 		<div style="height:6px;border-radius:99px;background:#eef1f5;margin:6px 0 14px;overflow:hidden">
 			<div style="height:100%;width:{{ count($zmc_cl) ? round($zmc_done / count($zmc_cl) * 100) : 0 }}%;background:#2677e3;border-radius:99px"></div>

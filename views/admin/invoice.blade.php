@@ -1,11 +1,11 @@
 @php
 	$biz = $shop_config;
-	$zmi_status = ['pending'=>'결제대기','paid'=>'결제완료','cancelled'=>'취소','failed'=>'실패','expired'=>'만료'];
+	$zmi_status = ['pending'=>lang('commerce.st_order_pending'),'paid'=>lang('commerce.st_order_paid'),'cancelled'=>lang('commerce.st_order_cancelled'),'failed'=>lang('commerce.st_order_failed'),'expired'=>lang('commerce.st_order_expired')];
 @endphp
 
 <div class="zmi-page">
 	<div class="zmi-toolbar">
-		@if (count($invoices) > 1)<span class="zmi-count">{{ count($invoices) }}건</span>@endif
+		@if (count($invoices) > 1)<span class="zmi-count">{{ sprintf(lang('commerce.st_unit_count'), count($invoices)) }}</span>@endif
 		<button type="button" class="zmi-btn zmi-btn-primary" onclick="window.print()">{{ lang('commerce.admin_invoice_1') }}</button>
 		<button type="button" class="zmi-btn" onclick="window.close()">{{ lang('commerce.admin_invoice_2') }}</button>
 	</div>
@@ -96,12 +96,17 @@
 			</div>
 		</div>
 
-		<h2>주문 품목 @if ($show_tax && $tax->zero_rated)<span class="zmi-tag">{{ lang('commerce.admin_invoice_21') }}</span>@endif</h2>
+		<h2>{{ lang('commerce.adm_invoice_items') }} @if ($show_tax && $tax->zero_rated)<span class="zmi-tag">{{ lang('commerce.admin_invoice_21') }}</span>@endif</h2>
 		<table class="zmi-tbl zmi-items">
 			<thead>
 				<tr>
 					<th style="width:34px">No</th>
 					<th>{{ lang('commerce.admin_invoice_22') }}</th>
+					@php $zmi_has_sku = false; @endphp
+					@foreach ($order_items as $zmi_sku_row)
+					@php $zmi_has_sku = $zmi_has_sku || trim((string)($zmi_sku_row->sku ?? '')) !== ''; @endphp
+					@endforeach
+					@if ($zmi_has_sku)<th style="width:110px">SKU</th>@endif
 					<th style="width:52px">{{ lang('commerce.admin_invoice_23') }}</th>
 					<th style="width:88px">{{ lang('commerce.admin_invoice_24') }}</th>
 					@if ($show_tax)
@@ -119,6 +124,7 @@
 						{{ $oi->item_name }}@if (($oi->tax_type ?? 'taxable') === 'free')<span class="zmi-tag">{{ lang('commerce.admin_invoice_28') }}</span>@endif
 						@if ($oi->option_name)<span class="zmi-opt">{{ $oi->option_name }}</span>@endif
 					</td>
+					@if ($zmi_has_sku)<td class="zmi-c">{{ $oi->sku ?? '' }}</td>@endif
 					<td class="zmi-c">{{ $oi->qty }}</td>
 					<td class="zmi-r">{{ shop_money_in($oi->price, $order->currency ?? 'KRW') }}</td>
 					@if ($show_tax)
@@ -136,7 +142,7 @@
 				@if ($show_tax)
 				<tr><th>{{ lang('commerce.admin_invoice_29') }}</th><td class="zmi-r">{{ shop_money_in($tax->taxable_supply, $order->currency ?? 'KRW') }}</td></tr>
 				@if ($tax->free_supply > 0)
-				<tr><th>{{ $tax->zero_rated ? '영세율 공급가액' : '면세 공급가액' }}</th><td class="zmi-r">{{ shop_money_in($tax->free_supply, $order->currency ?? 'KRW') }}</td></tr>
+				<tr><th>{{ $tax->zero_rated ? lang('commerce.adm_supply_zero') : lang('commerce.adm_supply_free') }}</th><td class="zmi-r">{{ shop_money_in($tax->free_supply, $order->currency ?? 'KRW') }}</td></tr>
 				@endif
 				<tr><th>{{ lang('commerce.admin_invoice_30') }}</th><td class="zmi-r">{{ shop_money_in($tax->delivery_supply, $order->currency ?? 'KRW') }}</td></tr>
 				<tr><th>{{ lang('commerce.admin_invoice_31') }}</th><td class="zmi-r">{{ shop_money_in($tax->total_vat, $order->currency ?? 'KRW') }}</td></tr>
@@ -154,7 +160,7 @@
 			</tbody>
 		</table>
 		@if ($show_tax && !$tax->zero_rated)
-		<p class="zmi-taxnote">부가세율 {{ (int)round($tax->rate * 100) }}%{{ $tax->included ? ', 표시가는 부가세 포함가' : ', 표시가는 부가세 별도' }} 기준으로 계산했습니다.</p>
+		<p class="zmi-taxnote">{{ sprintf($tax->included ? lang('commerce.adm_tax_note_incl') : lang('commerce.adm_tax_note_excl'), (int)round($tax->rate * 100)) }}</p>
 		@endif
 
 		@if ($order->memo)

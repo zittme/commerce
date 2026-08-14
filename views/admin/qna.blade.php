@@ -21,12 +21,12 @@
 							<input type="hidden" name="act" value="procCommerceAdminReviewReply" />
 							<input type="hidden" name="review_srl" value="{{ $rv->review_srl }}" />
 							<textarea name="reply" rows="3" placeholder="{{ lang('commerce.admin_qna_14') }}" style="flex:1;resize:vertical">{{ $rv->reply }}</textarea>
-							<button type="submit" class="rsva-btn rsva-btn-sm" style="align-self:flex-end">{{ empty($rv->reply) ? '답변 등록' : '답변 수정' }}</button>
+							<button type="submit" class="rsva-btn rsva-btn-sm" style="align-self:flex-end">{{ empty($rv->reply) ? lang('commerce.adm_reply_add') : lang('commerce.adm_reply_edit') }}</button>
 						</form>
 					</td>
 					<td><small>{{ zdate($rv->regdate, 'Y.m.d') }}</small></td>
 					<td>
-						<form action="./" method="post" onsubmit="return confirm('이 리뷰를 삭제할까요?')">
+						<form action="./" method="post" onsubmit="return confirm('{{ lang('commerce.adm_review_delete_ask') }}')">
 							<input type="hidden" name="module" value="commerce" />
 							<input type="hidden" name="act" value="procCommerceReviewDelete" />
 							<input type="hidden" name="review_srl" value="{{ $rv->review_srl }}" />
@@ -49,7 +49,7 @@
 			<button type="submit" class="rsva-btn">{{ lang('commerce.admin_qna_11') }}</button>
 		</form>
 		@if (!count($qna_inquiries))
-		<p style="color:#8b95a1">{{ $qna_unanswered ? '미답변 문의가 없습니다.' : '등록된 문의가 없습니다.' }}</p>
+		<p style="color:#8b95a1">{{ $qna_unanswered ? lang('commerce.adm_no_unanswered') : lang('commerce.adm_no_inquiries') }}</p>
 		@else
 		<table class="rsva-table">
 			<thead><tr><th>{{ lang('commerce.admin_qna_3') }}</th><th>{{ lang('commerce.admin_qna_4') }}</th><th style="width:50%">{{ lang('commerce.admin_qna_6') }}</th><th>{{ lang('commerce.admin_qna_7') }}</th><th></th></tr></thead>
@@ -69,12 +69,12 @@
 							<input type="hidden" name="act" value="procCommerceAdminInquiryAnswer" />
 							<input type="hidden" name="inquiry_srl" value="{{ $iq->inquiry_srl }}" />
 							<textarea name="answer" rows="3" placeholder="{{ lang('commerce.admin_qna_14') }}" style="flex:1;resize:vertical">{{ $iq->answer }}</textarea>
-							<button type="submit" class="rsva-btn rsva-btn-sm" style="align-self:flex-end">{{ empty($iq->answer) ? '답변 등록' : '답변 수정' }}</button>
+							<button type="submit" class="rsva-btn rsva-btn-sm" style="align-self:flex-end">{{ empty($iq->answer) ? lang('commerce.adm_reply_add') : lang('commerce.adm_reply_edit') }}</button>
 						</form>
 					</td>
 					<td><small>{{ zdate($iq->regdate, 'Y.m.d') }}</small></td>
 					<td>
-						<form action="./" method="post" onsubmit="return confirm('이 문의를 삭제할까요?')">
+						<form action="./" method="post" onsubmit="return confirm('{{ lang('commerce.adm_inquiry_delete_ask') }}')">
 							<input type="hidden" name="module" value="commerce" />
 							<input type="hidden" name="act" value="procCommerceInquiryDelete" />
 							<input type="hidden" name="inquiry_srl" value="{{ $iq->inquiry_srl }}" />

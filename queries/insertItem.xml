@@ -10,6 +10,7 @@
 		<column name="item_code" var="item_code" />
 		<column name="price" var="price" default="0" />
 		<column name="sale_price" var="sale_price" default="0" />
+		<column name="effective_price" var="effective_price" default="0" />
 		<column name="stock" var="stock" default="0" />
 		<column name="use_stock" var="use_stock" default="Y" />
 		<column name="summary" var="summary" />

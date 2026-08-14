@@ -93,6 +93,83 @@ class Cart
 	 * @param ?object $owner
 	 * @return array
 	 */
+	/**
+	 * 비회원으로 담아 둔 장바구니를 로그인한 회원에게 넘긴다.
+	 *
+	 * 로그인하면 소유자가 쿠키 키에서 회원 번호로 바뀌므로, 옮기지 않으면
+	 * 담아 둔 것이 사라진 것처럼 보인다. 같은 상품·옵션이 양쪽에 있으면
+	 * 수량을 합치고 비회원 줄은 지운다.
+	 *
+	 * @param int $member_srl 로그인한 회원
+	 * @return int 옮긴 줄 수
+	 */
+	public static function mergeGuestCart(int $member_srl): int
+	{
+		$key = (string)($_COOKIE[self::COOKIE_NAME] ?? '');
+		if ($member_srl <= 0 || !preg_match('/^[a-f0-9]{32}$/', $key))
+		{
+			return 0;
+		}
+
+		$guest_rows = self::rows((object)['member_srl' => 0, 'session_key' => $key]);
+		if (!count($guest_rows))
+		{
+			self::forgetGuestKey();
+			return 0;
+		}
+
+		// 회원이 이미 담아 둔 것 — 같은 상품·옵션이면 수량만 더한다
+		$mine = [];
+		foreach (self::rows((object)['member_srl' => $member_srl, 'session_key' => '']) as $row)
+		{
+			$mine[(int)$row->item_srl . ':' . (int)$row->option_srl] = $row;
+		}
+
+		$moved = 0;
+		$db = \Rhymix\Framework\DB::getInstance();
+		foreach ($guest_rows as $row)
+		{
+			$dup = $mine[(int)$row->item_srl . ':' . (int)$row->option_srl] ?? null;
+			if ($dup)
+			{
+				$db->query(
+					'UPDATE commerce_cart SET qty = ? WHERE cart_srl = ?',
+					(int)$dup->qty + (int)$row->qty, (int)$dup->cart_srl
+				);
+				$db->query('DELETE FROM commerce_cart WHERE cart_srl = ?', (int)$row->cart_srl);
+			}
+			else
+			{
+				$db->query(
+					"UPDATE commerce_cart SET member_srl = ?, session_key = '' WHERE cart_srl = ?",
+					$member_srl, (int)$row->cart_srl
+				);
+			}
+			$moved++;
+		}
+
+		self::forgetGuestKey();
+		return $moved;
+	}
+
+	/**
+	 * 비회원 식별 쿠키를 버린다. 회원에게 넘긴 뒤에는 쓸 일이 없다.
+	 */
+	protected static function forgetGuestKey(): void
+	{
+		unset($_COOKIE[self::COOKIE_NAME]);
+		if (!headers_sent())
+		{
+			setcookie(self::COOKIE_NAME, '', [
+				'expires' => time() - 3600,
+				'path' => '/',
+				'httponly' => true,
+				'samesite' => 'Lax',
+				'secure' => !empty($_SERVER['HTTPS']),
+			]);
+		}
+	}
+
 	public static function rows(?object $owner = null): array
 	{
 		$owner = $owner ?: self::owner();
@@ -150,11 +227,19 @@ class Cart
 			{
 				continue;
 			}
+			// 다국어 연결 상품명($user_lang->코드)을 실값으로 - 주문서 표기와 주문 스냅샷이 이 값을 쓴다
+			$item->item_name = Lang::text((string)$item->item_name);
 			$option = null;
 			if ((int)$row->option_srl > 0)
 			{
 				$output = executeQuery('commerce.getOption', (object)['option_srl' => (int)$row->option_srl]);
 				$option = ($output->toBool() && is_object($output->data) && !empty($output->data->option_srl)) ? $output->data : null;
+				if ($option)
+				{
+					$option->option_label = Lang::text((string)$option->option_label);
+					// 조합 옵션 이름은 축 값에서 다시 만든다 (저장된 이름은 만든 시점 글자로 굳는다)
+					$option->option_label = Combo::optionLabel($item, $option);
+				}
 			}
 
 			// 추가 옵션(extra)은 별개 추가상품 — 추가금이 곧 단가. 기본 옵션(basic)은 판매가 + 추가금
@@ -205,23 +290,25 @@ class Cart
 	 */
 	/**
 	 * 지역 추가 배송비. 설정 ship_extra_zones(JSON) 한 줄은
-	 *   country: 적용 국가 (빈 값이면 국내 KR)
-	 *   regions: 시·도 이름 목록 (쉼표 구분, 배송지 주소 앞부분과 맞춘다)
-	 *   zips:    우편번호 패턴 (접두 "63" 또는 범위 "40200-40240", 쉼표 구분)
-	 * 셋 중 하나라도 걸리면 그 줄의 추가금을 쓴다. 국가가 다르면 아예 후보에서 뺀다.
+	 *   country: 적용 국가 코드 (관리 화면에서 목록으로 고른다)
+	 *   region:  국내 시·도 (국가가 KR 일 때만. 목록에서 고른 값)
+	 *   zips:    우편번호 패턴 (국내에서 더 좁힐 때. 접두 "63" 또는 범위 "40200-40240")
+	 *   fee:     기본 추가금 (구간을 두지 않았을 때, 또는 0원 구간)
+	 *   tiers:   구매 금액 구간 [{from: 기준액, fee: 추가금}]. 넘긴 구간 중 가장 높은 것을 쓴다
+	 *
+	 * 해외는 나라 단위로만 잡는다. 도시나 주 이름은 구매자가 어떻게 적을지 알 수 없어
+	 * 글자 맞추기로는 조용히 빗나간다. 국내만 시·도와 우편번호로 좁힌다.
 	 *
 	 * @param string $zipcode
-	 * @param string $address1 배송지 주소 (시·도 판정용)
-	 * @param string $country 배송 국가
+	 * @param string $address1 배송지 주소 (국내 시·도 판정용)
+	 * @param string $country 배송 국가 코드
 	 * @return int
 	 */
-	public static function extraShipFee(string $zipcode, string $address1 = '', string $country = 'KR', string $state = '', string $city = ''): int
+	public static function extraShipFee(string $zipcode, string $address1 = '', string $country = 'KR', string $state = '', string $city = '', int $item_total = 0): int
 	{
 		$zipcode = preg_replace('/[^0-9]/', '', $zipcode);
 		$country = strtoupper(trim($country)) ?: 'KR';
 		$region = $address1 !== '' ? Stats::normalizeRegion(explode(' ', trim($address1))[0]) : '';
-		// 해외형 입력은 시·도가 별도 칸으로 들어온다
-		$intl_regions = array_filter([mb_strtolower(trim($state)), mb_strtolower(trim($city))]);
 
 		$zones = json_decode((string)(Base::config()->ship_extra_zones ?? '[]'), true);
 		if (!is_array($zones))
@@ -232,35 +319,60 @@ class Cart
 		{
 			$zone = (array)$zone;
 			$fee = (int)($zone['fee'] ?? 0);
-			if ($fee <= 0)
+			$tiers = is_array($zone['tiers'] ?? null) ? $zone['tiers'] : [];
+			if ($fee <= 0 && !count($tiers))
 			{
 				continue;
 			}
 
-			// 국가를 비워 둔 기존 설정은 국내 규칙으로 본다
+			// 구매 금액 구간. 기준액을 넘긴 구간 중 가장 높은 것을 쓴다.
+			// 마지막 구간의 추가금을 0 으로 두면 그 금액부터 면제가 된다.
+			$matched_from = -1;
+			foreach ($tiers as $tier)
+			{
+				$tier = (array)$tier;
+				$from = (int)($tier['from'] ?? 0);
+				if ($item_total >= $from && $from > $matched_from)
+				{
+					$matched_from = $from;
+					$fee = max(0, (int)($tier['fee'] ?? 0));
+				}
+			}
+
+			// 국가를 비워 둔 예전 설정은 국내 규칙으로 본다
 			$zone_country = strtoupper(trim((string)($zone['country'] ?? ''))) ?: 'KR';
 			if ($zone_country !== $country)
 			{
 				continue;
 			}
 
-			foreach (array_filter(array_map('trim', explode(',', (string)($zone['regions'] ?? '')))) as $name)
+			// 행정구역 코드로 맞춘다. 구매자도 같은 목록에서 고르므로 표기가 갈리지 않는다
+			$zone_region = trim((string)($zone['region'] ?? ''));
+			$buyer_region = trim($state);
+			if ($zone_region !== '' && $buyer_region !== '' && strcasecmp($zone_region, $buyer_region) === 0)
+			{
+				return $fee;
+			}
+
+			// 해외는 지역을 지정하지 않았으면 나라 단위로 적용한다
+			if ($country !== 'KR')
+			{
+				if ($zone_region === '')
+				{
+					return $fee;
+				}
+				continue;
+			}
+
+			// 국내는 예전 방식(주소 앞부분의 시·도 이름)도 계속 읽는다
+			$zone_names = array_filter(array_map('trim', explode(',',
+				$zone_region . ',' . (string)($zone['regions'] ?? ''))));
+			foreach ($zone_names as $name)
 			{
 				if ($region !== '' && Stats::normalizeRegion($name) === $region)
 				{
 					return $fee;
 				}
-				// 해외형: 규칙의 지역명이 주/도·도시 어느 쪽과든 일치하면 적용
-				if (count($intl_regions) && in_array(mb_strtolower($name), $intl_regions, true))
-				{
-					return $fee;
-				}
-			}
-
-			// 국가만 지정하고 지역·우편번호를 비우면 그 나라 전체에 적용된다
-			if ($country !== 'KR' && trim((string)($zone['regions'] ?? '')) === '' && trim((string)($zone['zips'] ?? '')) === '')
-			{
-				return $fee;
 			}
 
 			if ($zipcode === '')

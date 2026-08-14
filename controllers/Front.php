@@ -7,6 +7,7 @@ use Zittme\Modules\Commerce\Models\Badge as BadgeModel;
 use Zittme\Modules\Commerce\Models\Cart as CartModel;
 use Zittme\Modules\Commerce\Models\Item as ItemModel;
 use Zittme\Modules\Commerce\Models\Lang as LangModel;
+use Zittme\Modules\Commerce\Models\Money as MoneyModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
 
 /**
@@ -14,6 +15,69 @@ use Zittme\Modules\Commerce\Models\Order as OrderModel;
  */
 class Front extends Base
 {
+	/**
+	 * 스킨이 쓸 통화 값과 뱃지를 미리 담는다.
+	 *
+	 * 스킨에서 모델을 직접 부르면 컴파일 단계에서 네임스페이스 구분자가 유실돼
+	 * 클래스를 못 찾는 오류가 난다. 화면에 필요한 값은 전부 여기서 만들어 넘긴다.
+	 *
+	 * @param array<int, object> $items 뱃지를 붙일 상품 목록 (없으면 통화 값만)
+	 * @return void
+	 */
+	protected function setShopContext(array $items = []): void
+	{
+		$base = MoneyModel::base();
+		$now = MoneyModel::current();
+
+		\Context::set('shp_base_currency', $base);
+		\Context::set('shp_base_zero', MoneyModel::isZeroDecimal($base));
+		\Context::set('shp_unit_label', MoneyModel::unitLabel());
+		// KRW 접미사 '원' 은 한국어 화면에서만 쓴다. 스킨의 JS 합계도 같은 기준을 따른다
+		\Context::set('shp_won_suffix', MoneyModel::useWonSuffix());
+		\Context::set('shp_currency', $now);
+		\Context::set('shp_currency_zero', MoneyModel::isZeroDecimal($now));
+		\Context::set('shp_currency_symbol', MoneyModel::symbol($now));
+		\Context::set('shp_currency_rate', MoneyModel::rate($now) ?: 1);
+
+		// 통화 알약에 쓸 목록 — 기준 통화이거나 환율이 있는 것만 고른다
+		$choices = [];
+		foreach (MoneyModel::currencies() as $code)
+		{
+			if ($code === $base || MoneyModel::rate($code) > 0)
+			{
+				$choices[$code] = MoneyModel::symbol($code);
+			}
+		}
+		\Context::set('shp_currency_choices', $choices);
+
+		$badge_map = BadgeModel::getMap(true);
+		\Context::set('shop_badge_map', $badge_map);
+
+		// 등급 할인이 걸린 회원에게는 할인된 값을 함께 담아 화면이 그 값을 보여 주게 한다
+		$logged = \Context::get('logged_info');
+		$grade_discount = (int)($logged->member_srl ?? 0) > 0
+			? \Zittme\Modules\Commerce\Models\Grade::discountFor((int)$logged->member_srl)
+			: null;
+		\Context::set('shp_grade_discount', $grade_discount);
+
+		foreach ($items as $shop_item)
+		{
+			if (!is_object($shop_item))
+			{
+				continue;
+			}
+			// badges 는 번호 문자열 컬럼이다. 덮어쓰면 다음 호출에서 형이 어긋난다
+			$shop_item->badge_list = BadgeModel::ofItem($shop_item, $badge_map);
+
+			$listed = (int)($shop_item->sale_price ?? 0) > 0
+				? (int)$shop_item->sale_price
+				: (int)($shop_item->price ?? 0);
+			$graded = \Zittme\Modules\Commerce\Models\Grade::applyDiscount($listed, $grade_discount);
+			// 등급 할인이 실제로 값을 낮췄을 때만 표시를 바꾼다
+			$shop_item->grade_price = $graded < $listed ? $graded : 0;
+		}
+	}
+
 	/**
 	 * 스킨 경로.
 	 *
@@ -176,6 +240,7 @@ class Front extends Base
 		\Context::set('items', $items);
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', self::config());
+		$this->setShopContext($items);
 		\Context::setBrowserTitle($promo->title);
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('promo');
@@ -287,11 +352,12 @@ class Front extends Base
 				$args->order_type = 'desc';
 				break;
 			case 'price_low':
-				$args->sort_index = 'sale_price';
+				// sale_price 는 할인 없는 상품이 0 이라 정렬이 어긋난다. 실판매가 컬럼을 쓴다
+				$args->sort_index = 'effective_price';
 				$args->order_type = 'asc';
 				break;
 			case 'price_high':
-				$args->sort_index = 'sale_price';
+				$args->sort_index = 'effective_price';
 				$args->order_type = 'desc';
 				break;
 			case 'new':
@@ -333,7 +399,7 @@ class Front extends Base
 		\Context::set('current_filter', $filter);
 		\Context::set('page_navigation', $filter === 'sale' ? null : ($output->page_navigation ?? null));
 		\Context::set('shop_categories', self::getActiveCategories());
-		\Context::set('shop_badge_map', BadgeModel::getMap(true));
+		$this->setShopContext($items ?? []);
 		\Context::set('current_category', $category_srl);
 		\Context::set('current_sort', $sort);
 		\Context::set('current_q', $keyword);
@@ -449,7 +515,16 @@ class Front extends Base
 		\Context::set('home_banners', $banners);
 		\Context::set('home_sections', $sections);
 		\Context::set('shop_categories', self::getActiveCategories());
-		\Context::set('shop_badge_map', BadgeModel::getMap(true));
+		// 홈은 섹션마다 상품이 들어 있다
+		$home_items = [];
+		foreach ($sections as $home_section)
+		{
+			foreach ((array)($home_section->items ?? []) as $home_row)
+			{
+				$home_items[] = $home_row;
+			}
+		}
+		$this->setShopContext($home_items);
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', $config);
 		self::injectAdminPanel();
@@ -507,25 +582,63 @@ class Front extends Base
 		\Context::set('is_logged', $member_srl > 0);
 		\Context::set('is_shop_admin', $is_admin);
 		// 관리자도 예외 없이 구매확정한 상품만 리뷰 가능
-		\Context::set('can_review', Review::hasPurchased($member_srl, $item_srl));
+		// 리뷰를 아직 안 쓴 확정 주문이 하나라도 있으면 작성 가능 (주문건 단위)
+		\Context::set('can_review', Review::canReviewNow($member_srl, $item_srl));
 
 		// 적립 혜택 표기용 적립률 (등급 적립률 > 기본 설정)
 		\Context::set('credit_rate', \Zittme\Modules\Commerce\Models\Grade::creditRateFor($member_srl));
 
 		LangModel::textAll([$item], ['item_name', 'summary']);
 		\Context::set('item', $item);
-		\Context::set('options', ItemModel::getOptions($item_srl, true));
+		$shop_options = ItemModel::getOptions($item_srl, true);
 		// 조합형 옵션 축 — 스킨이 모델을 직접 부르지 않도록 여기서 풀어 넘긴다.
 		// 방식을 직접 입력으로 되돌린 상품은 축 정의가 남아 있어도 쓰지 않는다.
-		\Context::set('shop_axes', ($item->option_mode ?? 'single') === 'combo'
+		$shop_axes = ($item->option_mode ?? 'single') === 'combo'
 			? \Zittme\Modules\Commerce\Models\Combo::axes($item->option_axes ?? '')
-			: []);
+			: [];
+		// 구매 화면 대조는 자리 번호로 한다 (표시 글자는 언어마다 달라진다)
+		foreach ($shop_options as $shop_option)
+		{
+			$shop_option->combo_key = empty($shop_option->combo)
+				? ''
+				: \Zittme\Modules\Commerce\Models\Combo::indexKey($shop_axes, $shop_option->combo);
+		}
+		// 다국어 코드는 서버에서 실값으로 푼다. 템플릿이 이스케이프한 뒤에는 코어 치환이 걸리지 않는다
+		LangModel::textAll($shop_options, ['option_label']);
+		foreach ($shop_axes as $shop_axis)
+		{
+			$shop_axis->name = LangModel::text($shop_axis->name);
+			foreach ($shop_axis->values as $shop_axis_i => $shop_axis_value)
+			{
+				$shop_axis->values[$shop_axis_i] = LangModel::text($shop_axis_value);
+			}
+			foreach ($shop_axis->items as $shop_axis_item)
+			{
+				$shop_axis_item->value = LangModel::text($shop_axis_item->value);
+			}
+		}
+		// 조합 옵션 이름은 축 값에서 다시 만든다. 저장된 이름은 조합을 만든 시점의
+		// 글자라, 뒤늦게 축에 다국어 코드를 연결해도 그대로 남는다.
+		foreach ($shop_options as $shop_option)
+		{
+			if (empty($shop_option->combo_key))
+			{
+				continue;
+			}
+			$shop_combo_label = \Zittme\Modules\Commerce\Models\Combo::labelFromKey($shop_axes, $shop_option->combo_key);
+			if ($shop_combo_label !== '')
+			{
+				$shop_option->option_label = $shop_combo_label;
+			}
+		}
+		\Context::set('options', $shop_options);
+		\Context::set('shop_axes', $shop_axes);
 		\Context::set('purchasable', ItemModel::isPurchasable($item));
 		\Context::set('effective_price', ItemModel::effectivePrice($item));
 		\Context::set('adult_ok', ($item->is_adult ?? 'N') !== 'Y' || Order::isAdultVerified($member_srl));
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', self::config());
-		\Context::set('shop_badge_map', BadgeModel::getMap(true));
+		$this->setShopContext([$item]);
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('item');
 	}
@@ -540,6 +653,7 @@ class Front extends Base
 		\Context::set('ship_fee', CartModel::calcShipFee($resolved));
 		\Context::set('shop_config', self::config());
 		$this->setTemplatePath($this->getSkinPath());
+		$this->setShopContext();
 		$this->setTemplateFile('cart');
 	}
 
@@ -581,11 +695,13 @@ class Front extends Base
 		\Context::set('my_coupons', \Zittme\Modules\Commerce\Models\Coupon::listUsableForMember($member_srl, $resolved->item_total));
 		\Context::set('credit_balance', \Zittme\Modules\Commerce\Models\Credit::balanceOf($member_srl));
 
-		// 표시 통화 — 외화면 주문 생성(procCommerceOrder)과 같은 규칙으로 금액을 재계산한다.
-		// 통화별 등록가 우선, 배송비는 환산. 외화에서는 쿠폰·적립금을 쓸 수 없어 화면에서 숨긴다.
+		// 표시 통화 — 기준 통화가 기본이다. 기준이 KRW 인 상점의 외화 병행 표시일 때만
+		// 주문 생성(procCommerceOrder)과 같은 규칙으로 금액을 재계산한다.
+		// 병행 통화에서는 쿠폰·적립금을 쓸 수 없어 화면에서 숨긴다.
+		$base_currency = \Zittme\Modules\Commerce\Models\Money::base();
 		$fx_currency = \Zittme\Modules\Commerce\Models\Money::current();
 		$fx_rate = \Zittme\Modules\Commerce\Models\Money::rate($fx_currency);
-		if ($fx_currency !== 'KRW' && $fx_rate > 0)
+		if ($fx_currency !== $base_currency && $fx_rate > 0)
 		{
 			$fx_item_total = 0;
 			$fx_ok = true;
@@ -611,17 +727,18 @@ class Front extends Base
 			}
 			else
 			{
-				// 외화로 팔 수 없는 상품이 있으면 이 주문서는 KRW 로 되돌린다
-				$fx_currency = 'KRW';
+				// 병행 통화로 팔 수 없는 상품이 있으면 이 주문서는 기준 통화로 되돌린다
+				$fx_currency = $base_currency;
 			}
 		}
 		else
 		{
-			$fx_currency = 'KRW';
+			$fx_currency = $base_currency;
 		}
 		\Context::set('shp_currency', $fx_currency);
-		\Context::set('shp_fx_rate', $fx_currency === 'KRW' ? 1 : $fx_rate);
-		\Context::set('shp_fx_zero_decimal', $fx_currency === 'KRW' ? true : \Zittme\Modules\Commerce\Models\Money::currencies() && class_exists('\\Zittme\\Modules\\Zittme_pay\\Models\\Currency') && \Zittme\Modules\Zittme_pay\Models\Currency::isZeroDecimal($fx_currency));
+		\Context::set('shp_base_currency', $base_currency);
+		\Context::set('shp_fx_rate', $fx_currency === $base_currency ? 1 : $fx_rate);
+		\Context::set('shp_fx_zero_decimal', \Zittme\Modules\Commerce\Models\Money::isZeroDecimal($fx_currency));
 
 		\Context::set('cart', $resolved);
 		\Context::set('ship_fee', $ship_fee);
@@ -632,6 +749,17 @@ class Front extends Base
 		\Context::set('shop_address_mode', AddressModel::mode());
 		\Context::set('shop_need_country', AddressModel::needsCountry());
 		\Context::set('shop_countries', AddressModel::countries());
+
+		// 행정구역은 목록에서 골라야 배송비 규칙과 어긋나지 않는다. 목록이 있는 나라만 넘긴다
+		$region_data = [];
+		foreach (array_keys(\Zittme\Modules\Commerce\Models\Region::REGIONS) as $region_country)
+		{
+			$region_data[$region_country] = \Zittme\Modules\Commerce\Models\Region::searchData($region_country);
+		}
+		\Context::set('shp_region_json', json_encode($region_data, \JSON_UNESCAPED_UNICODE));
+		\Context::set('shp_state_value', (string)\Context::get('state'));
+		\Context::addCSSFile('./modules/commerce/tpl/css/pickbox.css');
+		\Context::addJsFile('./modules/commerce/tpl/js/pickbox.js');
 		\Context::set('shop_default_country', AddressModel::mode() === 'intl' ? '' : 'KR');
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('checkout');
@@ -697,18 +825,11 @@ class Front extends Base
 		}
 		\Context::set('tracking_info', $tracking_info);
 
-		// 구매확정 주문: 리뷰 미작성 상품 목록 (리뷰 유도)
+		// 구매확정 주문: 이 주문에서 아직 리뷰를 안 쓴 상품 (리뷰는 주문건 단위)
 		$unreviewed = [];
 		if ($member_srl > 0 && OrderModel::displayStatus($order, $order_sellers) === 'confirmed')
 		{
-			foreach (OrderModel::getItems((int)$order->order_srl) as $rv_oi)
-			{
-				if ((int)$rv_oi->item_srl > 0 && !isset($unreviewed[(int)$rv_oi->item_srl])
-					&& !\Zittme\Modules\Commerce\Controllers\Review::hasReviewed($member_srl, (int)$rv_oi->item_srl))
-				{
-					$unreviewed[(int)$rv_oi->item_srl] = $rv_oi->item_name;
-				}
-			}
+			$unreviewed = \Zittme\Modules\Commerce\Controllers\Review::unreviewedItems($member_srl, (int)$order->order_srl);
 		}
 		\Context::set('unreviewed_items', $unreviewed);
 		\Context::set('order_sellers', $order_sellers);
@@ -739,6 +860,9 @@ class Front extends Base
 					if (!empty($row->order_srl))
 					{
 						$row->display_status = OrderModel::displayStatus($row);
+						// 리뷰 작성 버튼: 이 주문건에 아직 리뷰 안 쓴 상품이 있을 때만
+						$row->needs_review = $row->display_status === 'confirmed'
+							&& count(\Zittme\Modules\Commerce\Controllers\Review::unreviewedItems($member_srl, (int)$row->order_srl)) > 0;
 						$orders[] = $row;
 					}
 				}

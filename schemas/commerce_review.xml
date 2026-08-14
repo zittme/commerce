@@ -3,6 +3,8 @@
 	<column name="review_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="item_srl" type="bigint" notnull="notnull" index="idx_item_srl" />
 	<column name="member_srl" type="bigint" notnull="notnull" default="0" index="idx_member_srl" />
+	<!-- 리뷰는 주문건 단위 - 같은 상품이라도 새 주문이면 다시 쓸 수 있다 -->
+	<column name="order_srl" type="bigint" notnull="notnull" default="0" index="idx_order_srl" />
 	<column name="nick_name" type="varchar" size="80" />
 	<column name="rating" type="int" notnull="notnull" default="5" />
 	<column name="content" type="text" notnull="notnull" />

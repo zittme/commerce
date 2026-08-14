@@ -26,13 +26,27 @@ if (!function_exists('shop_money_in'))
 if (!function_exists('shop_money'))
 {
 	/**
-	 * KRW 금액을 현재 표시 통화로 표기한다. 예: 12000 → '12,000원' 또는 '$8.89'
+	 * 기준 통화 최소단위 금액을 현재 표시 통화로 표기한다. 예: 12000 → '12,000원' 또는 '$8.89'
 	 *
-	 * @param int|float|string $krw
+	 * @param int|float|string $amount
 	 * @return string
 	 */
-	function shop_money($krw): string
+	function shop_money($amount): string
 	{
-		return CommerceMoney::text((int)$krw);
+		return CommerceMoney::text((int)$amount);
+	}
+}
+
+if (!function_exists('shop_money_base'))
+{
+	/**
+	 * 기준 통화 최소단위 금액을 기준 통화로 표기한다. 관리자 화면·원장 표기용.
+	 *
+	 * @param int|float|string $amount
+	 * @return string
+	 */
+	function shop_money_base($amount): string
+	{
+		return CommerceMoney::format((int)$amount, CommerceMoney::base());
 	}
 }

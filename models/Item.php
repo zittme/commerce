@@ -93,7 +93,7 @@ class Item
 			$currency = strtoupper(trim((string)$currency));
 			$price = max(0, (int)($row['price'] ?? 0));
 			$sale = max(0, (int)($row['sale_price'] ?? 0));
-			if (!preg_match('/^[A-Z]{3}$/', $currency) || $currency === 'KRW' || ($price <= 0 && $sale <= 0))
+			if (!preg_match('/^[A-Z]{3}$/', $currency) || $currency === Money::base() || ($price <= 0 && $sale <= 0))
 			{
 				continue;
 			}
@@ -119,7 +119,7 @@ class Item
 	public static function effectivePriceIn(object $item, string $currency, ?array $prices = null): int
 	{
 		$currency = strtoupper(trim($currency));
-		if ($currency === '' || $currency === 'KRW')
+		if ($currency === '' || $currency === Money::base())
 		{
 			return self::effectivePrice($item);
 		}

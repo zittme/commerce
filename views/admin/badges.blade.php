@@ -39,7 +39,7 @@
 					</td>
 					<td>
 						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-primary" form="zmcBadgeForm{{ $b->badge_srl }}">{{ lang('commerce.admin_badges_11') }}</button>
-						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('삭제하시겠습니까? 상품에 붙어 있던 표시도 사라집니다.')">
+						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_badge_delete_ask') }}')">
 							<input type="hidden" name="module" value="admin" />
 							<input type="hidden" name="act" value="procCommerceAdminDeleteBadge" />
 							<input type="hidden" name="badge_srl" value="{{ $b->badge_srl }}" />

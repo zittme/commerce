@@ -50,7 +50,31 @@ class Order
 			return [];
 		}
 		$data = is_array($output->data) ? $output->data : [$output->data];
-		return array_values(array_filter($data, function($row) { return !empty($row->order_item_srl); }));
+		$rows = array_values(array_filter($data, function($row) { return !empty($row->order_item_srl); }));
+		// 다국어 코드가 스냅샷된 과거 주문도 화면에는 실값으로
+		Lang::textAll($rows, ['item_name', 'option_name']);
+		// 조합 옵션 이름은 지금 축 값에서 다시 만든다. 상품이나 옵션이 사라졌으면 스냅샷을 그대로 쓴다
+		foreach ($rows as $row)
+		{
+			if ((int)($row->option_srl ?? 0) <= 0 || (int)($row->item_srl ?? 0) <= 0)
+			{
+				continue;
+			}
+			$order_item = Item::get((int)$row->item_srl);
+			if (!$order_item)
+			{
+				continue;
+			}
+			$output = executeQuery('commerce.getOption', (object)['option_srl' => (int)$row->option_srl]);
+			$order_option = ($output->toBool() && is_object($output->data) && !empty($output->data->option_srl)) ? $output->data : null;
+			if (!$order_option || empty($order_option->combo))
+			{
+				continue;
+			}
+			$order_option->option_label = $row->option_name;
+			$row->option_name = Combo::optionLabel($order_item, $order_option);
+		}
+		return $rows;
 	}
 
 	/**
@@ -161,7 +185,7 @@ class Order
 			{
 				$lines[] = '- ' . $item->item_name . ($item->option_name ? ' / ' . $item->option_name : '') . ' x ' . (int)$item->qty;
 			}
-			$lines[] = '결제 금액: ' . number_format((int)$order->payment_price) . '원';
+			$lines[] = '결제 금액: ' . shop_money_in((int)$order->payment_price, $order->currency ?? 'KRW');
 			if ($kind === 'new_order' && $order->status === Base::ORDER_PENDING)
 			{
 				$lines[] = '상태: 결제 대기 (무통장 주문이면 입금 확인이 필요합니다)';

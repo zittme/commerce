@@ -20,8 +20,8 @@
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_13') }}</h3>
 			<div class="rsva-form-grid">
-				<div><label>{{ lang('commerce.admin_config_14') }}</label><input type="number" name="default_ship_fee" min="0" value="{{ $shop_config->default_ship_fee }}" /></div>
-				<div><label>{{ lang('commerce.admin_config_15') }}</label><input type="number" name="free_ship_over" min="0" value="{{ $shop_config->free_ship_over }}" /></div>
+				<div><label>{{ lang('commerce.admin_config_14') }}</label><input type="number" name="default_ship_fee" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$shop_config->default_ship_fee) }}" /></div>
+				<div><label>{{ lang('commerce.admin_config_15') }}</label><input type="number" name="free_ship_over" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$shop_config->free_ship_over) }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_16') }}</label><select name="item_sticky"><option value="N" @if(($shop_config->item_sticky ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="Y" @if(($shop_config->item_sticky ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_19') }}</label><input type="number" name="claim_days" min="0" max="90" value="{{ $shop_config->claim_days }}" /></div>
 			</div>
@@ -29,23 +29,20 @@
 				<label style="font-weight:700">{{ lang('commerce.admin_config_20') }}</label>
 				<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1;line-height:1.7">
 					{{ lang('commerce.admin_config_21') }}
-					<a href="https://tracking.sweettracker.co.kr" target="_blank" rel="noopener" style="color:#2677e3">{{ lang('commerce.admin_config_22') }}</a>에 가입하고 "배송조회 API" 키를 발급받아 입력하면:
-					주문에 송장을 등록해두는 것만으로 배송 준비 → 배송 중 → 배송 완료가 자동으로 바뀌고, 구매자 주문 상세에 현재 배송 위치가 표시됩니다.
-					조회는 약 10분 간격으로 이루어져 반영에 최대 10분 정도 걸릴 수 있습니다.
-					스윗트래커의 "배송추적(실시간 푸시)"은 연 단위 별도 계약 상품이라 사용하지 않으며, 이 기능은 종량제 <b>{{ lang('commerce.admin_config_24') }}</b> {{ lang('commerce.admin_config_25') }}
+					<a href="https://tracking.sweettracker.co.kr" target="_blank" rel="noopener" style="color:#2677e3">{{ lang('commerce.admin_config_22') }}</a>{{ lang('commerce.cfg_track_note1') }}
+					{{ lang('commerce.cfg_track_note2') }}
+					{{ lang('commerce.cfg_track_note3') }} <b>{{ lang('commerce.admin_config_24') }}</b> {{ lang('commerce.admin_config_25') }}
 				</p>
 				<input type="text" name="sweettracker_api_key" value="{{ $shop_config->sweettracker_api_key ?? '' }}" placeholder="{{ lang('commerce.admin_config_103') }}" style="width:340px;max-width:100%" autocomplete="off" />
 			</div>
 			<div style="margin-top:16px">
 				<label style="font-weight:700">{{ lang('commerce.admin_config_26') }}</label>
 				<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1;line-height:1.7">
-					국가는 ISO 2자리(비우면 KR)입니다. 시·도는 이름으로 적고(제주, 강원 - 제주도/제주특별자치도처럼 써도 같은 지역으로 봅니다),
-					우편번호는 접두(63) 또는 범위(40200-40240)를 쉼표로 나열합니다.
-					시·도와 우편번호 중 하나라도 맞으면 그 줄의 추가금을 씁니다. 국가만 적고 나머지를 비우면 그 나라 전체에 적용됩니다.
+					{{ lang('commerce.cfg_zone_note') }}
 				</p>
 				<div id="zmcZoneRows"></div>
 				<button type="button" class="rsva-btn rsva-btn-sm" id="zmcZoneAdd">{{ lang('commerce.admin_config_28') }}</button>
-				<input type="hidden" name="ship_extra_zones" id="zmcZonesJson" value="{{ $shop_config->ship_extra_zones ?? '[]' }}" />
+				<input type="hidden" name="ship_extra_zones" id="zmcZonesJson" value="{{ $zmc_zones_display }}" />
 			</div>
 		</div>
 
@@ -82,6 +79,17 @@
 				.zmc-f .zmc-inline { display: inline-flex; align-items: center; gap: 5px; margin: 0 0 0 8px; font-size: 12.5px; color: #4e5968; }
 				.zmc-banner-del { position: absolute; top: 12px; right: 14px; }
 				@media (max-width: 900px) { .zmc-banner-card { grid-template-columns: minmax(0, 1fr); } }
+				.zmc-pay-link { color: #2677e3; }
+				.zmc-zone-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+				.zmc-zone-row > select, .zmc-zone-row > input { min-width: 0; }
+				.zmc-zone-country { flex: 0 0 170px; }
+				.zmc-zone-region { flex: 0 0 130px; }
+				.zmc-zone-zips { flex: 1; min-width: 200px; }
+				.zmc-zone-row [hidden] { display: none !important; }
+				.zmc-tier-wrap { flex: 1 0 100%; margin: 4px 0 10px 8px; padding-left: 12px; border-left: 2px solid #e5e8ee; }
+				.zmc-tier { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+				.zmc-tier input { width: 150px; }
+				.zmc-tier-arrow { color: #8b95a1; }
 				</style>
 				<div id="zmcBannerRows"></div>
 				<button type="button" class="rsva-btn rsva-btn-sm" id="zmcBannerAdd">{{ lang('commerce.admin_config_43') }}</button>
@@ -93,22 +101,22 @@
 			<h3>{{ lang('commerce.admin_config_44') }}</h3>
 			<div class="rsva-form-grid">
 				<div><label>{{ lang('commerce.admin_config_45') }}</label><input type="number" name="credit_rate" min="0" max="100" step="0.01" value="{{ $shop_config->credit_rate }}" /></div>
-				<div><label>{{ lang('commerce.admin_config_46') }}</label><input type="number" name="credit_min_use" min="0" value="{{ $shop_config->credit_min_use }}" /></div>
-				<div><label>{{ lang('commerce.admin_config_47') }}</label><input type="number" name="review_credit_text" min="0" value="{{ $shop_config->review_credit_text ?? 0 }}" /></div>
-				<div><label>{{ lang('commerce.admin_config_48') }}</label><input type="number" name="review_credit_photo" min="0" value="{{ $shop_config->review_credit_photo ?? 0 }}" /></div>
+				<div><label>{{ lang('commerce.admin_config_46') }}</label><input type="number" name="credit_min_use" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$shop_config->credit_min_use) }}" /></div>
+				<div><label>{{ lang('commerce.admin_config_47') }}</label><input type="number" name="review_credit_text" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($shop_config->review_credit_text ?? 0)) }}" /></div>
+				<div><label>{{ lang('commerce.admin_config_48') }}</label><input type="number" name="review_credit_photo" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($shop_config->review_credit_photo ?? 0)) }}" /></div>
 			</div>
 			<p style="margin:8px 0 0;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_config_49') }}</p>
 		</div>
 
 		<div class="rsva-panel">
-			<h3>결제 {{ $pay_available ? '' : '— 짓미 페이(zittme_pay)가 설치되어 있지 않아 결제를 받을 수 없습니다' }}</h3>
+			<h3>{{ lang('commerce.cfg_payment') }} {{ $pay_available ? '' : ': ' . lang('commerce.cfg_pay_missing') }}</h3>
 			<p style="margin:0;font-size:13px;color:#6b7684">{{ lang('commerce.admin_config_50') }}</p>
 		</div>
 
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_51') }}</h3>
 			<div class="rsva-form-grid">
-				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_52') }}</label><textarea name="privacy_text" rows="3">{{ $shop_config->privacy_text }}</textarea></div>
+				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_52') }}</label><div class="zlf-row-wrap"><textarea name="privacy_text" rows="3">{{ $shop_config->privacy_text }}</textarea>@include('_langfield', ['lf_name' => 'privacy_text', 'lf_value' => $shop_config->privacy_text_raw ?? $shop_config->privacy_text, 'lf_key' => 'cfgprivacy'])</div></div>
 				<div><label>{{ lang('commerce.admin_config_53') }}</label><input type="text" name="privacy_version" maxlength="20" value="{{ $shop_config->privacy_version }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_54') }}</label><input type="number" name="retention_days" min="0" max="3650" value="{{ $shop_config->retention_days }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_55') }}</label><select name="notify_admin"><option value="N" @if($shop_config->notify_admin === 'N') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if($shop_config->notify_admin === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></div>
@@ -120,12 +128,12 @@
 			<h3>{{ lang('commerce.admin_config_59') }}</h3>
 			<p class="rsva-hint">{{ lang('commerce.admin_config_60') }}</p>
 			<div class="rsva-form-grid">
-				<div><label>{{ lang('commerce.admin_config_61') }}</label><input type="text" name="biz_name" maxlength="100" value="{{ $shop_config->biz_name }}" /></div>
+				<div><label>{{ lang('commerce.admin_config_61') }}</label><div class="zlf-row-wrap"><input type="text" name="biz_name" maxlength="100" value="{{ $shop_config->biz_name }}" />@include('_langfield', ['lf_name' => 'biz_name', 'lf_value' => $shop_config->biz_name_raw ?? $shop_config->biz_name, 'lf_key' => 'cfgbizname'])</div></div>
 				<div><label>{{ lang('commerce.admin_config_62') }}</label><input type="text" name="biz_ceo" maxlength="60" value="{{ $shop_config->biz_ceo }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_63') }}</label><input type="text" name="biz_number" maxlength="40" value="{{ $shop_config->biz_number }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_64') }}</label><input type="text" name="biz_tel" maxlength="40" value="{{ $shop_config->biz_tel }}" /></div>
-				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_65') }}</label><input type="text" name="biz_address" maxlength="250" value="{{ $shop_config->biz_address }}" /></div>
-				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_66') }}</label><textarea name="biz_note" rows="2">{{ $shop_config->biz_note }}</textarea></div>
+				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_65') }}</label><div class="zlf-row-wrap"><input type="text" name="biz_address" maxlength="250" value="{{ $shop_config->biz_address }}" />@include('_langfield', ['lf_name' => 'biz_address', 'lf_value' => $shop_config->biz_address_raw ?? $shop_config->biz_address, 'lf_key' => 'cfgbizaddr'])</div></div>
+				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_66') }}</label><div class="zlf-row-wrap"><textarea name="biz_note" rows="2">{{ $shop_config->biz_note }}</textarea>@include('_langfield', ['lf_name' => 'biz_note', 'lf_value' => $shop_config->biz_note_raw ?? $shop_config->biz_note, 'lf_key' => 'cfgbiznote'])</div></div>
 			</div>
 		</div>
 
@@ -166,7 +174,16 @@
 				</div>
 				<div>
 					<label>{{ lang('commerce.shop_currencies') }}</label>
-					<input type="text" name="currencies" value="{{ implode(', ', is_array($shop_config->currencies ?? null) ? $shop_config->currencies : []) }}" placeholder="USD, JPY" />
+					{{-- 통화 선택은 짓미페이 기본 설정 한 곳에서만 한다 --}}
+					@php
+					// 출력식 안에서 HTML 을 조립하면 템플릿이 style 속성을 코드로 읽는다. 여기서 만든다
+					$cfg_pay_link = '<a href="' . escape(getUrl('', 'module', 'admin', 'act', 'dispZittme_payAdminConfig')) . '" class="zmc-pay-link">' . escape(lang('commerce.cfg_pay_settings')) . '</a>';
+					$cfg_currency_note = sprintf(escape(lang('commerce.cfg_currency_from')), $cfg_pay_link);
+					@endphp
+					<div style="padding:8px 0;color:#6b7684;font-size:13px">
+						{{ implode(', ', \Zittme\Modules\Commerce\Models\Money::currencies()) }}
+						- {!! $cfg_currency_note !!}
+					</div>
 				</div>
 				<div>
 					<label>{{ lang('commerce.shop_currency_fallback') }}</label>
@@ -230,7 +247,7 @@
 			row.querySelector('[data-k=' + key + ']').value = url;
 			var thumb = cell.querySelector('[data-thumb]');
 			cell.querySelector('[data-imgdel]').hidden = !url;
-			cell.querySelector('[data-pick]').textContent = url ? '변경' : '선택';
+			cell.querySelector('[data-pick]').textContent = url ? {!! json_encode(lang('commerce.cfg_change')) !!} : {!! json_encode(lang('commerce.cfg_pick')) !!};
 			thumb.style.backgroundImage = url ? 'url("' + url + '")' : '';
 			thumb.classList.toggle('is-empty', !url);
 			// 배경 이미지를 넣었는데 배경 종류가 그라디언트·단색이면 화면에 안 보인다 — 함께 맞춘다
@@ -252,7 +269,7 @@
 					var file = fileEl.files && fileEl.files[0];
 					if (!file) return;
 					var label = pickBtn.textContent;
-					pickBtn.textContent = '올리는 중…';
+					pickBtn.textContent = {!! json_encode(lang('commerce.admin_item_edit_180')) !!};
 					pickBtn.disabled = true;
 
 					var fd = new FormData();
@@ -264,12 +281,12 @@
 								setBannerImage(row, key, ret.url, true);
 								if (onChange) onChange();
 							} else {
-								alert((ret && ret.message) || '업로드에 실패했습니다.');
+								alert((ret && ret.message) || {!! json_encode(lang('commerce.msg_shop_upload_failed')) !!});
 								pickBtn.textContent = label;
 							}
 						})
 						.catch(function () {
-							alert('업로드에 실패했습니다.');
+							alert({!! json_encode(lang('commerce.msg_shop_upload_failed')) !!});
 							pickBtn.textContent = label;
 						})
 						.then(function () {
@@ -311,8 +328,8 @@
 					'<span class="zmc-banner-thumb" data-thumb></span>' +
 					'<div class="zmc-banner-imgacts">' +
 						'<span class="zmc-banner-imglabel">' + label + '</span>' +
-						'<span><button type="button" class="rsva-btn rsva-btn-sm" data-pick>선택</button> ' +
-						'<button type="button" class="rsva-btn rsva-btn-sm" data-imgdel hidden>지우기</button></span>' +
+						'<span><button type="button" class="rsva-btn rsva-btn-sm" data-pick>' + {!! json_encode(lang('commerce.cfg_pick')) !!} + '</button> ' +
+						'<button type="button" class="rsva-btn rsva-btn-sm" data-imgdel hidden>' + {!! json_encode(lang('commerce.cfg_clear')) !!} + '</button></span>' +
 					'</div>' +
 					'<input type="file" accept="image/*" data-file hidden />' +
 					'<input type="hidden" data-k="' + key + '" />' +
@@ -323,22 +340,22 @@
 				return '<div class="zmc-f"><label>' + label + '</label><span class="zlf-row-wrap">' +
 					'<input type="text" data-k="' + key + '" />' +
 					'<input type="hidden" data-lf-code data-k="' + key + '_code" />' +
-					'<button type="button" class="zlf-btn" data-lf-open title="다국어 문구 연결">' + globe + '</button>' +
+					'<button type="button" class="zlf-btn" data-lf-open title="' + {!! json_encode(lang('commerce.adm_lang_link')) !!} + '">' + globe + '</button>' +
 					'</span></div>';
 			}
 			row.innerHTML =
-				'<div class="zmc-banner-imgs">' + imgCell('image', '배경 이미지') + imgCell('point_image', '포인트 이미지 (우측)') + '</div>' +
+				'<div class="zmc-banner-imgs">' + imgCell('image', {!! json_encode(lang('commerce.cfg_bg_image_label')) !!}) + imgCell('point_image', {!! json_encode(lang('commerce.cfg_point_image_label')) !!}) + '</div>' +
 				'<div class="zmc-banner-fields">' +
-					'<div class="zmc-f"><label>배경</label><select data-k="bg_type">' +
-						'<option value="gradient">그라디언트</option><option value="color">단색</option><option value="image">이미지</option>' +
+					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_bg')) !!} + '</label><select data-k="bg_type">' +
+						'<option value="gradient">' + {!! json_encode(lang('commerce.cfg_bg_gradient')) !!} + '</option><option value="color">' + {!! json_encode(lang('commerce.cfg_bg_solid')) !!} + '</option><option value="image">' + {!! json_encode(lang('commerce.cfg_bg_image')) !!} + '</option>' +
 					'</select></div>' +
-					'<div class="zmc-f zmc-bgcolors"><label>배경색</label><span><input type="color" data-k="bg_color" /> <input type="color" data-k="bg_color2" /></span></div>' +
-					'<div class="zmc-f"><label>글자</label><span><input type="color" data-k="text_color" /> <label class="zmc-inline"><input type="checkbox" data-k="shadow" /> 그림자</label></span></div>' +
-					langCell('title', '제목') +
-					langCell('text', '문구') +
-					'<div class="zmc-f"><label>링크 URL</label><input type="text" data-k="url" placeholder="비우면 상품 목록" /></div>' +
+					'<div class="zmc-f zmc-bgcolors"><label>' + {!! json_encode(lang('commerce.cfg_bg_color')) !!} + '</label><span><input type="color" data-k="bg_color" /> <input type="color" data-k="bg_color2" /></span></div>' +
+					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_text_color')) !!} + '</label><span><input type="color" data-k="text_color" /> <label class="zmc-inline"><input type="checkbox" data-k="shadow" /> ' + {!! json_encode(lang('commerce.cfg_shadow')) !!} + '</label></span></div>' +
+					langCell('title', {!! json_encode(lang('commerce.cfg_banner_title')) !!}) +
+					langCell('text', {!! json_encode(lang('commerce.cfg_banner_text')) !!}) +
+					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_link_url')) !!} + '</label><input type="text" data-k="url" placeholder="' + {!! json_encode(lang('commerce.cfg_link_ph')) !!} + '" /></div>' +
 				'</div>' +
-				'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger zmc-banner-del" data-del="1">삭제</button>';
+				'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger zmc-banner-del" data-del="1">' + {!! json_encode(lang('commerce.admin_item_edit_170')) !!} + '</button>';
 
 			row.zmcExtra = data;
 			row.querySelector('[data-k=url]').value = data.url || '';
@@ -380,24 +397,86 @@
 		var zoneRows = document.getElementById('zmcZoneRows');
 		var zonesJson = document.getElementById('zmcZonesJson');
 		var zoneAdd = document.getElementById('zmcZoneAdd');
+		// 국가와 시·도는 목록에서 고른다. 손으로 적게 하면 구매자가 고른 값과 어긋난다
+		var zoneCountries = {!! $zmc_country_json !!};
+		var zoneRegionData = {!! $zmc_region_json !!};
+		function zoneOptions(map, selected, placeholder) {
+			var html = '<option value="">' + placeholder + '</option>';
+			for (var code in map) {
+				html += '<option value="' + code + '"' + (code === selected ? ' selected' : '') + '>' + map[code] + '</option>';
+			}
+			return html;
+		}
 		function addZone(data) {
 			data = data || {};
+			var country = String(data.country || 'KR').toUpperCase();
+			var region = String(data.region || data.regions || '');
 			var row = document.createElement('div');
 			row.className = 'zmc-zone-row';
-			row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center';
 			row.innerHTML =
-				'<input type="text" data-k="name" placeholder="이름 (예: 제주)" style="flex:1;min-width:110px" />' +
-				'<input type="text" data-k="country" placeholder="국가 (KR)" maxlength="2" style="width:82px;text-transform:uppercase" />' +
-				'<input type="text" data-k="regions" placeholder="시·도 (예: 제주, 강원)" style="flex:1;min-width:150px" />' +
-				'<input type="text" data-k="zips" placeholder="우편번호 패턴 (예: 63, 40200-40240)" style="flex:2;min-width:200px" />' +
-				'<input type="number" data-k="fee" placeholder="추가금 (원)" min="0" style="width:120px" />' +
-				'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger" data-del="1">삭제</button>';
-			row.querySelector('[data-k=name]').value = data.name || '';
-			row.querySelector('[data-k=country]').value = data.country || '';
-			row.querySelector('[data-k=regions]').value = data.regions || '';
-			row.querySelector('[data-k=zips]').value = data.zips || '';
+				'<select data-k="country" class="zmc-zone-country">' + zoneOptions(zoneCountries, country, {!! json_encode(lang('commerce.cfg_zone_country_ph')) !!}) + '</select>' +
+				'<span class="zmc-pick zmc-zone-region"><input type="text" data-k="region-text" placeholder="' + {!! json_encode(lang('commerce.cfg_zone_region_ph')) !!} + '" /><input type="hidden" data-k="region" data-pick-value="1" /></span>' +
+				'<input type="text" data-k="zips" class="zmc-zone-zips" placeholder="' + {!! json_encode(lang('commerce.cfg_zone_zips_ph')) !!} + '" />' +
+				'<input type="number" data-k="fee" placeholder="' + {!! json_encode(lang('commerce.cfg_zone_fee_ph')) !!} + '" min="0" step="0.01" style="width:120px" />' +
+				'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger" data-del="1">' + {!! json_encode(lang('commerce.admin_item_edit_170')) !!} + '</button>';
+			row.querySelector('[data-k=zips]').value = country === 'KR' ? (data.zips || '') : '';
 			row.querySelector('[data-k=fee]').value = data.fee || '';
+
+						var countryEl = row.querySelector('[data-k=country]');
+			var regionWrap = row.querySelector('.zmc-zone-region');
+			var regionText = row.querySelector('[data-k=region-text]');
+			var regionEl = row.querySelector('[data-k=region]');
+			var zipsEl = row.querySelector('[data-k=zips]');
+
+			var regionPick = window.zmcPickBox ? zmcPickBox(regionText, {
+				items: [],
+				empty: {!! json_encode(lang('commerce.cfg_zone_search_empty')) !!}
+			}) : null;
+
+			function syncScope(keep) {
+				var cc = String(countryEl.value || '').toUpperCase();
+				var list = zoneRegionData[cc] || [];
+								regionWrap.hidden = !list.length;
+				zipsEl.hidden = (cc !== 'KR');
+				if (regionPick) { regionPick.setItems(list); }
+				if (!list.length) { regionEl.value = ''; }
+				if (cc !== 'KR') { zipsEl.value = ''; }
+				if (keep && regionPick) { regionPick.setValue(keep); }
+			}
+			countryEl.addEventListener('change', function () { syncScope(''); });
+			syncScope(region);
+
 			row.querySelector('[data-del]').addEventListener('click', function () { row.remove(); });
+
+			// 구매 금액 구간. 기준액을 넘긴 구간 중 가장 높은 것이 적용된다
+			var tierWrap = document.createElement('div');
+			tierWrap.className = 'zmc-tier-wrap';
+			var tierList = document.createElement('div');
+			tierList.className = 'zmc-tier-list';
+			var tierAdd = document.createElement('button');
+			tierAdd.type = 'button';
+			tierAdd.className = 'rsva-btn rsva-btn-sm';
+			tierAdd.textContent = {!! json_encode(lang('commerce.cfg_zone_tier_add')) !!};
+			function addTier(tier) {
+				tier = tier || {};
+				var t = document.createElement('div');
+				t.className = 'zmc-tier';
+				t.innerHTML =
+					'<input type="number" data-t="from" min="0" step="0.01" placeholder="' + {!! json_encode(lang('commerce.cfg_zone_tier_from')) !!} + '" />' +
+					'<span class="zmc-tier-arrow">&rarr;</span>' +
+					'<input type="number" data-t="fee" min="0" step="0.01" placeholder="' + {!! json_encode(lang('commerce.cfg_zone_tier_fee')) !!} + '" />' +
+					'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger" data-tdel="1">' + {!! json_encode(lang('commerce.admin_item_edit_170')) !!} + '</button>';
+				t.querySelector('[data-t=from]').value = tier.from || '';
+				t.querySelector('[data-t=fee]').value = tier.fee || '';
+				t.querySelector('[data-tdel]').addEventListener('click', function () { t.remove(); });
+				tierList.appendChild(t);
+			}
+			(data.tiers || []).forEach(addTier);
+			tierAdd.addEventListener('click', function () { addTier(); });
+			tierWrap.appendChild(tierList);
+			tierWrap.appendChild(tierAdd);
+			row.appendChild(tierWrap);
+
 			zoneRows.appendChild(row);
 		}
 		if (zoneRows && zonesJson) {
@@ -435,16 +514,24 @@
 				if (zoneRows && zonesJson) {
 					var zones = [];
 					zoneRows.querySelectorAll('.zmc-zone-row').forEach(function (row) {
+						var zoneCountry = row.querySelector('[data-k=country]').value.trim().toUpperCase();
+						var isKR = zoneCountry === 'KR';
 						var zone = {
-							name: row.querySelector('[data-k=name]').value.trim(),
-							country: row.querySelector('[data-k=country]').value.trim().toUpperCase(),
-							regions: row.querySelector('[data-k=regions]').value.trim(),
-							zips: row.querySelector('[data-k=zips]').value.trim(),
-							fee: parseInt(row.querySelector('[data-k=fee]').value, 10) || 0
+														country: zoneCountry,
+							region: row.querySelector('[data-k=region]').value.trim(),
+							zips: isKR ? row.querySelector('[data-k=zips]').value.trim() : '',
+							fee: row.querySelector('[data-k=fee]').value.trim(),
+							tiers: []
 						};
-						// 국가만 지정한 줄은 그 나라 전체에 적용되므로 조건이 비어도 저장한다
-						var hasRule = zone.zips || zone.regions || (zone.country && zone.country !== 'KR');
-						if (hasRule && zone.fee > 0) zones.push(zone);
+						row.querySelectorAll('.zmc-tier').forEach(function (t) {
+							var from = t.querySelector('[data-t=from]').value.trim();
+							var tfee = t.querySelector('[data-t=fee]').value.trim();
+							if (from !== '' && tfee !== '') zone.tiers.push({ from: from, fee: tfee });
+						});
+						// 국내는 시·도나 우편번호 중 하나는 있어야 하고, 해외는 국가만으로 성립한다
+						var hasRule = isKR ? (zone.region || zone.zips) : !!zoneCountry;
+												var hasFee = parseFloat(zone.fee) > 0 || zone.tiers.length > 0;
+						if (hasRule && hasFee) zones.push(zone);
 					});
 					zonesJson.value = JSON.stringify(zones);
 				}

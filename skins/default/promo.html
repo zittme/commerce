@@ -3,6 +3,7 @@
 
 {{-- 기획전 전용 페이지 — 배너 + 소개문 + 상품 그리드 --}}
 <div class="shp">
+	@include('_currency')
 	<div class="shp-top">
 		<div class="shp-title-wrap">
 			<h2 class="shp-title">{{ $promo->title }}</h2>
@@ -65,7 +66,10 @@
 				</span>
 				@endif
 				<span class="shp-price">
-					@if ($it->sale_price > 0 && $it->sale_price < $it->price)
+					@if (!empty($it->grade_price))
+					<s>{{ shop_money($it->sale_price > 0 && $it->sale_price < $it->price ? $it->sale_price : $it->price) }}</s> <strong>{{ shop_money($it->grade_price) }}</strong>
+					<em class="shp-grade-tag">{{ $lang->shop_grade ?? '회원 등급' }}</em>
+					@elseif ($it->sale_price > 0 && $it->sale_price < $it->price)
 					<s>{{ shop_money($it->price) }}</s> <strong>{{ shop_money($it->sale_price) }}</strong>
 					@else
 					<strong>{{ shop_money($it->price) }}</strong>

@@ -10,6 +10,7 @@ use Zittme\Modules\Commerce\Models\Item as ItemModel;
 use Zittme\Modules\Commerce\Models\Lang as LangModel;
 use Zittme\Modules\Commerce\Models\Money as MoneyModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
+use Zittme\Modules\Commerce\Models\Region as RegionModel;
 use Zittme\Modules\Commerce\Models\Stats as StatsModel;
 use Zittme\Modules\Commerce\Models\Tax as TaxModel;
 
@@ -34,20 +35,26 @@ class Admin extends Base
 		'notify_admin', 'notify_admin_email',
 	];
 
+	// 다국어 버튼으로 문구를 연결할 수 있는 설정 항목
+	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note'];
+
 	protected const BOOLEAN_FIELDS = ['enabled', 'allow_guest', 'notify_admin', 'item_sticky',
 		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale'];
 	// 소수점 2자리 허용 (적립률 0.00~100.00%)
 	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100]];
 	protected const INT_FIELDS = [
 		'pending_minutes' => [10, 1440],
-		'default_ship_fee' => [0, 1000000],
-		'free_ship_over' => [0, 100000000],
 		'claim_days' => [0, 90],
-		'credit_min_use' => [0, 1000000],
-		'review_credit_text' => [0, 100000],
-		'review_credit_photo' => [0, 100000],
 		'retention_days' => [0, 3650],
 		'home_count' => [4, 24],
+	];
+	// 금액 설정 — 기준 통화 최소단위로 저장 (소수부 통화는 100.50 형태 입력 허용)
+	protected const MONEY_FIELDS = [
+		'default_ship_fee' => [0, 100000000],
+		'free_ship_over' => [0, 10000000000],
+		'credit_min_use' => [0, 100000000],
+		'review_credit_text' => [0, 10000000],
+		'review_credit_photo' => [0, 10000000],
 	];
 
 	/**
@@ -110,7 +117,7 @@ class Admin extends Base
 		return $map;
 	}
 
-	// ────────────────────────── 화면 ──────────────────────────
+	// 화면
 
 	/**
 	 * 대시보드.
@@ -170,17 +177,26 @@ class Admin extends Base
 		$args->page = max(1, (int)\Context::get('page'));
 		$args->list_count = 50;
 		$args->sort_index = 'item_srl';
+		$args->order_type = 'desc';
 		$keyword = trim((string)\Context::get('f_keyword'));
 		if ($keyword !== '')
 		{
 			$args->search_keyword = '%' . $keyword . '%';
 		}
 		$output = executeQueryArray('commerce.getItemList', $args);
-		$items = $output->data ?: [];
+		$items = LangModel::textAll($output->data ?: [], ['item_name']);
 		$options_map = [];
 		foreach ($items as $stock_item)
 		{
-			$options_map[(int)$stock_item->item_srl] = ItemModel::getOptions((int)$stock_item->item_srl);
+			$stock_options = ItemModel::getOptions((int)$stock_item->item_srl);
+			// 연결된 다국어 문구는 실제 값으로 보여준다
+			LangModel::textAll($stock_options, ['option_label']);
+			// 조합 옵션 이름은 축 값에서 다시 만든다 (저장된 이름은 만든 시점 글자로 굳는다)
+			foreach ($stock_options as $stock_option)
+			{
+				$stock_option->option_label = ComboModel::optionLabel($stock_item, $stock_option);
+			}
+			$options_map[(int)$stock_item->item_srl] = $stock_options;
 		}
 		\Context::set('stock_items', $items);
 		\Context::set('stock_options_map', $options_map);
@@ -212,7 +228,10 @@ class Admin extends Base
 
 		// 상품 선택용 전체 상품 (판매·품절)
 		$output = executeQueryArray('commerce.getItemList', (object)['status_list' => 'sale,soldout', 'list_count' => 500, 'sort_index' => 'item_srl', 'order_type' => 'desc']);
-		\Context::set('promo_all_items', ($output->toBool() && !empty($output->data)) ? $output->data : []);
+		$promo_items = ($output->toBool() && !empty($output->data)) ? $output->data : [];
+		// 다국어 코드는 서버에서 푼다. 템플릿이 이스케이프한 뒤에는 코어 치환이 걸리지 않는다
+		LangModel::textAll($promo_items, ['item_name']);
+		\Context::set('promo_all_items', $promo_items);
 
 		$this->renderView('promotions', 'promotions');
 	}
@@ -394,13 +413,13 @@ class Admin extends Base
 	 */
 	public function dispCommerceAdminQna()
 	{
-		$item_output = executeQueryArray('commerce.getItemList', (object)['list_count' => 1000]);
+		$item_output = executeQueryArray('commerce.getItemList', (object)['list_count' => 1000, 'sort_index' => 'item_srl', 'order_type' => 'desc']);
 		$item_names = [];
 		foreach ($item_output->data ?: [] as $qna_item)
 		{
 			if (!empty($qna_item->item_srl))
 			{
-				$item_names[(int)$qna_item->item_srl] = $qna_item->item_name;
+				$item_names[(int)$qna_item->item_srl] = LangModel::text($qna_item->item_name);
 			}
 		}
 		\Context::set('qna_item_names', $item_names);
@@ -531,7 +550,7 @@ class Admin extends Base
 		}
 
 		// 다통화 판매 — 통화 목록과 이 상품의 외화 가격 (화면 표기용 소수 값으로 변환)
-		$fx_currencies = array_values(array_diff(MoneyModel::currencies(), ['KRW']));
+		$fx_currencies = array_values(array_diff(MoneyModel::currencies(), [MoneyModel::base()]));
 		$fx_values = [];
 		if (count($fx_currencies) && $item_srl > 0)
 		{
@@ -573,6 +592,34 @@ class Admin extends Base
 		\Context::set('editor', \EditorModel::getEditor($editor_target_srl, $editor_option));
 
 		\Context::set('item', $item);
+		// 연결된 다국어 문구는 실제 값으로 보여준다 (편집 시 코드는 위젯이 따로 들고 있다)
+		LangModel::textAll($options, ['option_label']);
+		// 조합 옵션 이름은 축 값에서 다시 만든다. 저장된 이름은 조합을 만든 시점의
+		// 글자라, 뒤늦게 축에 다국어 코드를 연결해도 그대로 남는다.
+		$edit_axes = ComboModel::axes($item->option_axes ?? '');
+		if (count($edit_axes))
+		{
+			foreach ($edit_axes as $edit_axis)
+			{
+				foreach ($edit_axis->items as $edit_axis_item)
+				{
+					$edit_axis_item->value = LangModel::text($edit_axis_item->value);
+				}
+			}
+			foreach ($options as $option)
+			{
+				if (empty($option->combo))
+				{
+					continue;
+				}
+				$edit_key = ComboModel::indexKey($edit_axes, $option->combo);
+				$edit_label = ComboModel::labelFromKey($edit_axes, $edit_key);
+				if ($edit_label !== '')
+				{
+					$option->option_label = $edit_label;
+				}
+			}
+		}
 		\Context::set('options', $options);
 		\Context::set('categories', self::getCategories());
 		\Context::set('badges', BadgeModel::getList(true));
@@ -808,7 +855,7 @@ class Admin extends Base
 		\Context::set('order_sellers', OrderModel::getSellerOrders($order_srl));
 		$order_address = count($to_array($address_output)) ? $to_array($address_output)[0] : null;
 		\Context::set('order_address', $order_address);
-		// 템플릿에서 클래스를 직접 부르면 컴파일 시 네임스페이스 구분자가 유실된다 (pitfall #110)
+		// 템플릿에서 클래스를 직접 부르면 컴파일 시 네임스페이스 구분자가 유실된다
 		\Context::set('order_address_text', $order_address ? AddressModel::format($order_address) : '');
 		\Context::set('order_phone_text', $order_address ? AddressModel::formatPhone($order_address) : '');
 		\Context::set('order_logs', $to_array($logs_output));
@@ -927,13 +974,13 @@ class Admin extends Base
 		}
 
 		$rows = [[
-			'주문번호', '주문일시', '주문자', '주문자연락처', '주문자이메일',
-			'받는분', '받는분연락처', '우편번호', '주소', '상세주소', '배송메모',
-			'상품', '수량합계', '결제금액', '결제상태', '배송상태', '택배사', '송장번호',
+			lang('commerce.csv_order_code'), lang('commerce.csv_order_date'), lang('commerce.csv_orderer'), lang('commerce.csv_orderer_phone'), lang('commerce.csv_orderer_email'),
+			lang('commerce.csv_receiver'), lang('commerce.csv_receiver_phone'), lang('commerce.csv_zipcode'), lang('commerce.csv_address'), lang('commerce.csv_address_detail'), lang('commerce.csv_delivery_memo'),
+			lang('commerce.csv_items'), lang('commerce.csv_qty_total'), lang('commerce.csv_amount'), lang('commerce.csv_pay_status'), lang('commerce.csv_ship_status'), lang('commerce.csv_carrier'), lang('commerce.csv_tracking_no'),
 		]];
 
-		$order_labels = ['pending' => '결제대기', 'paid' => '결제완료', 'cancelled' => '취소', 'failed' => '실패', 'expired' => '만료'];
-		$seller_labels = ['pending' => '결제대기', 'paid' => '발주대기', 'preparing' => '배송준비', 'shipping' => '배송중', 'delivered' => '배송완료', 'cancelled' => '취소', 'refunded' => '환불'];
+		$order_labels = ['pending' => lang('commerce.st_order_pending'), 'paid' => lang('commerce.st_order_paid'), 'cancelled' => lang('commerce.st_order_cancelled'), 'failed' => lang('commerce.st_order_failed'), 'expired' => lang('commerce.st_order_expired')];
+		$seller_labels = ['pending' => lang('commerce.st_order_pending'), 'paid' => lang('commerce.st_sel_paid'), 'preparing' => lang('commerce.st_sel_preparing'), 'shipping' => lang('commerce.st_sel_shipping'), 'delivered' => lang('commerce.st_sel_delivered'), 'cancelled' => lang('commerce.st_order_cancelled'), 'refunded' => lang('commerce.st_sel_refunded')];
 
 		foreach ($orders as $order)
 		{
@@ -1166,19 +1213,17 @@ class Admin extends Base
 		}
 
 		$discount_type = \Context::get('discount_type') === 'percent' ? 'percent' : 'fixed';
-		$discount_value = max(0, (int)\Context::get('discount_value'));
-		if ($discount_type === 'percent')
-		{
-			$discount_value = min(100, $discount_value);
-		}
+		$discount_value = $discount_type === 'percent'
+			? min(100, max(0, (int)\Context::get('discount_value')))
+			: max(0, MoneyModel::inputToMinor(\Context::get('discount_value')));
 
 		$args = (object)[
 			'title' => self::langValue('title', mb_substr($title, 0, 120)),
 			'code' => $code,
 			'discount_type' => $discount_type,
 			'discount_value' => $discount_value,
-			'max_discount' => max(0, (int)\Context::get('max_discount')),
-			'min_order' => max(0, (int)\Context::get('min_order')),
+			'max_discount' => max(0, MoneyModel::inputToMinor(\Context::get('max_discount'))),
+			'min_order' => max(0, MoneyModel::inputToMinor(\Context::get('min_order'))),
 			'use_start' => preg_replace('/\D/', '', (string)\Context::get('use_start')) ? preg_replace('/\D/', '', (string)\Context::get('use_start')) . '000000' : '',
 			'use_end' => preg_replace('/\D/', '', (string)\Context::get('use_end')) ? preg_replace('/\D/', '', (string)\Context::get('use_end')) . '235959' : '',
 			'per_member' => max(1, (int)\Context::get('per_member')),
@@ -1305,7 +1350,7 @@ class Admin extends Base
 	public function procCommerceAdminAdjustCredit()
 	{
 		$target = trim((string)\Context::get('target'));
-		$amount = (int)\Context::get('amount');
+		$amount = MoneyModel::inputToMinor(\Context::get('amount'));
 		if ($target === '' || $amount === 0)
 		{
 			return new \BaseObject(-1, 'msg_invalid_request');
@@ -1354,11 +1399,9 @@ class Admin extends Base
 		{
 			$discount_type = '';
 		}
-		$discount_value = max(0, round((float)\Context::get('discount_value'), 2));
-		if ($discount_type === 'percent')
-		{
-			$discount_value = min(100, $discount_value);
-		}
+		$discount_value = $discount_type === 'percent'
+			? min(100, max(0, round((float)\Context::get('discount_value'), 2)))
+			: max(0, MoneyModel::inputToMinor(\Context::get('discount_value')));
 		if ($discount_type === '' || $discount_value <= 0)
 		{
 			$discount_type = '';
@@ -1367,7 +1410,7 @@ class Admin extends Base
 
 		$args = (object)[
 			'title' => self::langValue('title', mb_substr($title, 0, 80)),
-			'min_spend' => max(0, (int)\Context::get('min_spend')),
+			'min_spend' => max(0, MoneyModel::inputToMinor(\Context::get('min_spend'))),
 			'credit_rate' => max(0, min(100, round((float)\Context::get('credit_rate'), 2))),
 			'coupon_srl' => max(0, (int)\Context::get('coupon_srl')),
 			'discount_type' => $discount_type,
@@ -1499,7 +1542,7 @@ class Admin extends Base
 
 		if ($tab === 'item')
 		{
-			$rows = [['상품', '판매수량', '주문건수', '매출']];
+			$rows = [[lang('commerce.csv_item'), lang('commerce.csv_qty_sold'), lang('commerce.csv_order_count'), lang('commerce.csv_revenue')]];
 			foreach (StatsModel::byItem($from, $to, 1000) as $r)
 			{
 				$rows[] = [$r->item_name, (string)$r->qty, (string)$r->orders, (string)$r->sales];
@@ -1507,7 +1550,7 @@ class Admin extends Base
 		}
 		elseif ($tab === 'region')
 		{
-			$rows = [['지역', '주문건수', '매출']];
+			$rows = [[lang('commerce.csv_region'), lang('commerce.csv_order_count'), lang('commerce.csv_revenue')]];
 			foreach (StatsModel::byRegion($from, $to) as $r)
 			{
 				$rows[] = [$r->region, (string)$r->orders, (string)$r->sales];
@@ -1515,7 +1558,7 @@ class Admin extends Base
 		}
 		else
 		{
-			$rows = [['기간', '주문건수', '매출']];
+			$rows = [[lang('commerce.csv_period'), lang('commerce.csv_order_count'), lang('commerce.csv_revenue')]];
 			foreach (StatsModel::series($from, $to, $unit) as $r)
 			{
 				$rows[] = [$r->label, (string)$r->orders, (string)$r->sales];
@@ -1539,9 +1582,119 @@ class Admin extends Base
 	/**
 	 * 설정.
 	 */
+	/**
+	 * 축 정의가 바뀌면 기존 조합 옵션의 축 이름·값을 새 정의로 옮긴다.
+	 *
+	 * 조합은 축의 차례대로 만들어지므로 자리 번호로 짝을 맞춘다.
+	 * 축 개수나 값 개수가 달라졌으면 짝을 확신할 수 없어 손대지 않는다
+	 * (그때는 관리자가 조합 만들기를 다시 눌러야 한다).
+	 *
+	 * @param int $item_srl
+	 * @param mixed $old_axes 저장 전 축 정의
+	 * @param mixed $new_axes 저장할 축 정의
+	 * @return void
+	 */
+	protected static function remapCombos(int $item_srl, $old_axes, $new_axes): void
+	{
+		$old = ComboModel::axes($old_axes);
+		$new = ComboModel::axes($new_axes);
+		if (!count($old) || count($old) !== count($new))
+		{
+			return;
+		}
+
+		// 축 이름과 값의 옛 표기 => 새 표기 대응표
+		$name_map = [];
+		$value_map = [];
+		foreach ($old as $axis_index => $old_axis)
+		{
+			$new_axis = $new[$axis_index];
+			if (count($old_axis->items) !== count($new_axis->items))
+			{
+				return;
+			}
+			$name_map[$old_axis->name] = $new_axis->name;
+			foreach ($old_axis->items as $value_index => $old_item)
+			{
+				$value_map[$old_axis->name . "\0" . $old_item->value] = $new_axis->items[$value_index]->value;
+			}
+		}
+		if ($name_map === array_combine(array_keys($name_map), array_keys($name_map))
+			&& count(array_filter($value_map, function($v, $k) { return $v !== substr($k, strpos($k, "\0") + 1); }, \ARRAY_FILTER_USE_BOTH)) === 0)
+		{
+			return;
+		}
+
+		foreach (ItemModel::getOptions($item_srl) as $option)
+		{
+			if (empty($option->combo))
+			{
+				continue;
+			}
+			$combo = json_decode((string)$option->combo, true);
+			if (!is_array($combo))
+			{
+				continue;
+			}
+			$moved = [];
+			foreach ($combo as $old_name => $old_value)
+			{
+				$new_name = $name_map[$old_name] ?? $old_name;
+				$moved[$new_name] = $value_map[$old_name . "\0" . $old_value] ?? $old_value;
+			}
+			executeQuery('commerce.updateOption', (object)[
+				'option_srl' => (int)$option->option_srl,
+				'option_label' => ComboModel::label($moved),
+				'option_type' => $option->option_type ?? 'basic',
+				'combo' => json_encode($moved, \JSON_UNESCAPED_UNICODE),
+				'price_add' => (int)$option->price_add,
+				'stock' => (int)$option->stock,
+				'sku' => (string)($option->sku ?? ''),
+				'list_order' => (int)$option->list_order,
+			]);
+		}
+	}
+
 	public function dispCommerceAdminConfig()
 	{
 		\Context::set('pay_available', self::isPayAvailable());
+
+		// 지역 추가 배송비는 기준 통화 최소단위로 저장돼 있다. 입력칸에는 사람이 쓰는 표기로 보여 준다
+		$zones = json_decode((string)(self::config()->ship_extra_zones ?? '[]'), true);
+		$zones = is_array($zones) ? array_values($zones) : [];
+		foreach ($zones as $zone_index => $zone_row)
+		{
+			if (is_array($zone_row))
+			{
+				$zones[$zone_index]['fee'] = MoneyModel::minorToInput((int)($zone_row['fee'] ?? 0));
+				if (is_array($zone_row['tiers'] ?? null))
+				{
+					foreach ($zone_row['tiers'] as $tier_index => $tier_row)
+					{
+						if (is_array($tier_row))
+						{
+							$zones[$zone_index]['tiers'][$tier_index]['from'] = MoneyModel::minorToInput((int)($tier_row['from'] ?? 0));
+							$zones[$zone_index]['tiers'][$tier_index]['fee'] = MoneyModel::minorToInput((int)($tier_row['fee'] ?? 0));
+						}
+					}
+				}
+			}
+		}
+		\Context::set('zmc_zones_display', json_encode($zones, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES));
+
+		$config_row = self::config();
+		LangModel::textAll([$config_row], self::LANG_CONFIG_FIELDS);
+		\Context::set('shop_config', $config_row);
+
+		$zone_region_data = [];
+		foreach (array_keys(RegionModel::REGIONS) as $zone_country_code)
+		{
+			$zone_region_data[$zone_country_code] = RegionModel::searchData($zone_country_code);
+		}
+		\Context::set('zmc_country_json', json_encode(AddressModel::countries(), \JSON_UNESCAPED_UNICODE));
+		\Context::set('zmc_region_json', json_encode($zone_region_data, \JSON_UNESCAPED_UNICODE));
+		\Context::addCSSFile('./modules/commerce/tpl/css/pickbox.css');
+		\Context::addJsFile('./modules/commerce/tpl/js/pickbox.js');
 
 		// 스킨 — 테마 패키지(레이아웃+커머스+짓미페이+게시판 스킨) 배포 규약의 일부
 		$instance = self::getDefaultInstance();
@@ -1589,7 +1742,7 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminConfig'));
 	}
 
-	// ────────────────────────── 처리 ──────────────────────────
+	// 처리
 
 	/**
 	 * 대표 이미지 업로드 (내용 검사 포함).
@@ -1623,7 +1776,7 @@ class Admin extends Base
 				{
 					continue;
 				}
-				$price = (int)($prices[$i] ?? 0);
+				$price = MoneyModel::inputToMinor($prices[$i] ?? 0);
 				if ($type === 'extra' && $price < 0)
 				{
 					$price = 0;
@@ -1834,8 +1987,12 @@ class Admin extends Base
 				? LangModel::toValue((string)\Context::get('item_name_langcode'))
 				: mb_substr($item_name, 0, 250),
 			'item_code' => mb_substr(trim((string)\Context::get('item_code')), 0, 100),
-			'price' => max(0, (int)preg_replace('/\D/', '', (string)\Context::get('price'))),
-			'sale_price' => max(0, (int)preg_replace('/\D/', '', (string)\Context::get('sale_price'))),
+			'price' => max(0, MoneyModel::inputToMinor(\Context::get('price'))),
+			'sale_price' => max(0, MoneyModel::inputToMinor(\Context::get('sale_price'))),
+			// 가격순 정렬 전용 실판매가 — 할인 있으면 할인가
+			'effective_price' => max(0, MoneyModel::inputToMinor(\Context::get('sale_price'))) > 0
+				? max(0, MoneyModel::inputToMinor(\Context::get('sale_price')))
+				: max(0, MoneyModel::inputToMinor(\Context::get('price'))),
 			// 재고 수량은 재고 관리 화면(입고/출고/손실)에서만 바꾼다.
 			// 여기서 받으면 저장할 때마다 재고가 폼 값으로 덮인다.
 			'use_stock' => \Context::get('use_stock') === 'N' ? 'N' : 'Y',
@@ -1853,7 +2010,7 @@ class Admin extends Base
 			'option_axes' => ComboModel::encodeAxes(\Context::get('option_axes')),
 			'option_mode' => \Context::get('option_mode') === 'combo' ? 'combo' : 'single',
 			'ship_fee_type' => in_array(\Context::get('ship_fee_type'), ['default', 'free', 'fixed'], true) ? \Context::get('ship_fee_type') : 'default',
-			'ship_fee' => max(0, (int)preg_replace('/\D/', '', (string)\Context::get('ship_fee'))),
+			'ship_fee' => max(0, MoneyModel::inputToMinor(\Context::get('ship_fee'))),
 			'status' => in_array(\Context::get('status'), ['sale', 'soldout', 'hidden', 'stop'], true) ? \Context::get('status') : 'sale',
 			'is_recommend' => \Context::get('is_recommend') === 'Y' ? 'Y' : 'N',
 			'is_new' => \Context::get('is_new') === 'Y' ? 'Y' : 'N',
@@ -1871,6 +2028,13 @@ class Admin extends Base
 		if ($item_srl <= 0)
 		{
 			$item_srl = getNextSequence();
+		}
+
+		// 신규 상품은 진열 맨 앞(관리 목록 맨 위)으로. 코어 문서와 같은 규약:
+		// list_order = -srl 이라 오름차순 정렬에서 최신이 먼저 온다. 드래그 정렬이 이후 값을 덮는다.
+		if ($is_new)
+		{
+			$fields->list_order = -$item_srl;
 		}
 
 		// 이미지 갤러리 (최대 7장) — 유지 목록(순서 반영) + 새 업로드. 첫 장이 대표 썸네일이다
@@ -1962,6 +2126,9 @@ class Admin extends Base
 		}
 		else
 		{
+			// 축 이름·값을 바꾸면(다국어 문구 연결 포함) 기존 조합 옵션이 옛 값을 들고 있어
+			// 구매 화면에서 어느 조합과도 맞지 않는다. 자리 순서를 기준으로 옮겨 준다.
+			self::remapCombos($item_srl, ItemModel::get($item_srl)->option_axes ?? '', $fields->option_axes ?? '');
 			$output = executeQuery('commerce.updateItem', $fields);
 		}
 		if (!$output->toBool())
@@ -1979,7 +2146,7 @@ class Admin extends Base
 		$fx_sale_input = (array)\Context::get('fx_sale_price');
 		foreach ($fx_currencies_on as $fx_currency)
 		{
-			if ($fx_currency === 'KRW')
+			if ($fx_currency === MoneyModel::base())
 			{
 				continue;
 			}
@@ -2020,8 +2187,43 @@ class Admin extends Base
 			}
 		}
 
+		// 변경사항 저장에 실려 온 옵션 일괄 수정 (행별 저장과 같은 규칙)
+		$opt_rows = json_decode((string)\Context::get('options_json'), true);
+		if (is_array($opt_rows))
+		{
+			foreach ($opt_rows as $opt_row)
+			{
+				$opt_srl = (int)($opt_row['option_srl'] ?? 0);
+				$opt_label = trim((string)($opt_row['option_label'] ?? ''));
+				if ($opt_srl <= 0 || $opt_label === '')
+				{
+					continue;
+				}
+				$opt_price = MoneyModel::inputToMinor($opt_row['price_add'] ?? 0);
+				$opt_type = ($opt_row['option_type'] ?? '') === 'extra' ? 'extra' : 'basic';
+				if ($opt_type === 'extra' && $opt_price < 0)
+				{
+					$opt_price = 0;
+				}
+				executeQuery('commerce.updateOption', (object)[
+					'option_srl' => $opt_srl,
+					'option_label' => mb_substr($opt_label, 0, 250),
+					'option_type' => $opt_type,
+					'price_add' => $opt_price,
+					'stock' => max(0, (int)($opt_row['stock'] ?? 0)),
+					'sku' => mb_substr(trim((string)($opt_row['sku'] ?? '')), 0, 80),
+				]);
+			}
+			ItemModel::syncSoldout($item_srl);
+		}
+
 		$this->setMessage('success_registed');
-		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item_srl));
+		// 신규 등록 폼의 success_return_url 은 srl 이 비어 새 등록 화면으로 되돌아간다.
+		// 등록 직후에는 항상 그 상품의 편집 화면을 연다. 콘솔에서 왔으면 콘솔 주소로
+		$edit_url = \Context::get('from_console') === 'Y'
+			? getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'item_edit', 'item_srl', $item_srl)
+			: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item_srl);
+		$this->setRedirectUrl($is_new ? $edit_url : (\Context::get('success_return_url') ?: $edit_url));
 	}
 
 	/**
@@ -2237,7 +2439,7 @@ class Admin extends Base
 		}
 
 		// 추가 옵션은 별도 부가상품이라 추가금이 곧 판매가다 — 음수면 -금액짜리 상품이 담기므로 막는다
-		$price_add = (int)preg_replace('/[^\-\d]/', '', (string)\Context::get('price_add'));
+		$price_add = MoneyModel::inputToMinor(\Context::get('price_add'));
 		if (\Context::get('option_type') === 'extra' && $price_add < 0)
 		{
 			return new \BaseObject(-1, lang('commerce.admin_msg_7'));
@@ -2246,7 +2448,7 @@ class Admin extends Base
 		executeQuery('commerce.insertOption', (object)[
 			'option_srl' => getNextSequence(),
 			'item_srl' => $item_srl,
-			'option_label' => mb_substr($label, 0, 250),
+			'option_label' => self::langValue('option_label', mb_substr($label, 0, 250)),
 			'option_type' => \Context::get('option_type') === 'extra' ? 'extra' : 'basic',
 			'price_add' => $price_add,
 			'stock' => max(0, (int)\Context::get('stock')),
@@ -2278,7 +2480,7 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		$price_add = (int)preg_replace('/[^\-\d]/', '', (string)\Context::get('price_add'));
+		$price_add = MoneyModel::inputToMinor(\Context::get('price_add'));
 		if (\Context::get('option_type') === 'extra' && $price_add < 0)
 		{
 			return new \BaseObject(-1, lang('commerce.admin_msg_7'));
@@ -2286,7 +2488,7 @@ class Admin extends Base
 
 		executeQuery('commerce.updateOption', (object)[
 			'option_srl' => $option_srl,
-			'option_label' => mb_substr($label, 0, 250),
+			'option_label' => self::langValue('option_label', mb_substr($label, 0, 250)),
 			'option_type' => \Context::get('option_type') === 'extra' ? 'extra' : 'basic',
 			'price_add' => $price_add,
 			'stock' => max(0, (int)\Context::get('stock')),
@@ -2396,7 +2598,12 @@ class Admin extends Base
 			{
 				continue;
 			}
-			if (in_array($key, self::BOOLEAN_FIELDS, true))
+			if (in_array($key, self::LANG_CONFIG_FIELDS, true))
+			{
+				// 다국어 버튼으로 문구를 연결했으면 '$user_lang->코드' 로 담는다
+				$value = self::langValue($key, trim((string)$value));
+			}
+			elseif (in_array($key, self::BOOLEAN_FIELDS, true))
 			{
 				$value = $value === 'Y' ? 'Y' : 'N';
 			}
@@ -2404,6 +2611,11 @@ class Admin extends Base
 			{
 				[$min, $max] = self::INT_FIELDS[$key];
 				$value = max($min, min($max, (int)$value));
+			}
+			elseif (isset(self::MONEY_FIELDS[$key]))
+			{
+				[$min, $max] = self::MONEY_FIELDS[$key];
+				$value = max($min, min($max, MoneyModel::inputToMinor($value)));
 			}
 			elseif (isset(self::FLOAT_FIELDS[$key]))
 			{
@@ -2424,11 +2636,16 @@ class Admin extends Base
 			}
 			elseif ($key === 'currencies')
 			{
-				// 쉼표 구분 통화 코드 (예: USD, JPY). KRW 는 기본이라 뺀다
+				// 병행 판매 통화 — 대표 통화 목록 안에서만 고른다. 기준 통화는 기본이라 뺀다.
+				$raw = is_array($value) ? $value : preg_split('/[\s,]+/', strtoupper((string)$value));
+				$allowed = class_exists('\\Zittme\\Modules\\Zittme_pay\\Models\\Currency')
+					? \Zittme\Modules\Zittme_pay\Models\Currency::MAJOR_CURRENCIES : [];
 				$codes = [];
-				foreach (preg_split('/[\s,]+/', strtoupper((string)$value)) as $code)
+				foreach ($raw as $code)
 				{
-					if (preg_match('/^[A-Z]{3}$/', $code) && $code !== 'KRW' && !in_array($code, $codes, true))
+					$code = strtoupper(trim((string)$code));
+					if (preg_match('/^[A-Z]{3}$/', $code) && $code !== MoneyModel::base()
+						&& (empty($allowed) || isset($allowed[$code])) && !in_array($code, $codes, true))
 					{
 						$codes[] = $code;
 					}
@@ -2443,7 +2660,33 @@ class Admin extends Base
 			{
 				// JSON 배열만 저장 — 깨진 값이면 빈 배열
 				$decoded = json_decode((string)$value, true);
-				$value = is_array($decoded) ? json_encode(array_values($decoded), \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES) : '[]';
+				$decoded = is_array($decoded) ? array_values($decoded) : [];
+				if ($key === 'ship_extra_zones')
+				{
+					// 지역 추가 배송비도 다른 금액 항목과 같이 기준 통화 최소단위로 저장한다
+					foreach ($decoded as &$zone_row)
+					{
+						if (is_array($zone_row))
+						{
+							$zone_row['fee'] = MoneyModel::inputToMinor($zone_row['fee'] ?? 0);
+							// 구간의 기준액과 추가금도 같은 단위로 담는다
+							if (is_array($zone_row['tiers'] ?? null))
+							{
+								foreach ($zone_row['tiers'] as &$zone_tier)
+								{
+									if (is_array($zone_tier))
+									{
+										$zone_tier['from'] = MoneyModel::inputToMinor($zone_tier['from'] ?? 0);
+										$zone_tier['fee'] = MoneyModel::inputToMinor($zone_tier['fee'] ?? 0);
+									}
+								}
+								unset($zone_tier);
+							}
+						}
+					}
+					unset($zone_row);
+				}
+				$value = json_encode($decoded, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES);
 			}
 			else
 			{
@@ -2493,7 +2736,14 @@ class Admin extends Base
 			case 'ship': // 송장 등록 → 배송중
 				$company = trim((string)\Context::get('shipping_company'));
 				$invoice = trim((string)\Context::get('shipping_invoice'));
-				if ($company === '' || $invoice === '')
+				// 직접배송은 택배사 없이 배송중으로 넘긴다. 송장·배송조회는 생략된다
+				$direct_ship = \Context::get('direct_ship') === 'Y';
+				if ($direct_ship)
+				{
+					$company = lang('commerce.shop_ship_direct');
+					$invoice = '';
+				}
+				elseif ($company === '' || $invoice === '')
 				{
 					return new \BaseObject(-1, 'msg_shop_need_invoice');
 				}
@@ -2582,7 +2832,7 @@ class Admin extends Base
 		elseif ($action === 'approve')
 		{
 			// 환불액: 관리자 입력값(반품배송비 차감 반영) — 상한은 주문 결제액
-			$refund_amount = max(0, (int)preg_replace('/\D/', '', (string)\Context::get('refund_amount')));
+			$refund_amount = max(0, MoneyModel::inputToMinor(\Context::get('refund_amount')));
 			if ($order)
 			{
 				$refund_amount = min($refund_amount, (int)$order->payment_price);

@@ -41,6 +41,59 @@ class Review extends Base
 	}
 
 	/**
+	 * 지금 이 상품에 리뷰를 쓸 수 있는가 (아직 리뷰 안 쓴 확정 주문이 있는가).
+	 */
+	public static function canReviewNow(int $member_srl, int $item_srl): bool
+	{
+		return self::resolveReviewOrder($member_srl, $item_srl) > 0;
+	}
+
+	/**
+	 * 리뷰를 붙일 주문건을 정한다.
+	 *
+	 * 지정한 주문이 있으면 그 주문이 이 회원의 확정 주문이고 이 상품을 담고 있는지 확인한다.
+	 * 지정이 없으면 아직 리뷰를 안 쓴 확정 주문 중 최근 것을 고른다. 없으면 0.
+	 *
+	 * @return int 리뷰를 붙일 order_srl (자격 없으면 0)
+	 */
+	protected static function resolveReviewOrder(int $member_srl, int $item_srl, int $want_order_srl = 0): int
+	{
+		if ($member_srl <= 0 || $item_srl <= 0)
+		{
+			return 0;
+		}
+		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
+		$sql = 'SELECT o.order_srl FROM `' . $prefix . 'commerce_order_item` AS oi'
+			. ' JOIN `' . $prefix . 'commerce_order` AS o ON o.order_srl = oi.order_srl'
+			. ' JOIN `' . $prefix . 'commerce_order_seller` AS os ON os.order_seller_srl = oi.order_seller_srl'
+			. ' WHERE o.member_srl = ? AND oi.item_srl = ? AND o.status = ? AND os.status = ?';
+		$args = [$member_srl, $item_srl, 'paid', 'confirmed'];
+		if ($want_order_srl > 0)
+		{
+			$sql .= ' AND o.order_srl = ?';
+			$args[] = $want_order_srl;
+		}
+		$sql .= ' ORDER BY o.order_srl DESC';
+		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare($sql);
+		// 코어는 버퍼링 없는 쿼리를 쓴다. 커서를 연 채로 다른 쿼리를 부를 수 없어 먼저 전부 읽는다
+		$candidates = [];
+		if ($stmt && $stmt->execute($args))
+		{
+			$candidates = $stmt->fetchAll(\PDO::FETCH_COLUMN, 0) ?: [];
+			$stmt->closeCursor();
+		}
+		foreach ($candidates as $candidate)
+		{
+			$candidate = (int)$candidate;
+			if ($candidate > 0 && !self::hasReviewed($member_srl, $item_srl, $candidate))
+			{
+				return $candidate;
+			}
+		}
+		return 0;
+	}
+
+	/**
 	 * 리뷰 등록 — 구매자만.
 	 */
 	public function procCommerceReviewInsert()
@@ -56,10 +109,16 @@ class Review extends Base
 		{
 			return new \BaseObject(-1, 'msg_shop_no_item');
 		}
-		// 관리자 예외 없음 — 구매확정한 상품만 리뷰를 쓸 수 있다
-		if (!self::hasPurchased((int)$logged_info->member_srl, $item_srl))
+		$member_srl = (int)$logged_info->member_srl;
+		// 리뷰는 주문건 단위다. 어느 주문에 대한 리뷰인지 정하고, 그 주문이 확정 상태인지 확인한다
+		$order_srl = self::resolveReviewOrder($member_srl, $item_srl, (int)\Context::get('order_srl'));
+		if ($order_srl <= 0)
 		{
 			return new \BaseObject(-1, 'msg_shop_review_buyer_only');
+		}
+		if (self::hasReviewed($member_srl, $item_srl, $order_srl))
+		{
+			return new \BaseObject(-1, 'msg_shop_review_already');
 		}
 		$content = trim((string)\Context::get('content'));
 		if ($content === '')
@@ -76,14 +135,11 @@ class Review extends Base
 		})) : [];
 		$images = array_slice($images, 0, 5);
 
-		$member_srl = (int)$logged_info->member_srl;
-		// 적립 보상은 상품당 첫 리뷰에만 준다 — 등록 전 기존 리뷰 수로 판정
-		$is_first = !self::findReviewByMemberItem($member_srl, $item_srl);
-
 		$output = executeQuery('commerce.insertReview', (object)[
 			'review_srl' => getNextSequence(),
 			'item_srl' => $item_srl,
 			'member_srl' => $member_srl,
+			'order_srl' => $order_srl,
 			'nick_name' => (string)$logged_info->nick_name,
 			'rating' => $rating,
 			'content' => $content,
@@ -95,18 +151,14 @@ class Review extends Base
 			return $output;
 		}
 
-		// 리뷰 적립: 텍스트/사진·영상 첨부에 따라 지급 (자체 원장)
-		$reward = 0;
-		if ($is_first)
+		// 리뷰 적립은 주문건마다 지급한다
+		$config = self::config();
+		$reward = count($images)
+			? (int)($config->review_credit_photo ?? 0)
+			: (int)($config->review_credit_text ?? 0);
+		if ($reward > 0)
 		{
-			$config = self::config();
-			$reward = count($images)
-				? (int)($config->review_credit_photo ?? 0)
-				: (int)($config->review_credit_text ?? 0);
-			if ($reward > 0)
-			{
-				\Zittme\Modules\Commerce\Models\Credit::add($member_srl, $reward, 'earn', 0, '리뷰 작성 적립');
-			}
+			\Zittme\Modules\Commerce\Models\Credit::add($member_srl, $reward, 'earn', $order_srl, '리뷰 작성 적립');
 		}
 
 		$this->setMessage($reward > 0 ? sprintf(lang('commerce.admin_msg_9'), number_format($reward)) : 'msg_shop_review_added');
@@ -114,29 +166,54 @@ class Review extends Base
 	}
 
 	/**
-	 * 회원의 해당 상품 리뷰 존재 여부 (외부 노출용 별칭).
+	 * 회원이 이 주문건의 이 상품에 리뷰를 썼는가.
+	 *
+	 * 리뷰는 주문건 단위다. 같은 상품을 다시 사면 그 주문으로 또 쓸 수 있다.
+	 * order_srl 이 0 이면 상품 단위로 본다 (컬럼 도입 전 리뷰 호환).
 	 */
-	public static function hasReviewed(int $member_srl, int $item_srl): bool
-	{
-		return self::findReviewByMemberItem($member_srl, $item_srl);
-	}
-
-	/**
-	 * 회원의 해당 상품 리뷰 존재 여부.
-	 */
-	protected static function findReviewByMemberItem(int $member_srl, int $item_srl): bool
+	public static function hasReviewed(int $member_srl, int $item_srl, int $order_srl = 0): bool
 	{
 		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
-		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare(
-			'SELECT 1 FROM `' . $prefix . 'commerce_review` WHERE member_srl = ? AND item_srl = ? LIMIT 1'
-		);
+		$sql = 'SELECT 1 FROM `' . $prefix . 'commerce_review` WHERE member_srl = ? AND item_srl = ?';
+		$args = [$member_srl, $item_srl];
+		if ($order_srl > 0)
+		{
+			// 주문 연결이 없는 옛 리뷰(0/NULL)는 어느 주문이든 작성한 것으로 본다.
+			// 보정이 아직 안 돈 사이트에서 이미 쓴 리뷰가 다시 뜨는 것을 막는다
+			$sql .= ' AND (order_srl = ? OR order_srl = 0 OR order_srl IS NULL)';
+			$args[] = $order_srl;
+		}
+		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare($sql . ' LIMIT 1');
 		$found = false;
-		if ($stmt && $stmt->execute([$member_srl, $item_srl]))
+		if ($stmt && $stmt->execute($args))
 		{
 			$found = (bool)$stmt->fetchColumn();
 			$stmt->closeCursor();
 		}
 		return $found;
+	}
+
+	/**
+	 * 이 주문에서 아직 리뷰를 안 쓴 상품 목록.
+	 *
+	 * @return array<int, string> item_srl => 상품명
+	 */
+	public static function unreviewedItems(int $member_srl, int $order_srl): array
+	{
+		$result = [];
+		if ($member_srl <= 0 || $order_srl <= 0)
+		{
+			return $result;
+		}
+		foreach (\Zittme\Modules\Commerce\Models\Order::getItems($order_srl) as $row)
+		{
+			$item_srl = (int)($row->item_srl ?? 0);
+			if ($item_srl > 0 && !isset($result[$item_srl]) && !self::hasReviewed($member_srl, $item_srl, $order_srl))
+			{
+				$result[$item_srl] = (string)$row->item_name;
+			}
+		}
+		return $result;
 	}
 
 	/**

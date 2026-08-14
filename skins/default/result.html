@@ -8,14 +8,70 @@
 	@if (count($shp_unrv))
 	<div class="shp-review-invite {{ Context::get('review') ? 'is-hot' : '' }}">
 		<div class="shp-review-invite-msg">
-			<strong>{{ Context::get('review') ? '구매확정 완료! 리뷰를 작성해보세요' : '아직 리뷰를 작성하지 않은 상품이 있어요' }}</strong>
-			<span>리뷰를 남기면 다른 구매자에게 큰 도움이 됩니다.</span>
+			<strong>{{ Context::get('review') ? $lang->shop_review_prompt_confirmed : $lang->shop_review_prompt_pending }}</strong>
+			<span>{{ $lang->shop_review_prompt_note }}</span>
 		</div>
 		<div class="shp-review-invite-items">
 			@foreach ($shp_unrv as $shp_unrv_srl => $shp_unrv_name)
-			<a class="shp-btn shp-btn-primary shp-btn-sm" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $shp_unrv_srl, 'review', '1') }}">{{ $shp_unrv_name }} 리뷰 작성</a>
+			<button type="button" class="shp-btn shp-btn-primary shp-btn-sm" onclick="var f=document.getElementById('shpRvForm{{ $shp_unrv_srl }}'); f.style.display=f.style.display==='none'?'grid':'none';">{{ sprintf($lang->shop_write_review_for, $shp_unrv_name) }}</button>
 			@endforeach
 		</div>
+		{{-- 상품 상세로 보내지 않고 이 자리에서 바로 등록한다 --}}
+		@foreach ($shp_unrv as $shp_unrv_srl => $shp_unrv_name)
+		<form action="{{ getUrl('') }}" method="post" id="shpRvForm{{ $shp_unrv_srl }}" style="display:none;margin-top:12px;gap:8px">
+			<input type="hidden" name="act" value="procCommerceReviewInsert" />
+			<input type="hidden" name="mid" value="{{ $mid }}" />
+			<input type="hidden" name="item_srl" value="{{ $shp_unrv_srl }}" />
+			<input type="hidden" name="order_srl" value="{{ $order->order_srl }}" />
+			<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order->order_code) }}" />
+			<div style="display:flex;gap:10px;align-items:center">
+				<strong style="font-size:13.5px">{{ $shp_unrv_name }}</strong>
+				<span class="shp-starpick">@foreach ([5, 4, 3, 2, 1] as $shp_star_v)<input type="radio" id="shpStar{{ $shp_unrv_srl }}_{{ $shp_star_v }}" name="rating" value="{{ $shp_star_v }}" @if ($shp_star_v === 5) checked @endif /><label for="shpStar{{ $shp_unrv_srl }}_{{ $shp_star_v }}" aria-label="{{ $shp_star_v }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 5.9 6.5 1-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5L2.6 9.4l6.5-1z"/></svg></label>@endforeach</span>
+			</div>
+			<textarea name="content" rows="3" required placeholder="{{ $lang->shop_write_review ?? '리뷰 작성' }}" style="width:100%"></textarea>
+			<input type="hidden" name="images" class="shpRvImages" value="" />
+			<div style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:#6b7684"><input type="file" class="shpRvFile" data-item="{{ $shp_unrv_srl }}" accept="image/*,video/mp4,video/quicktime,video/webm" multiple /> {{ $lang->shop_review_media_label }}</div>
+			<div class="shp-review-media shpRvPreview"></div>
+			<div><button type="submit" class="shp-btn shp-btn-primary shp-btn-sm">{{ $lang->shop_write_review ?? '리뷰 작성' }}</button></div>
+		</form>
+		@endforeach
+		<script>
+		(function () {
+			document.querySelectorAll('.shpRvFile').forEach(function (fileEl) {
+				var form = fileEl.closest('form');
+				var jsonEl = form.querySelector('.shpRvImages');
+				var preview = form.querySelector('.shpRvPreview');
+				var urls = [];
+				function render() {
+					jsonEl.value = JSON.stringify(urls);
+					preview.innerHTML = '';
+					urls.forEach(function (u, i) {
+						var w = document.createElement('span');
+						w.className = 'shp-review-thumb';
+						w.innerHTML = (/\.(mp4|mov|webm)$/i.test(u) ? '<video src="' + u + '" preload="metadata"></video>' : '<img src="' + u + '" alt="" />') + '<button type="button" aria-label="{{ $lang->shop_delete }}">&times;</button>';
+						w.querySelector('button').addEventListener('click', function () { urls.splice(i, 1); render(); });
+						preview.appendChild(w);
+					});
+				}
+				fileEl.addEventListener('change', function () {
+					[].slice.call(fileEl.files).forEach(function (f) {
+						if (urls.length >= 5) return;
+						var fd = new FormData();
+						fd.append('file', f);
+						fd.append('item_srl', fileEl.getAttribute('data-item'));
+						fetch('./?module=commerce&act=procCommerceReviewUpload', { method: 'POST', body: fd })
+							.then(function (r) { return r.json(); })
+							.then(function (res) {
+								if (res && !res.error && res.url) { urls.push(res.url); render(); }
+								else alert(res && res.message ? res.message : {!! json_encode($lang->msg_shop_upload_failed) !!});
+							})
+							.catch(function () { alert({!! json_encode($lang->msg_shop_upload_failed) !!}); });
+					});
+					fileEl.value = '';
+				});
+			});
+		})();
+		</script>
 	</div>
 	@endif
 
@@ -27,7 +83,7 @@
 	@endphp
 	@if ($shp_step_idx !== false)
 	<div class="shp-steps">
-		@foreach (['결제 완료', '배송 준비', '배송 중', '배송 완료', '구매확정'] as $shp_si => $shp_sl)
+		@foreach ([$lang->shop_status_paid, $lang->shop_status_preparing, $lang->shop_status_shipping, $lang->shop_status_delivered, $lang->shop_status_confirmed] as $shp_si => $shp_sl)
 		<div class="shp-step {{ $shp_si < $shp_step_idx ? 'is-done' : '' }} {{ $shp_si === $shp_step_idx ? 'is-now' : '' }}">
 			<span class="shp-step-dot">
 				@if ($shp_si < $shp_step_idx)
@@ -43,7 +99,7 @@
 	<dl class="shp-detail-list">
 		<dt>{{ $lang->shop_order_code }}</dt>
 		<dd><strong>{{ $order->order_code }}</strong></dd>
-		<dt>{{ $lang->reservation_status ?? '상태' }}</dt>
+		<dt>{{ $lang->shop_status }}</dt>
 		@php $shp_ds = Context::get('display_status') ?: $order->status; @endphp
 		<dd><span class="shp-st shp-st-{{ $shp_ds }}">{{ $lang->{'shop_status_' . $shp_ds} ?? $shp_ds }}</span></dd>
 		<dt>{{ $lang->shop_orderer }}</dt>
@@ -86,7 +142,7 @@
 	<div class="shp-track">
 		@if ($shp_tk)
 		<div class="shp-track-head">
-			<strong class="{{ $shp_tk->complete === 'Y' ? 'is-done' : '' }}">{{ $shp_tk->complete === 'Y' ? '배송이 완료되었어요' : $shp_tk->status_name }}</strong>
+			<strong class="{{ $shp_tk->complete === 'Y' ? 'is-done' : '' }}">{{ $shp_tk->complete === 'Y' ? $lang->shop_delivered_note : $shp_tk->status_name }}</strong>
 			@if (count($shp_tk_details))<span>{{ $shp_tk_details[0]['time'] ?? '' }}</span>@endif
 		</div>
 		@endif
@@ -104,7 +160,7 @@
 			@endforeach
 		</ol>
 		@if (count($shp_tk_details) > 4)
-		<button type="button" class="shp-btn shp-btn-ghost" style="width:100%;margin-top:10px;padding:9px 0;font-size:13.5px" onclick="this.closest('.shp-track').classList.toggle('is-open');this.textContent=this.closest('.shp-track').classList.contains('is-open')?'접기':'전체 배송 이력 보기';">전체 배송 이력 보기</button>
+		<button type="button" class="shp-btn shp-btn-ghost" style="width:100%;margin-top:10px;padding:9px 0;font-size:13.5px" onclick="this.closest('.shp-track').classList.toggle('is-open');this.textContent=this.closest('.shp-track').classList.contains('is-open')?{!! json_encode($lang->shop_track_fold) !!}:{!! json_encode($lang->shop_track_all) !!};">{{ $lang->shop_track_all }}</button>
 		@endif
 		@endif
 	</div>

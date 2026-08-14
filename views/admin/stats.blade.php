@@ -1,7 +1,7 @@
 @include('_tabs')
 
 @php
-	$st_tabs = ['period' => '기간별 매출', 'item' => '상품별', 'region' => '지역별'];
+	$st_tabs = ['period' => lang('commerce.adm_stats_period'), 'item' => lang('commerce.adm_stats_item'), 'region' => lang('commerce.adm_stats_region')];
 	$st_base = ['module', 'admin', 'act', 'dispCommerceAdminStats'];
 	$st_max = 0;
 @endphp
@@ -29,7 +29,7 @@
 		@if ($st_tab === 'period')
 		<select name="unit">
 			@foreach ($st_units as $key => $label)
-			<option value="{{ $key }}" @if($st_unit === $key) selected @endif>{{ $label }} 단위</option>
+			<option value="{{ $key }}" @if($st_unit === $key) selected @endif>{{ sprintf(lang('commerce.adm_stats_unit'), $label) }}</option>
 			@endforeach
 		</select>
 		@endif
@@ -38,10 +38,10 @@
 	</form>
 
 	<div class="zms-cards">
-		<div class="zms-card"><span>{{ lang('commerce.admin_stats_4') }}</span><strong>{{ number_format($st_summary->sales) }}원</strong></div>
-		<div class="zms-card"><span>{{ lang('commerce.admin_stats_5') }}</span><strong>{{ number_format($st_summary->orders) }}건</strong></div>
-		<div class="zms-card"><span>{{ lang('commerce.admin_stats_6') }}</span><strong>{{ number_format($st_summary->average) }}원</strong></div>
-		<div class="zms-card zms-card-minus"><span>{{ lang('commerce.admin_stats_7') }}</span><strong>{{ number_format($st_summary->cancelled_sales) }}원</strong><small>{{ number_format($st_summary->cancelled_orders) }}건</small></div>
+		<div class="zms-card"><span>{{ lang('commerce.admin_stats_4') }}</span><strong>{{ shop_money_base($st_summary->sales) }}</strong></div>
+		<div class="zms-card"><span>{{ lang('commerce.admin_stats_5') }}</span><strong>{{ sprintf(lang('commerce.st_unit_count'), number_format($st_summary->orders)) }}</strong></div>
+		<div class="zms-card"><span>{{ lang('commerce.admin_stats_6') }}</span><strong>{{ shop_money_base($st_summary->average) }}</strong></div>
+		<div class="zms-card zms-card-minus"><span>{{ lang('commerce.admin_stats_7') }}</span><strong>{{ shop_money_base($st_summary->cancelled_sales) }}</strong><small>{{ sprintf(lang('commerce.st_unit_count'), number_format($st_summary->cancelled_orders)) }}</small></div>
 	</div>
 
 	<div class="rsva-panel">
@@ -52,7 +52,7 @@
 		@if ($st_tab === 'period')
 		<div class="zms-chart">
 			@foreach ($st_rows as $r)
-			<div class="zms-bar" title="{{ $r->label }} · {{ number_format($r->sales) }}원 · {{ $r->orders }}건">
+			<div class="zms-bar" title="{{ $r->label }} · {{ shop_money_base($r->sales) }} · {{ sprintf(lang('commerce.st_unit_count'), $r->orders) }}">
 				<div class="zms-bar-fill" style="height:{{ $st_max > 0 ? max(2, (int)round($r->sales / $st_max * 100)) : 2 }}%"></div>
 				<span class="zms-bar-label">{{ $r->label }}</span>
 			</div>
@@ -62,7 +62,7 @@
 			<thead><tr><th>{{ lang('commerce.admin_stats_1') }}</th><th style="width:120px">{{ lang('commerce.admin_stats_5') }}</th><th style="width:180px">{{ lang('commerce.admin_stats_4') }}</th></tr></thead>
 			<tbody>
 				@foreach ($st_rows as $r)
-				<tr><td>{{ $r->label }}</td><td>{{ number_format($r->orders) }}건</td><td>{{ number_format($r->sales) }}원</td></tr>
+				<tr><td>{{ $r->label }}</td><td>{{ sprintf(lang('commerce.st_unit_count'), number_format($r->orders)) }}</td><td>{{ shop_money_base($r->sales) }}</td></tr>
 				@endforeach
 			</tbody>
 		</table>
@@ -76,7 +76,7 @@
 					<td><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $r->item_srl) }}">{{ $r->item_name }}</a></td>
 					<td>{{ number_format($r->qty) }}</td>
 					<td>{{ number_format($r->orders) }}</td>
-					<td>{{ number_format($r->sales) }}원</td>
+					<td>{{ shop_money_base($r->sales) }}</td>
 				</tr>
 				@endforeach
 			</tbody>
@@ -87,7 +87,7 @@
 			<thead><tr><th>{{ lang('commerce.admin_stats_12') }}</th><th style="width:120px">{{ lang('commerce.admin_stats_11') }}</th><th style="width:180px">{{ lang('commerce.admin_stats_4') }}</th></tr></thead>
 			<tbody>
 				@foreach ($st_rows as $r)
-				<tr><td>{{ $r->region }}</td><td>{{ number_format($r->orders) }}건</td><td>{{ number_format($r->sales) }}원</td></tr>
+				<tr><td>{{ $r->region }}</td><td>{{ sprintf(lang('commerce.st_unit_count'), number_format($r->orders)) }}</td><td>{{ shop_money_base($r->sales) }}</td></tr>
 				@endforeach
 			</tbody>
 		</table>

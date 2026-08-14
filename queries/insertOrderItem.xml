@@ -10,6 +10,7 @@
 		<column name="option_srl" var="option_srl" default="0" />
 		<column name="item_name" var="item_name" notnull="notnull" />
 		<column name="option_name" var="option_name" />
+		<column name="sku" var="sku" default="" />
 		<column name="thumb" var="thumb" />
 		<column name="price" var="price" default="0" />
 		<column name="qty" var="qty" default="1" />

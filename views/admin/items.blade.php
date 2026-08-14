@@ -32,7 +32,7 @@
 			@foreach ($items as $it)
 			@php $it_thumb_style = !empty($it->thumb) ? "background-image:url('" . $it->thumb . "');" : ''; @endphp
 			<tr draggable="true" data-item-srl="{{ $it->item_srl }}">
-				<td class="zmc-handle" aria-label="순서 이동 손잡이">
+				<td class="zmc-handle" aria-label="{{ lang('commerce.adm_order_handle') }}">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>
 				</td>
 				<td><span style="display:block;width:44px;height:44px;border-radius:8px;background:#f7f8fa center/cover no-repeat;{{ $it_thumb_style }}"></span></td>
@@ -45,18 +45,18 @@
 				</td>
 				<td>
 					@if ($it->sale_price > 0 && $it->sale_price < $it->price)
-					<s style="color:#9aa1ab">{{ number_format($it->price) }}</s> <strong>{{ number_format($it->sale_price) }}</strong>
+					<s style="color:#9aa1ab">{{ shop_money_base((int)$it->price) }}</s> <strong>{{ shop_money_base((int)$it->sale_price) }}</strong>
 					@else
-					{{ number_format($it->price) }}
+					{{ shop_money_base((int)$it->price) }}
 					@endif
 				</td>
-				<td>{{ $it->use_stock === 'Y' ? number_format($it->stock) : '무제한' }}</td>
+				<td>{{ $it->use_stock === 'Y' ? number_format($it->stock) : lang('commerce.st_item_unlimited') }}</td>
 				<td>{{ $it->has_options === 'Y' ? 'Y' : '-' }}</td>
-				<td><span class="rsva-st {{ $it->status === 'sale' ? 'rsva-st-confirmed' : ($it->status === 'soldout' ? 'rsva-st-hold' : '') }}">{{ ['sale'=>'판매중','soldout'=>'품절','hidden'=>'숨김','stop'=>'중지'][$it->status] ?? $it->status }}</span></td>
+				<td><span class="rsva-st {{ $it->status === 'sale' ? 'rsva-st-confirmed' : ($it->status === 'soldout' ? 'rsva-st-hold' : '') }}">{{ ['sale'=>lang('commerce.st_item_sale'),'soldout'=>lang('commerce.st_item_soldout'),'hidden'=>lang('commerce.st_item_hidden'),'stop'=>lang('commerce.st_item_stop')][$it->status] ?? $it->status }}</span></td>
 				<td>
 					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $it->item_srl) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_items_20') }}</a>
 					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'clone_from', $it->item_srl) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_items_21') }}</a>
-					<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('삭제하시겠습니까? 주문 이력이 있으면 숨김으로 전환됩니다.')">
+					<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_item_delete_ask') }}')">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminDeleteItem" />
 						<input type="hidden" name="item_srl" value="{{ $it->item_srl }}" />
@@ -144,9 +144,9 @@ jQuery(function ($) {
 		exec_json('commerce.procCommerceAdminSortItems', { item_srls: srls.join(',') }, function () {
 			bar.classList.remove('is-on');
 			original = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
-			alert('진열 순서를 저장했습니다.');
+			alert({!! json_encode(lang('commerce.adm_order_saved')) !!});
 		}, function (ret) {
-			alert((ret && ret.message) || '순서를 저장하지 못했습니다.');
+			alert((ret && ret.message) || {!! json_encode(lang('commerce.adm_order_save_failed')) !!});
 		});
 	});
 });

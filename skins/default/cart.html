@@ -2,6 +2,7 @@
 @load('css/shop.css')
 
 <div class="shp">
+	@include('_currency')
 	<div class="shp-top"><h2 class="shp-title">{{ $lang->shop_cart }}</h2></div>
 
 	@if (empty($cart->items))
@@ -37,7 +38,7 @@
 							<input type="hidden" name="cart_srl" value="{{ $entry->cart_srl }}" />
 							<button type="submit" aria-label="{{ $lang->shop_delete }}"><svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
 						</form>
-						<strong class="shp-cart-price">{{ number_format($entry->subtotal) }}원</strong>
+						<strong class="shp-cart-price">{{ shop_money($entry->subtotal) }}</strong>
 					</div>
 				</div>
 				@endforeach
@@ -48,9 +49,9 @@
 		<aside class="shp-2col-aside">
 			<div class="shp-box shp-paybox">
 				<h3>{{ $lang->shop_order_estimate ?? '주문 예상 금액' }}</h3>
-				<div class="shp-summary-row"><span>{{ $lang->shop_item_total }}</span><span>{{ number_format($cart->item_total) }}원</span></div>
-				<div class="shp-summary-row"><span>{{ $lang->shop_ship_fee }}</span><span>{{ $ship_fee > 0 ? '+' . number_format($ship_fee) . '원' : $lang->shop_ship_free }}</span></div>
-				<div class="shp-summary-row is-total"><span>{{ $lang->shop_total }}</span><span>{{ number_format($cart->item_total + $ship_fee) }}원</span></div>
+				<div class="shp-summary-row"><span>{{ $lang->shop_item_total }}</span><span>{{ shop_money($cart->item_total) }}</span></div>
+				<div class="shp-summary-row"><span>{{ $lang->shop_ship_fee }}</span><span>{{ $ship_fee > 0 ? '+' . shop_money($ship_fee) : $lang->shop_ship_free }}</span></div>
+				<div class="shp-summary-row is-total"><span>{{ $lang->shop_total }}</span><span>{{ shop_money($cart->item_total + $ship_fee) }}</span></div>
 				<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceCheckout') }}" class="shp-btn shp-btn-primary" style="width:100%;margin-top:14px">{{ $lang->shop_checkout }}</a>
 			</div>
 		</aside>

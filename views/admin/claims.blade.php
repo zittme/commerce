@@ -24,14 +24,14 @@
 			<tr>
 				<td>
 					@if ($co)<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $co->order_srl) }}" style="font-weight:700">{{ $co->order_code }}</a>
-					<br /><small style="color:#9aa1ab">{{ number_format($co->payment_price) }}원</small>@endif
+					<br /><small style="color:#9aa1ab">{{ shop_money_in($co->payment_price, $co->currency ?? 'KRW') }}</small>@endif
 				</td>
-				<td>{{ ['cancel'=>'취소','return'=>'반품','exchange'=>'교환'][$c->claim_type] ?? $c->claim_type }}</td>
+				<td>{{ ['cancel'=>lang('commerce.st_claim_cancel'),'return'=>lang('commerce.st_claim_return'),'exchange'=>lang('commerce.st_claim_exchange')][$c->claim_type] ?? $c->claim_type }}</td>
 				<td style="max-width:260px">{{ $c->reason ?: '-' }}</td>
-				<td><span class="rsva-st {{ $c->status === 'requested' ? 'rsva-st-hold' : '' }}">{{ ['requested'=>'신청','rejected'=>'거절','done'=>'완료'][$c->status] ?? $c->status }}</span></td>
+				<td><span class="rsva-st {{ $c->status === 'requested' ? 'rsva-st-hold' : '' }}">{{ ['requested'=>lang('commerce.st_claim_request'),'rejected'=>lang('commerce.st_claim_rejected'),'done'=>lang('commerce.st_claim_done')][$c->status] ?? $c->status }}</span></td>
 				<td>
 					@if ($c->status === 'requested')
-					<form action="{{ getUrl('') }}" method="post" class="rsva-inline" onsubmit="return confirm('처리하시겠습니까?')">
+					<form action="{{ getUrl('') }}" method="post" class="rsva-inline" onsubmit="return confirm('{{ lang('commerce.adm_claim_handle_ask') }}')">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminUpdateClaim" />
 						<input type="hidden" name="claim_srl" value="{{ $c->claim_srl }}" />
@@ -41,7 +41,7 @@
 						<div><button type="submit" name="claim_action" value="reject" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_claims_4') }}</button></div>
 					</form>
 					@else
-					{{ $c->refund_amount > 0 ? '환불 ' . number_format($c->refund_amount) . '원' : '-' }}
+					{{ $c->refund_amount > 0 ? sprintf(lang('commerce.adm_refund_of'), shop_money_in($c->refund_amount, $co->currency ?? 'KRW')) : '-' }}
 					@endif
 				</td>
 			</tr>

@@ -1,5 +1,5 @@
 /* 커머스 기본 스킨 — Pretendard, #2677e3, 반응형 */
-.shp { --shp-brand: #2677e3; --shp-brand-soft: rgba(38, 119, 227, .08); --shp-border: #e5e8ee; --shp-text: #1c2330; --shp-sub: #6b7684; --shp-bg: #f7f8fa;
+.shp { --shp-brand: #2677e3; --shp-brand-soft: rgba(38, 119, 227, .08); --shp-border: #e5e8ee; --shp-text: #1c2330; --shp-sub: #6b7684; --shp-bg: #f7f8fa; --shp-card: #fff;
 	width: 100%; margin: 0 auto; padding: 8px 0 48px; color: var(--shp-text);
 	font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; word-break: keep-all; }
 .shp * { box-sizing: border-box; }
@@ -15,8 +15,8 @@
 
 /* 필터 바 */
 .shp-filter { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
-.shp-filter select, .shp-filter input { padding: 8px 10px; border: 1px solid var(--shp-border); border-radius: 9px; font-size: 13px; font-family: inherit; background: #fff; }
-.shp-filter button { padding: 8px 14px; border: 1px solid var(--shp-border); border-radius: 9px; background: #fff; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.shp-filter select, .shp-filter input { padding: 8px 10px; border: 1px solid var(--shp-border); border-radius: 9px; font-size: 13px; font-family: inherit; background: var(--shp-card); }
+.shp-filter button { padding: 8px 14px; border: 1px solid var(--shp-border); border-radius: 9px; background: var(--shp-card); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
 .shp-filter button:hover { border-color: var(--shp-brand); color: var(--shp-brand); }
 .shp-sort { display: flex; gap: 4px; margin-left: auto; }
 .shp-sort a { padding: 6px 10px; border-radius: 8px; font-size: 13px; color: var(--shp-sub); }
@@ -24,7 +24,7 @@
 
 /* 상품 그리드 */
 .shp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
-.shp-card { display: flex; flex-direction: column; border: 1px solid var(--shp-border); border-radius: 16px; background: #fff; overflow: hidden; transition: border-color .15s, box-shadow .15s, transform .15s; position: relative; }
+.shp-card { display: flex; flex-direction: column; border: 1px solid var(--shp-border); border-radius: 16px; background: var(--shp-card); overflow: hidden; transition: border-color .15s, box-shadow .15s, transform .15s; position: relative; }
 .shp-card:hover { border-color: var(--shp-brand); box-shadow: 0 8px 24px rgba(38, 119, 227, .12); transform: translateY(-2px); }
 .shp-card-thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 1 / 1; background: var(--shp-bg) center/cover no-repeat; }
 .shp-card-thumb svg { width: 44px; height: 44px; fill: var(--shp-sub); opacity: .35; }
@@ -54,24 +54,24 @@
 .shp-btn { display: inline-flex; align-items: center; justify-content: center; padding: 13px 22px; border: 1px solid transparent; border-radius: 11px; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; flex: 1; }
 .shp-btn-primary { background: var(--shp-brand); color: #fff; }
 .shp-btn-primary:hover { filter: brightness(1.06); }
-.shp-btn-ghost { background: #fff; border-color: var(--shp-border); color: var(--shp-text); }
+.shp-btn-ghost { background: var(--shp-card); border-color: var(--shp-border); color: var(--shp-text); }
 .shp-btn-ghost:hover { border-color: var(--shp-brand); color: var(--shp-brand); }
 .shp-warn { padding: 13px 15px; border: 1px solid #f0c36d; border-radius: 10px; background: #fdf7ea; font-size: 14px; margin-bottom: 12px; }
 .shp-content { padding-top: 24px; border-top: 1px solid var(--shp-border); font-size: 15px; line-height: 1.8; }
 .shp-content img { max-width: 100%; }
 
 /* 장바구니·주문서 테이블 */
-.shp-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--shp-border); border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+.shp-table { width: 100%; border-collapse: collapse; background: var(--shp-card); border: 1px solid var(--shp-border); border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
 .shp-table th { padding: 11px 12px; background: var(--shp-bg); font-size: 13px; font-weight: 600; color: var(--shp-sub); text-align: left; border-bottom: 1px solid var(--shp-border); }
 .shp-table td { padding: 12px; font-size: 14px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
 .shp-table tr:last-child td { border-bottom: 0; }
 .shp-mini-thumb { display: block; width: 52px; height: 52px; border-radius: 9px; background: var(--shp-bg) center/cover no-repeat; }
-.shp-summary { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; border: 1px solid var(--shp-border); border-radius: 14px; background: #fff; margin-bottom: 18px; }
+.shp-summary { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; border: 1px solid var(--shp-border); border-radius: 14px; background: var(--shp-card); margin-bottom: 18px; }
 .shp-summary-row { display: flex; justify-content: space-between; font-size: 14px; }
 .shp-summary-row.is-total { padding-top: 10px; border-top: 1px solid var(--shp-border); font-size: 17px; font-weight: 800; }
 .shp-blocked { opacity: .5; }
 
-.shp-form fieldset { margin: 0 0 16px; padding: 18px 20px; border: 1px solid var(--shp-border); border-radius: 14px; background: #fff; }
+.shp-form fieldset { margin: 0 0 16px; padding: 18px 20px; border: 1px solid var(--shp-border); border-radius: 14px; background: var(--shp-card); }
 .shp-form legend { padding: 0 6px; font-size: 15px; font-weight: 700; }
 .shp-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .shp-check { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; cursor: pointer; }
@@ -83,7 +83,7 @@
 .shp-foot-links a:hover { color: var(--shp-brand); }
 
 /* 결과 */
-.shp-detail-list { display: grid; grid-template-columns: 130px 1fr; gap: 10px 14px; margin: 0 0 20px; padding: 18px 20px; border: 1px solid var(--shp-border); border-radius: 14px; background: #fff; }
+.shp-detail-list { display: grid; grid-template-columns: 130px 1fr; gap: 10px 14px; margin: 0 0 20px; padding: 18px 20px; border: 1px solid var(--shp-border); border-radius: 14px; background: var(--shp-card); }
 .shp-detail-list dt { font-size: 13px; font-weight: 600; color: var(--shp-sub); }
 .shp-detail-list dd { margin: 0; font-size: 14px; }
 .shp-st { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f2f3f5; color: var(--shp-sub); }
@@ -248,7 +248,7 @@ html { scroll-behavior: smooth; }
 .shp-home-banner-copy span { font-size: clamp(13px, 1.5vw, 16px); opacity: .9; }
 .shp-home-banner-dots { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 6px; }
 .shp-home-banner-dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 999px; background: rgba(255, 255, 255, .45); cursor: pointer; transition: width .18s, background .18s; }
-.shp-home-banner-dots button.is-on { width: 20px; background: #fff; }
+.shp-home-banner-dots button.is-on { width: 20px; background: var(--shp-card); }
 
 /* 쇼핑 홈: 섹션 */
 .shp-home-section { margin-bottom: 34px; }
@@ -286,7 +286,7 @@ html { scroll-behavior: smooth; }
 .shp-steps { display: flex; align-items: flex-start; justify-content: space-between; margin: 4px 0 22px; position: relative; }
 .shp-steps::before { content: ''; position: absolute; top: 11px; left: 10%; right: 10%; height: 2px; background: var(--shp-border, #e3e6eb); }
 .shp-step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; flex: 1; }
-.shp-step-dot { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid var(--shp-border, #e3e6eb); color: #fff; box-sizing: border-box; }
+.shp-step-dot { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--shp-card); border: 2px solid var(--shp-border, #e3e6eb); color: #fff; box-sizing: border-box; }
 .shp-step-label { font-size: 12.5px; color: var(--shp-sub, #6b7684); }
 .shp-step.is-done .shp-step-dot { background: var(--shp-brand, #2677e3); border-color: var(--shp-brand, #2677e3); }
 .shp-step.is-now .shp-step-dot { border-color: var(--shp-brand, #2677e3); box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 22px var(--shp-brand, #2677e3); }
@@ -295,11 +295,11 @@ html { scroll-behavior: smooth; }
 
 /* 하단 텍스트 링크 → 버튼형 */
 .shp-foot-links { gap: 10px; }
-.shp-foot-links a { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border: 1px solid var(--shp-border, #e3e6eb); border-radius: 999px; background: #fff; font-size: 13.5px; font-weight: 600; color: var(--shp-text, #333d4b); }
+.shp-foot-links a { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border: 1px solid var(--shp-border, #e3e6eb); border-radius: 999px; background: var(--shp-card); font-size: 13.5px; font-weight: 600; color: var(--shp-text, #333d4b); }
 .shp-foot-links a:hover { border-color: var(--shp-brand, #2677e3); color: var(--shp-brand, #2677e3); }
 
 /* 고스트 버튼 다듬기 */
-.shp-btn-ghost { background: #fff; border: 1px solid var(--shp-border, #e3e6eb); }
+.shp-btn-ghost { background: var(--shp-card); border: 1px solid var(--shp-border, #e3e6eb); }
 .shp-btn-ghost:hover { background: #f7f9fc; }
 
 /* 하위 카테고리 들여쓰기 */
@@ -353,7 +353,7 @@ html { scroll-behavior: smooth; }
 
 /* 목록 페이지네이션 */
 .shp-paging { display: flex; justify-content: center; gap: 6px; margin-top: 26px; }
-.shp-paging a, .shp-paging span { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid var(--shp-border, #e3e6eb); border-radius: 9px; font-size: 13.5px; color: var(--shp-text, #333d4b); background: #fff; }
+.shp-paging a, .shp-paging span { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid var(--shp-border, #e3e6eb); border-radius: 9px; font-size: 13.5px; color: var(--shp-text, #333d4b); background: var(--shp-card); }
 .shp-paging a:hover { border-color: var(--shp-brand, #2677e3); color: var(--shp-brand, #2677e3); }
 .shp-paging .is-on { border-color: var(--shp-brand, #2677e3); background: var(--shp-brand, #2677e3); color: #fff; font-weight: 700; }
 
@@ -442,7 +442,7 @@ html { scroll-behavior: smooth; }
 .shp-shortcuts::-webkit-scrollbar { height: 4px; }
 .shp-shortcuts::-webkit-scrollbar-thumb { background: #e0e4ea; border-radius: 99px; }
 .shp-shortcuts a { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 0 0 auto; width: 72px; text-decoration: none; }
-.shp-shortcuts img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid var(--shp-border, #e3e6eb); background: #fff; transition: transform .15s, box-shadow .15s; }
+.shp-shortcuts img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid var(--shp-border, #e3e6eb); background: var(--shp-card); transition: transform .15s, box-shadow .15s; }
 .shp-shortcuts a:hover img { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(0, 0, 0, .14); }
 .shp-shortcuts span { font-size: 12.5px; font-weight: 600; color: var(--shp-text, #333d4b); text-align: center; line-height: 1.3; word-break: keep-all; }
 .shp-shortcuts a:hover span { color: var(--shp-brand, #2677e3); }
@@ -605,7 +605,7 @@ html { scroll-behavior: smooth; }
 .shp-axis-row label { display: flex; align-items: baseline; gap: 2px; }
 .shp-axis-picked { font-weight: 500; color: var(--shp-sub); }
 .shp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.shp-chip { min-width: 54px; padding: 10px 14px; border: 1px solid var(--shp-border); border-radius: 9px; background: #fff; font-size: 14px; font-family: inherit; color: var(--shp-text); cursor: pointer; }
+.shp-chip { min-width: 54px; padding: 10px 14px; border: 1px solid var(--shp-border); border-radius: 9px; background: var(--shp-card); font-size: 14px; font-family: inherit; color: var(--shp-text); cursor: pointer; }
 .shp-chip:hover:not(:disabled) { border-color: var(--shp-brand); }
 .shp-chip.is-on { border-color: var(--shp-text); border-width: 2px; font-weight: 700; }
 .shp-chip.is-soldout { color: #b6bcc6; background: #f7f8fa; cursor: default; text-decoration: line-through; }
@@ -621,3 +621,88 @@ html { scroll-behavior: smooth; }
 
 .shp-currency { margin-left: auto; padding: 7px 10px; border: 1px solid var(--shp-border); border-radius: 9px; background: var(--shp-card); color: var(--shp-text); font-size: 13px; font-family: inherit; }
 .shp-currency + .shp-cart-link { margin-left: 0; }
+
+.shp-top .shp-currency-bar { margin-left: auto !important; }
+.shp-starpick { display: inline-flex; flex-direction: row-reverse; gap: 2px; }
+.shp-starpick input { display: none; }
+.shp-starpick label { cursor: pointer; color: #c9d1dc; }
+.shp-starpick label svg { display: block; }
+.shp-starpick input:checked ~ label, .shp-starpick label:hover, .shp-starpick label:hover ~ label { color: #f5a623; }
+.shp-currency-bar ~ .shp-cart-link:first-of-type { margin-left: 0; }
+.shpRvFile::file-selector-button { padding: 7px 14px; margin-right: 8px; border: 1px solid #d5dae1; border-radius: 8px; background: var(--shp-card); color: #333d4b; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+
+/* 어두운 화면 */
+/*
+ * 레이아웃이 문서 뿌리에 data-theme 를 찍는 경로와, 표시가 없어 운영체제 설정만
+ * 남는 경로를 모두 정의한다. 한쪽만 두면 다른 경로에서 밝은 색이 남아 글자가 묻힌다.
+ */
+:root[data-theme="dark"] .shp {
+	--shp-brand-soft: rgba(38, 119, 227, .18);
+	--shp-border: #333a45;
+	--shp-text: #e6e9ee;
+	--shp-sub: #9aa3b0;
+	--shp-bg: #161a21;
+	--shp-card: #1c212a;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) .shp {
+		--shp-brand-soft: rgba(38, 119, 227, .18);
+		--shp-border: #333a45;
+		--shp-text: #e6e9ee;
+		--shp-sub: #9aa3b0;
+		--shp-bg: #161a21;
+		--shp-card: #1c212a;
+	}
+}
+
+/* 등급 할인으로 낮아진 값임을 알리는 표시 */
+.shp-grade-tag { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 999px; background: var(--shp-brand-soft); color: var(--shp-brand); font-size: 11.5px; font-weight: 700; font-style: normal; vertical-align: middle; }
+
+/*
+ * 상태 배지·안내 박스처럼 색을 직접 박은 곳은 토큰으로 안 덮인다.
+ * 어두운 화면에서 흰 상자가 남지 않도록 여기서 한 번에 되돌린다.
+ */
+:root[data-theme="dark"] .shp .shp-badge.is-soldout,
+:root[data-theme="dark"] .shp .shp-st,
+:root[data-theme="dark"] .shp .shp-chip.is-soldout { background: rgba(255, 255, 255, .08); color: var(--shp-sub); }
+:root[data-theme="dark"] .shp .shp-badge.is-adult,
+:root[data-theme="dark"] .shp .shp-st-cancelled,
+:root[data-theme="dark"] .shp .shp-st-expired { background: rgba(192, 57, 43, .18); color: #ff9b8f; }
+:root[data-theme="dark"] .shp .shp-st-pending,
+:root[data-theme="dark"] .shp .shp-st-preparing,
+:root[data-theme="dark"] .shp .shp-promo-ended { background: rgba(234, 152, 8, .16); color: #f0b34d; }
+:root[data-theme="dark"] .shp .shp-st-shipping { background: rgba(38, 119, 227, .18); color: #7db1f5; }
+:root[data-theme="dark"] .shp .shp-st-confirmed { background: rgba(29, 122, 61, .18); color: #6fce93; }
+:root[data-theme="dark"] .shp .shp-warn { border-color: rgba(234, 152, 8, .45); background: rgba(234, 152, 8, .12); color: var(--shp-text); }
+:root[data-theme="dark"] .shp .shp-review-reward,
+:root[data-theme="dark"] .shp .shp-review-invite { border-color: rgba(38, 119, 227, .38); background: rgba(38, 119, 227, .12); }
+:root[data-theme="dark"] .shp .shp-review-reward { color: #7db1f5; }
+:root[data-theme="dark"] .shp .shp-review-invite-msg strong { color: var(--shp-text); }
+:root[data-theme="dark"] .shp .shp-btn-ghost:hover { background: rgba(255, 255, 255, .06); }
+:root[data-theme="dark"] .shp .shp-track-list li::before,
+:root[data-theme="dark"] .shp .shp-shortcuts::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); }
+:root[data-theme="dark"] .shp .shpRvFile::file-selector-button { border-color: var(--shp-border); color: var(--shp-text); }
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) .shp .shp-badge.is-soldout,
+	:root:not([data-theme="light"]) .shp .shp-st,
+	:root:not([data-theme="light"]) .shp .shp-chip.is-soldout { background: rgba(255, 255, 255, .08); color: var(--shp-sub); }
+	:root:not([data-theme="light"]) .shp .shp-badge.is-adult,
+	:root:not([data-theme="light"]) .shp .shp-st-cancelled,
+	:root:not([data-theme="light"]) .shp .shp-st-expired { background: rgba(192, 57, 43, .18); color: #ff9b8f; }
+	:root:not([data-theme="light"]) .shp .shp-st-pending,
+	:root:not([data-theme="light"]) .shp .shp-st-preparing,
+	:root:not([data-theme="light"]) .shp .shp-promo-ended { background: rgba(234, 152, 8, .16); color: #f0b34d; }
+	:root:not([data-theme="light"]) .shp .shp-st-shipping { background: rgba(38, 119, 227, .18); color: #7db1f5; }
+	:root:not([data-theme="light"]) .shp .shp-st-confirmed { background: rgba(29, 122, 61, .18); color: #6fce93; }
+	:root:not([data-theme="light"]) .shp .shp-warn { border-color: rgba(234, 152, 8, .45); background: rgba(234, 152, 8, .12); color: var(--shp-text); }
+	:root:not([data-theme="light"]) .shp .shp-review-reward,
+	:root:not([data-theme="light"]) .shp .shp-review-invite { border-color: rgba(38, 119, 227, .38); background: rgba(38, 119, 227, .12); }
+	:root:not([data-theme="light"]) .shp .shp-review-reward { color: #7db1f5; }
+	:root:not([data-theme="light"]) .shp .shp-review-invite-msg strong { color: var(--shp-text); }
+	:root:not([data-theme="light"]) .shp .shp-btn-ghost:hover { background: rgba(255, 255, 255, .06); }
+	:root:not([data-theme="light"]) .shp .shp-track-list li::before,
+	:root:not([data-theme="light"]) .shp .shp-shortcuts::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); }
+	:root:not([data-theme="light"]) .shp .shpRvFile::file-selector-button { border-color: var(--shp-border); color: var(--shp-text); }
+}

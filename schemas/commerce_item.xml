@@ -7,6 +7,8 @@
 	<!-- 정가 / 판매가(0이면 정가로 판매) -->
 	<column name="price" type="bigint" notnull="notnull" default="0" />
 	<column name="sale_price" type="bigint" notnull="notnull" default="0" />
+	<!-- 실판매가 (sale_price>0 ? sale_price : price). 가격순 정렬 전용 - 저장 시 갱신 -->
+	<column name="effective_price" type="bigint" notnull="notnull" default="0" index="idx_effective_price" />
 	<!--
 	  옵션 없는 상품의 재고. 옵션이 있으면(has_options=Y) 재고는 옵션 단위로만 관리하고
 	  차감은 조건부 UPDATE (stock >= n) 로 처리한다.

@@ -18,7 +18,7 @@
 				<tr draggable="true" data-srl="{{ $c->category_srl }}" data-parent="{{ (int)$c->parent_srl }}" data-depth="{{ (int)($c->depth ?? 0) }}">
 					{{-- 행마다 폼을 표 안에 두면 중첩되므로 form 속성으로 잇는다 --}}
 					<form action="{{ getUrl('') }}" method="post" id="zmcCatForm{{ $c->category_srl }}"></form>
-					<td class="zmc-handle" aria-label="순서 이동 손잡이">
+					<td class="zmc-handle" aria-label="{{ lang('commerce.adm_order_handle') }}">
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>
 					</td>
 					<td class="zmc-indent-cell">
@@ -43,7 +43,7 @@
 					</td>
 					<td>
 						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-primary" form="zmcCatForm{{ $c->category_srl }}">{{ lang('commerce.admin_categories_10') }}</button>
-						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('삭제하시겠습니까? 소속 상품은 미분류로 이동합니다.')">
+						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_cat_delete_ask') }}')">
 							<input type="hidden" name="module" value="admin" />
 							<input type="hidden" name="act" value="procCommerceAdminDeleteCategory" />
 							<input type="hidden" name="category_srl" value="{{ $c->category_srl }}" />
@@ -213,10 +213,10 @@ jQuery(function ($) {
 		});
 		exec_json('commerce.procCommerceAdminSortCategories', { tree: JSON.stringify(tree) }, function () {
 			bar.classList.remove('is-on');
-			alert('카테고리 구성을 저장했습니다.');
+			alert({!! json_encode(lang('commerce.adm_cat_saved')) !!});
 			location.reload();
 		}, function (ret) {
-			alert((ret && ret.message) || '저장하지 못했습니다.');
+			alert((ret && ret.message) || {!! json_encode(lang('commerce.adm_save_failed')) !!});
 		});
 	});
 

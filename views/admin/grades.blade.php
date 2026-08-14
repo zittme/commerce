@@ -42,13 +42,13 @@
 			@foreach ($grades as $g)
 			<tr>
 				<td style="font-weight:700">{{ $g->title }}</td>
-				<td>{{ number_format($g->min_spend) }}원 이상</td>
-				<td>{{ $g->credit_rate > 0 ? rtrim(rtrim(number_format((float)$g->credit_rate, 2), '0'), '.') . '%' : '기본 따름' }}</td>
+				<td>{{ sprintf(lang('commerce.adm_grade_min_spend'), shop_money_base($g->min_spend)) }}</td>
+				<td>{{ $g->credit_rate > 0 ? rtrim(rtrim(number_format((float)$g->credit_rate, 2), '0'), '.') . '%' : lang('commerce.adm_grade_default_rate') }}</td>
 				<td>
 					@if (($g->discount_type ?? '') === 'percent')
-						{{ rtrim(rtrim(number_format((float)$g->discount_value, 2), '0'), '.') }}% 할인
+						{{ sprintf(lang('commerce.adm_grade_discount_pct'), rtrim(rtrim(number_format((float)$g->discount_value, 2), '0'), '.')) }}
 					@elseif (($g->discount_type ?? '') === 'amount')
-						{{ number_format((int)$g->discount_value) }}원 할인
+						{{ sprintf(lang('commerce.adm_grade_discount_amt'), shop_money_base((int)$g->discount_value)) }}
 					@else
 						-
 					@endif
@@ -85,7 +85,7 @@
 					</form>
 				</td>
 				<td>
-					<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('등급을 삭제할까요? 해당 등급 회원은 다음 재계산 때 다른 등급으로 이동합니다.')">
+					<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_grade_delete_ask') }}')">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminDeleteGrade" />
 						<input type="hidden" name="grade_srl" value="{{ $g->grade_srl }}" />

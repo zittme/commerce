@@ -7,9 +7,9 @@
 	@if ($is_member)
 		<div class="shp-summary" style="margin-bottom:16px">
 			@if (!empty($my_grade))
-			<div class="shp-summary-row"><span>{{ $lang->shop_grade }}</span><span><strong style="color:#2677e3">{{ $my_grade->title }}</strong> <small style="color:#6b7684">(누적 {{ number_format($my_grade->total_spend) }}원)</small></span></div>
+			<div class="shp-summary-row"><span>{{ $lang->shop_grade }}</span><span><strong style="color:#2677e3">{{ $my_grade->title }}</strong> <small style="color:#6b7684">(누적 {{ shop_money_base($my_grade->total_spend) }})</small></span></div>
 			@endif
-			<div class="shp-summary-row is-total"><span>{{ $lang->shop_credit_balance }}</span><span>{{ number_format($credit_balance) }}원</span></div>
+			<div class="shp-summary-row is-total"><span>{{ $lang->shop_credit_balance }}</span><span>{{ shop_money_base($credit_balance) }}</span></div>
 		</div>
 
 		@if (empty($orders))
@@ -23,7 +23,7 @@
 					<td><strong>{{ $o->order_code }}</strong><br /><small style="color:#6b7684">{{ zdate($o->regdate, 'Y.m.d H:i') }}</small></td>
 					<td>{{ shop_money_in($o->payment_price, $o->currency ?? 'KRW') }}</td>
 					<td>@php $shp_ds = $o->display_status ?? $o->status; @endphp<span class="shp-st shp-st-{{ $shp_ds }}">{{ $lang->{'shop_status_' . $shp_ds} ?? $shp_ds }}</span></td>
-					<td style="white-space:nowrap"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code) }}" style="color:#2677e3;font-weight:600">{{ $lang->shop_view }}</a>@if ($shp_ds === 'confirmed') <a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code, 'review', '1') }}" style="color:#1d7a3d;font-weight:600;margin-left:8px">리뷰 작성</a>@endif</td>
+					<td style="white-space:nowrap"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code) }}" style="color:#2677e3;font-weight:600">{{ $lang->shop_view }}</a>@if ($shp_ds === 'confirmed' && !empty($o->needs_review)) <a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code, 'review', '1') }}" style="color:#1d7a3d;font-weight:600;margin-left:8px">{{ $lang->shop_write_review }}</a>@endif</td>
 				</tr>
 				@endforeach
 			</tbody>
