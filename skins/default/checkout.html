@@ -149,7 +149,7 @@
 
 			{{-- 결제 요약 (우측 고정) --}}
 			<aside class="shp-2col-aside">
-				<div class="shp-box shp-paybox" data-item-total="{{ (int)$cart->item_total }}" data-ship-fee="{{ (int)$ship_fee }}" data-currency="{{ $shp_currency }}" data-base="{{ $shp_base_currency ?? 'KRW' }}" data-base-zero="{{ $shp_base_zero ? 1 : 0 }}" data-rate="{{ $shp_fx_rate }}" data-zero="{{ $shp_fx_zero_decimal ? 1 : 0 }}" data-extra-zones="{{ $shop_config->ship_extra_zones ?? '[]' }}">
+				<div class="shp-box shp-paybox" data-item-total="{{ (int)$cart->item_total }}" data-ship-fee="{{ (int)$ship_fee }}" data-currency="{{ $shp_currency }}" data-base="{{ $shp_base_currency ?? 'KRW' }}" data-base-zero="{{ $shp_base_zero ? 1 : 0 }}" data-rate="{{ $shp_fx_rate }}" data-zero="{{ $shp_fx_zero_decimal ? 1 : 0 }}" data-symbol="{{ $shp_currency_symbol }}" data-won-suffix="{{ $shp_won_suffix ? 1 : 0 }}" data-extra-zones="{{ $shop_config->ship_extra_zones ?? '[]' }}">
 					<h3>{{ $lang->shop_pay_summary ?? '결제 금액' }}</h3>
 					<div class="shp-summary-row"><span>{{ $lang->shop_item_total }}</span><span>{{ shop_money_in($cart->item_total, $shp_currency) }}</span></div>
 					<div class="shp-summary-row" id="shpSumDiscount" hidden><span>{{ $lang->shop_discount }}</span><span class="shp-minus">-<em>0</em></span></div>
@@ -224,8 +224,9 @@
 		var shpBase = paybox ? (paybox.getAttribute('data-base') || 'KRW') : 'KRW';
 		var shpZero = paybox ? paybox.getAttribute('data-zero') === '1' : true;
 		var shpRate = paybox ? (parseFloat(paybox.getAttribute('data-rate')) || 1) : 1;
-		var shpSym = { KRW: '', USD: '$', EUR: '\u20AC', JPY: '\u00A5', GBP: '\u00A3', CNY: '\u00A5', TWD: 'NT$', HKD: 'HK$', AUD: 'A$', CAD: 'C$', SGD: 'S$', MXN: 'MX$', BRL: 'R$', THB: '฿', PHP: '₱', VND: '₫' }[shpCur];
-		if (shpSym === undefined) shpSym = shpCur + ' ';
+		// 기호는 서버가 정한 것을 그대로 받는다. 표를 두 벌 두면 화면끼리 표기가 갈린다
+		var shpSym = paybox ? (paybox.getAttribute('data-symbol') || '') : '';
+		var shpWonSuffix = paybox ? paybox.getAttribute('data-won-suffix') === '1' : true;
 		function money(minor) {
 			if (shpCur === 'KRW') return fmt(minor) + '\uC6D0';
 			return shpSym + (shpZero ? fmt(minor) : fmt(Math.floor(minor / 100)) + '.' + ('0' + (minor % 100)).slice(-2));
@@ -423,20 +424,20 @@
 				}
 				var f;
 				f = val('orderer_name');
-				if (f && f.v === '') return fail(f, '주문자 이름을 입력해주세요.');
+				if (f && f.v === '') return fail(f, {!! json_encode($lang->shop_v_name) !!});
 				f = val('orderer_phone');
-				if (f && f.v === '') return fail(f, '주문자 연락처를 입력해주세요.');
+				if (f && f.v === '') return fail(f, {!! json_encode($lang->shop_v_phone) !!});
 				f = val('zipcode');
 				var addr1 = val('address1');
-				if (f && f.v === '' && addr1 && addr1.v === '') return fail(f, '주소 검색 버튼으로 배송지 주소를 입력해주세요.');
-				if (addr1 && addr1.v === '') return fail(addr1, '배송지 주소를 입력해주세요.');
+				if (f && f.v === '' && addr1 && addr1.v === '') return fail(f, {!! json_encode($lang->shop_v_zip) !!});
+				if (addr1 && addr1.v === '') return fail(addr1, {!! json_encode($lang->shop_v_address) !!});
 				f = val('guest_password');
-				if (f && f.v.length < 4) return fail(f, '주문 조회 비밀번호를 4자 이상 입력해주세요.');
+				if (f && f.v.length < 4) return fail(f, {!! json_encode($lang->shop_v_guest_pw) !!});
 				var agree = checkoutForm.querySelector('[name="agree_privacy"]');
 				if (agree && !agree.checked) {
 					e.preventDefault();
 					agree.scrollIntoView({ behavior: 'smooth', block: 'center' });
-					alert('개인정보 수집·이용에 동의해주세요.');
+					alert({!! json_encode($lang->shop_v_agree) !!});
 					return false;
 				}
 			});

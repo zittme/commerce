@@ -423,7 +423,7 @@
 		function smoney(minor) {
 			var major = (shpZero ? minor : minor / 100) / shpDispRate;
 			// KRW 는 한국어 화면에서만 접미사 '원' 을 쓴다 (서버 표기와 맞춘다)
-			if (shpDisp === 'KRW') return shpWon ? fmt(Math.round(major)) + '원' : 'KRW ' + fmt(Math.round(major));
+			if (shpDisp === 'KRW' && shpWon) return fmt(Math.round(major)) + {!! json_encode($shp_unit_label) !!};
 			var pre = shpDispSym || (shpDisp + ' ');
 			if (shpDispZero) return pre + fmt(Math.round(major));
 			var cents = Math.round(major * 100);

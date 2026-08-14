@@ -162,7 +162,9 @@ class Promotion
 		$bn['text_color'] = (isset($bn['text_color']) && preg_match('/^#[0-9a-fA-F]+$/', (string)$bn['text_color'])) ? $bn['text_color'] : '#ffffff';
 		$bn['shadow'] = ($bn['shadow'] ?? 'Y') === 'N' ? 'N' : 'Y';
 		$bn['title_html'] = \Zittme\Modules\Commerce\Controllers\Front::escapeAllowBr((string)($promo->title ?? ''));
-		$bn['text_html'] = \Zittme\Modules\Commerce\Controllers\Front::escapeAllowBr((string)($bn['text'] ?? ''));
+		// 배너 문구도 다국어 코드를 담을 수 있다. 화면에 내기 전에 현재 언어로 푼다
+		$bn['text'] = Lang::text((string)($bn['text'] ?? ''));
+		$bn['text_html'] = \Zittme\Modules\Commerce\Controllers\Front::escapeAllowBr((string)$bn['text']);
 		return $bn;
 	}
 }

@@ -167,49 +167,119 @@
 		<div class="zmi-memo"><b>{{ lang('commerce.admin_invoice_37') }}</b> {{ $order->memo }}</div>
 		@endif
 
-		@if ($biz->biz_note)
-		<div class="zmi-note">{{ $biz->biz_note }}</div>
+		@if ($biz->biz_note || !empty($biz->biz_logo))
+		<div class="zmi-foot">
+			@if ($biz->biz_note)
+			<div class="zmi-note">{{ $biz->biz_note }}</div>
+			@endif
+			@if (!empty($biz->biz_logo))
+			<img class="zmi-logo" src="{{ $biz->biz_logo }}" alt="{{ $biz->biz_name }}" />
+			@endif
+		</div>
 		@endif
 	</div>
 	@endforeach
 </div>
 
+
+
+
 <style>
-.zmi-page { background: #f2f4f6; min-height: 100vh; padding: 20px 0 60px; font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif; color: #1d2433; }
-.zmi-toolbar { width: 190mm; max-width: calc(100% - 24px); margin: 0 auto 14px; display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
-.zmi-count { margin-right: auto; font-size: 13px; color: #4b5563; }
-.zmi-btn { padding: 9px 18px; border: 1px solid #d9dee5; border-radius: 8px; background: #fff; color: #1d2433; font-family: inherit; font-size: 14px; cursor: pointer; }
-.zmi-btn-primary { border-color: #2677e3; background: #2677e3; color: #fff; font-weight: 700; }
-.zmi-sheet { width: 190mm; max-width: calc(100% - 24px); margin: 0 auto 18px; padding: 16mm 14mm; background: #fff; box-shadow: 0 10px 30px -16px rgba(16,24,40,.35); box-sizing: border-box; }
-.zmi-head { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 2px solid #1d2433; padding-bottom: 10px; margin-bottom: 16px; }
-.zmi-head h1 { margin: 0; font-size: 26px; letter-spacing: 6px; }
-.zmi-code { text-align: right; font-size: 12.5px; color: #4b5563; line-height: 1.7; }
-.zmi-sheet h2 { margin: 18px 0 6px; font-size: 13.5px; font-weight: 700; }
-.zmi-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.zmi-tbl th, .zmi-tbl td { border: 1px solid #d9dee5; padding: 6px 9px; text-align: left; vertical-align: middle; line-height: 1.5; }
-.zmi-tbl th { background: #f7f9fa; font-weight: 600; color: #4b5563; width: 84px; white-space: nowrap; }
-.zmi-biz th { width: 104px; }
-.zmi-cols { display: flex; gap: 12px; }
+/*
+ * 거래명세서 — 종이는 A4(210x297mm) 고정. 좁은 화면에서는 통째로 축소해 비율을 지킨다.
+ * 칸마다 선을 두르지 않는다. 대신 덩어리는 제목·여백·바탕으로 확실히 나눈다.
+ */
+.zmi-page {
+	--zmi-ink: #16202e;
+	--zmi-sub: #6b7684;
+	--zmi-line: #e4e8ed;
+	--zmi-rule: #aab2bd;
+	--zmi-fill: #f4f6f9;
+	--zmi-accent: #2677e3;
+	background: #eef1f5; min-height: 100vh; padding: 22px 0 64px;
+	font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+	color: var(--zmi-ink);
+}
+.zmi-toolbar { width: 210mm; max-width: 100%; margin: 0 auto 14px; padding: 0 10px; display: flex; gap: 8px; align-items: center; justify-content: flex-end; box-sizing: border-box; }
+.zmi-count { margin-right: auto; font-size: 13px; color: var(--zmi-sub); }
+.zmi-btn { padding: 9px 18px; border: 1px solid #dfe3e9; border-radius: 8px; background: #fff; color: var(--zmi-ink); font-family: inherit; font-size: 14px; cursor: pointer; }
+.zmi-btn:hover { border-color: #b9c0ca; }
+.zmi-btn-primary { border-color: var(--zmi-accent); background: var(--zmi-accent); color: #fff; font-weight: 700; }
+
+.zmi-sheet {
+	position: relative; width: 210mm; min-height: 297mm; margin: 0 auto 20px;
+	padding: 18mm 16mm 16mm; background: #fff; box-sizing: border-box;
+	box-shadow: 0 1px 2px rgba(16,24,40,.07), 0 14px 40px -18px rgba(16,24,40,.4);
+	display: flex; flex-direction: column;
+}
+
+/* 머리 */
+.zmi-head { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding-bottom: 10px; margin-bottom: 6px; border-bottom: 2px solid var(--zmi-ink); }
+.zmi-head h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: 5px; }
+.zmi-code { text-align: right; font-size: 11.5px; color: var(--zmi-sub); line-height: 1.7; }
+.zmi-code b { display: block; font-size: 13px; font-weight: 700; color: var(--zmi-ink); letter-spacing: .4px; }
+
+/* 구획 제목 — 아래에 짧은 선을 두어 다음 덩어리가 시작됨을 보인다 */
+.zmi-sheet h2 {
+	margin: 26px 0 0; padding-bottom: 6px;
+	border-bottom: 1.5px solid var(--zmi-rule);
+	font-size: 12.5px; font-weight: 700; letter-spacing: .5px; line-height: 1.3;
+}
+
+/* 정보 표 — 라벨 칸에만 옅은 바탕. 값과 라벨이 한눈에 갈린다 */
+.zmi-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.zmi-tbl th, .zmi-tbl td { border: 0; border-bottom: 1px solid var(--zmi-line); padding: 7px 10px; text-align: left; vertical-align: top; line-height: 1.6; }
+.zmi-tbl th { width: 76px; background: var(--zmi-fill); font-weight: 600; color: var(--zmi-sub); white-space: nowrap; }
+.zmi-tbl tr:last-child th, .zmi-tbl tr:last-child td { border-bottom: 0; }
+.zmi-biz { margin-top: 8px; }
+.zmi-biz td { padding-right: 14px; }
+.zmi-cols { display: flex; gap: 16px; }
 .zmi-col { flex: 1; min-width: 0; }
-.zmi-items thead th { text-align: center; background: #f7f9fa; width: auto; }
-.zmi-items td { height: 26px; }
-.zmi-tag { display: inline-block; margin-left: 5px; padding: 1px 6px; border: 1px solid #d9dee5; border-radius: 4px; font-size: 10.5px; font-weight: 600; color: #4b5563; vertical-align: middle; }
-.zmi-taxnote { margin: 8px 0 0; text-align: right; font-size: 11.5px; color: #6b7684; }
-.zmi-opt { display: block; margin-top: 2px; font-size: 11.5px; color: #6b7684; }
+.zmi-col .zmi-tbl { margin-top: 8px; }
+
+/* 품목 — 머리줄에 바탕을 깔아 표가 시작되는 지점을 확실히 한다 */
+.zmi-items { margin-top: 8px; }
+.zmi-items thead th { padding: 8px; background: var(--zmi-fill); border-bottom: 1.5px solid var(--zmi-rule); font-size: 11.5px; font-weight: 700; color: var(--zmi-ink); text-align: center; white-space: nowrap; width: auto; }
+.zmi-items thead th:nth-child(2) { text-align: left; }
+.zmi-items tbody td { padding: 10px 8px; border-bottom: 1px solid var(--zmi-line); background: none; }
+.zmi-items tbody tr:last-child td { border-bottom: 1.5px solid var(--zmi-rule); }
+.zmi-items tbody td:first-child { color: var(--zmi-sub); }
+.zmi-tag { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 3px; background: #e9edf2; font-size: 10px; font-weight: 600; color: var(--zmi-sub); vertical-align: middle; }
+.zmi-opt { display: block; margin-top: 3px; font-size: 11px; color: var(--zmi-sub); }
 .zmi-c { text-align: center; }
-.zmi-r { text-align: right; }
-.zmi-sum { width: 300px; margin-left: auto; margin-top: 10px; }
-.zmi-sum th { width: 130px; }
-.zmi-total th, .zmi-total td { background: #f7f9fa; font-size: 14px; font-weight: 700; color: #1d2433; }
-.zmi-memo { margin-top: 14px; padding: 9px 11px; border: 1px dashed #d9dee5; font-size: 12.5px; line-height: 1.6; }
-.zmi-note { margin-top: 16px; padding-top: 10px; border-top: 1px solid #e5e8eb; font-size: 11.5px; color: #6b7684; line-height: 1.7; white-space: pre-line; }
+.zmi-r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 합계 — 오른쪽에 붙는 정산 덩어리. 옅은 바탕으로 표와 분리한다 */
+.zmi-sum { width: 88mm; margin: 14px 0 0 auto; background: var(--zmi-fill); }
+.zmi-sum th, .zmi-sum td { border-bottom: 1px solid #dde2e8; padding: 7px 12px; }
+.zmi-sum th { width: auto; background: none; font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+.zmi-sum tr:last-child th, .zmi-sum tr:last-child td { border-bottom: 0; }
+.zmi-total th, .zmi-total td { padding-top: 9px; padding-bottom: 9px; border-top: 1.5px solid var(--zmi-ink); font-size: 14.5px; font-weight: 800; color: var(--zmi-ink); }
+.zmi-taxnote { margin: 6px 0 0; text-align: right; font-size: 10.5px; color: var(--zmi-sub); }
+.zmi-memo { margin-top: 18px; padding: 10px 12px; background: var(--zmi-fill); border-left: 2.5px solid var(--zmi-rule); font-size: 11.5px; line-height: 1.7; color: var(--zmi-sub); }
+.zmi-memo b { color: var(--zmi-ink); }
+
+/* 꼬리 */
+.zmi-foot { margin-top: auto; padding-top: 14px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.zmi-note { flex: 1; min-width: 0; padding-top: 10px; border-top: 1px solid var(--zmi-line); font-size: 10.5px; color: var(--zmi-sub); line-height: 1.8; white-space: pre-line; }
+.zmi-logo { flex: 0 0 auto; max-width: 26mm; max-height: 9mm; width: auto; height: auto; object-fit: contain; opacity: .75; }
+
+@media (max-width: 830px) {
+	.zmi-page { padding: 14px 0 40px; }
+	.zmi-toolbar { width: auto; }
+	.zmi-sheet { transform: scale(calc((100vw - 24px) / 210mm)); transform-origin: top center; margin-bottom: calc(20px - 297mm * (1 - (100vw - 24px) / 210mm)); }
+}
 
 @media print {
-	@page { size: A4; margin: 12mm; }
+	@page { size: A4; margin: 15mm 14mm; }
 	.zmi-page { background: #fff; padding: 0; }
 	.zmi-toolbar { display: none; }
-	.zmi-sheet { width: auto; max-width: none; margin: 0; padding: 0; box-shadow: none; break-after: page; page-break-after: always; }
+	.zmi-sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; transform: none; break-after: page; page-break-after: always; }
 	.zmi-sheet:last-child { break-after: auto; page-break-after: auto; }
-	.zmi-tbl th { background: #f7f9fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+	.zmi-tbl th, .zmi-items thead th, .zmi-sum, .zmi-memo, .zmi-tag {
+		-webkit-print-color-adjust: exact; print-color-adjust: exact;
+	}
+	.zmi-items tr { break-inside: avoid; page-break-inside: avoid; }
+	.zmi-sum, .zmi-foot, .zmi-memo { break-inside: avoid; page-break-inside: avoid; }
 }
 </style>

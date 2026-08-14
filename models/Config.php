@@ -65,6 +65,8 @@ class Config
 		'biz_address' => '',
 		'biz_tel' => '',
 		'biz_note' => '',
+		// 거래명세서 하단에 찍는 로고 이미지 주소
+		'biz_logo' => '',
 		// 사업자 구분 — taxable(과세) / exempt(면세) / simplified(간이)
 		'biz_tax_mode' => 'taxable',
 		// 부가세율 (%)

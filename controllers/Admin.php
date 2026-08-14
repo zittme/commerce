@@ -29,7 +29,7 @@ class Admin extends Base
 		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones',
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
 		'privacy_text', 'privacy_version', 'retention_days',
-		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note',
+		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note', 'biz_logo',
 		'biz_tax_mode', 'vat_rate', 'price_includes_tax', 'allow_overseas', 'address_mode',
 		'currencies', 'currency_fallback',
 		'notify_admin', 'notify_admin_email',

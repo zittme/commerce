@@ -335,7 +335,8 @@ class Money
 		$currency = $currency !== '' ? strtoupper($currency) : self::base();
 		if ($currency === 'KRW')
 		{
-			return '';
+			// 한국어 화면은 접미사 '원' 을 쓰므로 앞에 붙일 것이 없다
+			return self::useWonSuffix() ? '' : 'KRW ';
 		}
 		$class = '\\Zittme\\Modules\\Zittme_pay\\Models\\Currency';
 		$map = class_exists($class) ? $class::SYMBOLS : [];

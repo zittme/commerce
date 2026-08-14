@@ -45,7 +45,7 @@
 		var btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = 'shp-cat-toggle';
-		btn.setAttribute('aria-label', '하위 카테고리 열기');
+		btn.setAttribute('aria-label', {!! json_encode($lang->shop_a11y_subcat_open) !!});
 		btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 		btn.addEventListener('click', function (e) {
 			e.preventDefault();

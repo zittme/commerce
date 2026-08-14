@@ -80,6 +80,11 @@
 				.zmc-banner-del { position: absolute; top: 12px; right: 14px; }
 				@media (max-width: 900px) { .zmc-banner-card { grid-template-columns: minmax(0, 1fr); } }
 				.zmc-pay-link { color: #2677e3; }
+				.zmc-hint { margin: 4px 0 8px; font-size: 12px; color: #8b95a1; line-height: 1.6; }
+				.zmc-logo-row { display: flex; align-items: center; gap: 12px; }
+				.zmc-logo-thumb { flex: 0 0 auto; width: 132px; height: 56px; border: 1px solid #e5e8ee; border-radius: 8px; background: #fff center/contain no-repeat; }
+				.zmc-logo-thumb.is-empty { border-style: dashed; }
+				.zmc-logo-acts { display: flex; gap: 6px; }
 				.zmc-zone-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
 				.zmc-zone-row > select, .zmc-zone-row > input { min-width: 0; }
 				.zmc-zone-country { flex: 0 0 170px; }
@@ -134,6 +139,19 @@
 				<div><label>{{ lang('commerce.admin_config_64') }}</label><input type="text" name="biz_tel" maxlength="40" value="{{ $shop_config->biz_tel }}" /></div>
 				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_65') }}</label><div class="zlf-row-wrap"><input type="text" name="biz_address" maxlength="250" value="{{ $shop_config->biz_address }}" />@include('_langfield', ['lf_name' => 'biz_address', 'lf_value' => $shop_config->biz_address_raw ?? $shop_config->biz_address, 'lf_key' => 'cfgbizaddr'])</div></div>
 				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_66') }}</label><div class="zlf-row-wrap"><textarea name="biz_note" rows="2">{{ $shop_config->biz_note }}</textarea>@include('_langfield', ['lf_name' => 'biz_note', 'lf_value' => $shop_config->biz_note_raw ?? $shop_config->biz_note, 'lf_key' => 'cfgbiznote'])</div></div>
+				<div style="grid-column:1/-1">
+					<label>{{ lang('commerce.cfg_biz_logo') }}</label>
+					<p class="zmc-hint">{{ lang('commerce.cfg_biz_logo_note') }}</p>
+					<div class="zmc-logo-row">
+						<span class="zmc-logo-thumb @if (empty($shop_config->biz_logo)) is-empty @endif" id="zmcLogoThumb" @if (!empty($shop_config->biz_logo)) style="background-image:url('{{ $shop_config->biz_logo }}')" @endif></span>
+						<span class="zmc-logo-acts">
+							<input type="file" id="zmcLogoFile" accept="image/*" hidden />
+							<button type="button" class="rsva-btn rsva-btn-sm" id="zmcLogoPick">{{ lang('commerce.cfg_biz_logo_pick') }}</button>
+							<button type="button" class="rsva-btn rsva-btn-sm" id="zmcLogoClear">{{ lang('commerce.admin_item_edit_170') }}</button>
+						</span>
+					</div>
+					<input type="hidden" name="biz_logo" id="zmcLogoUrl" value="{{ $shop_config->biz_logo ?? '' }}" />
+				</div>
 			</div>
 		</div>
 
@@ -537,6 +555,41 @@
 				}
 			});
 		}
+	})();
+	</script>
+	<script>
+	// 거래명세서 로고 — 배너와 같은 업로드 통로를 쓴다
+	(function () {
+		var pick = document.getElementById('zmcLogoPick');
+		var file = document.getElementById('zmcLogoFile');
+		var thumb = document.getElementById('zmcLogoThumb');
+		var url = document.getElementById('zmcLogoUrl');
+		if (!pick || !file || !thumb || !url) return;
+
+		function apply(value) {
+			url.value = value || '';
+			thumb.style.backgroundImage = value ? "url('" + value + "')" : '';
+			thumb.classList.toggle('is-empty', !value);
+		}
+		pick.addEventListener('click', function () { file.click(); });
+		document.getElementById('zmcLogoClear').addEventListener('click', function () { apply(''); });
+		file.addEventListener('change', function () {
+			var f = file.files && file.files[0];
+			if (!f) return;
+			var label = pick.textContent;
+			pick.textContent = {!! json_encode(lang('commerce.admin_item_edit_180')) !!};
+			pick.disabled = true;
+			var fd = new FormData();
+			fd.append('file', f);
+			fetch('./?module=commerce&act=procCommerceAdminUploadBanner', { method: 'POST', body: fd, credentials: 'same-origin' })
+				.then(function (res) { return res.json(); })
+				.then(function (ret) {
+					if (ret && !ret.error && ret.url) { apply(ret.url); }
+					else { alert((ret && ret.message) || 'error'); }
+				})
+				.catch(function () { alert('error'); })
+				.then(function () { pick.textContent = label; pick.disabled = false; file.value = ''; });
+		});
 	})();
 	</script>
 </div>

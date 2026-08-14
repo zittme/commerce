@@ -25,9 +25,9 @@
 							<input type="hidden" name="mid" value="{{ $mid }}" />
 							<input type="hidden" name="cart_srl" value="{{ $entry->cart_srl }}" />
 							<div class="shp-stepper">
-								<button type="button" class="shp-step" data-step="-1" aria-label="수량 줄이기">&minus;</button>
+								<button type="button" class="shp-step" data-step="-1" aria-label="{{ $lang->shop_a11y_qty_down }}">&minus;</button>
 								<input class="shp-qty" type="number" name="qty" value="{{ $entry->qty }}" min="1" />
-								<button type="button" class="shp-step" data-step="1" aria-label="수량 늘리기">+</button>
+								<button type="button" class="shp-step" data-step="1" aria-label="{{ $lang->shop_a11y_qty_up }}">+</button>
 							</div>
 						</form>
 					</div>

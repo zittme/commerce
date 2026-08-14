@@ -17,7 +17,7 @@
 			<a href="{{ getUrl('', 'mid', $mid, 'v', 'list', 'f', $shp_nav_sec->key) }}">{{ $shp_nav_sec->title }}</a>
 			@endforeach
 			@if (count($home_promotions ?? []))
-			<a href="#shpPromos">기획전</a>
+			<a href="#shpPromos">{{ $lang->shop_promotions }}</a>
 			@endif
 		</nav>
 		@include('_currency')
@@ -79,7 +79,7 @@
 				<span class="shp-home-banner-copy {{ ($shp_bn['shadow'] ?? 'Y') === 'N' ? 'no-shadow' : '' }}" style="color:{{ $shp_bn['text_color'] ?? '#ffffff' }}">
 					@if (!empty($shp_bn['title']))<strong>{!! $shp_bn['title_html'] ?? escape($shp_bn['title']) !!}</strong>@endif
 					@if (!empty($shp_bn['text']))<span>{!! $shp_bn['text_html'] ?? escape($shp_bn['text']) !!}</span>@endif
-					<span class="shp-home-banner-cta">자세히 보기
+					<span class="shp-home-banner-cta">{{ $lang->shop_view_more }}
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
 					</span>
 				</span>
@@ -126,7 +126,7 @@
 			@if (count($home_promotions ?? []))
 			<section class="shp-home-section" id="shpPromos">
 				<div class="shp-home-section-head">
-					<h3>기획전</h3>
+					<h3>{{ $lang->shop_promotions }}</h3>
 				</div>
 				<div class="shp-promo-cards">
 					@foreach ($home_promotions as $shp_pm)
@@ -134,7 +134,7 @@
 						<span class="shp-promo-card-copy {{ ($shp_pm->banner_data['shadow'] ?? 'Y') === 'N' ? 'no-shadow' : '' }}" style="color:{{ $shp_pm->banner_data['text_color'] ?? '#ffffff' }}">
 							<strong>{!! $shp_pm->banner_data['title_html'] ?? escape($shp_pm->title) !!}</strong>
 							@if (!empty($shp_pm->banner_data['text']))<span>{!! $shp_pm->banner_data['text_html'] ?? escape($shp_pm->banner_data['text']) !!}</span>@endif
-							<small>{{ $shp_pm->start_date ? zdate($shp_pm->start_date, 'm.d') : '' }} ~ {{ $shp_pm->end_date ? zdate($shp_pm->end_date, 'm.d') : '' }} · {{ $shp_pm->item_count }}개 상품</small>
+							<small>{{ $shp_pm->start_date ? zdate($shp_pm->start_date, 'm.d') : '' }} ~ {{ $shp_pm->end_date ? zdate($shp_pm->end_date, 'm.d') : '' }} · {{ sprintf($lang->shop_item_count, $shp_pm->item_count) }}</small>
 						</span>
 						@if (!empty($shp_pm->banner_data['point_image']))
 						<span class="shp-promo-card-point" style="background-image:url('{{ escape($shp_pm->banner_data['point_image']) }}')"></span>

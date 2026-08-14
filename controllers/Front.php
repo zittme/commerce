@@ -45,7 +45,9 @@ class Front extends Base
 		{
 			if ($code === $base || MoneyModel::rate($code) > 0)
 			{
-				$choices[$code] = MoneyModel::symbol($code);
+				// 알약은 '기호 코드' 로 적는다. 기호에 이미 코드가 들어간 통화는 겹치지 않게 한다
+				$symbol = trim(MoneyModel::symbol($code));
+				$choices[$code] = strpos($symbol, $code) === false ? trim($symbol . ' ' . $code) : $symbol;
 			}
 		}
 		\Context::set('shp_currency_choices', $choices);
@@ -507,8 +509,11 @@ class Front extends Base
 			$bn['text_color'] = (isset($bn['text_color']) && preg_match('/^#[0-9a-fA-F]+$/', (string)$bn['text_color'])) ? $bn['text_color'] : '#ffffff';
 			$bn['shadow'] = ($bn['shadow'] ?? 'Y') === 'N' ? 'N' : 'Y';
 			// 제목·문구에 <br> 만 허용 (그 외 태그는 이스케이프)
-			$bn['title_html'] = self::escapeAllowBr((string)($bn['title'] ?? ''));
-			$bn['text_html'] = self::escapeAllowBr((string)($bn['text'] ?? ''));
+			// 제목·문구는 다국어 코드를 담을 수 있다. 화면에 내기 전에 현재 언어로 푼다
+			$bn['title'] = LangModel::text((string)($bn['title'] ?? ''));
+			$bn['text'] = LangModel::text((string)($bn['text'] ?? ''));
+			$bn['title_html'] = self::escapeAllowBr((string)$bn['title']);
+			$bn['text_html'] = self::escapeAllowBr((string)$bn['text']);
 			$banners[$i] = $bn;
 		}
 
@@ -736,6 +741,8 @@ class Front extends Base
 			$fx_currency = $base_currency;
 		}
 		\Context::set('shp_currency', $fx_currency);
+		// 주문서는 통화를 다시 정하므로 기호도 그 통화로 맞춘다
+		\Context::set('shp_currency_symbol', \Zittme\Modules\Commerce\Models\Money::symbol($fx_currency));
 		\Context::set('shp_base_currency', $base_currency);
 		\Context::set('shp_fx_rate', $fx_currency === $base_currency ? 1 : $fx_rate);
 		\Context::set('shp_fx_zero_decimal', \Zittme\Modules\Commerce\Models\Money::isZeroDecimal($fx_currency));

@@ -38,7 +38,7 @@
 			}
 			@endphp
 			<nav class="shp-breadcrumb">
-				<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">홈</a>
+				<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_home }}</a>
 				@if ($shp_filter !== '')
 				<span>&rsaquo;</span><em>{{ $shp_page_title }}</em>
 				@endif
@@ -84,14 +84,14 @@
 		}
 	@endphp
 	@if (!$shp_side_cats && count($shp_chip_tops))
-	<nav class="shp-cats" aria-label="카테고리">
+	<nav class="shp-cats" aria-label="{{ $lang->shop_a11y_cats }}">
 		<a class="shp-cat @if (!$current_category) is-on @endif" href="{{ getUrl('', 'mid', $mid, 'v', 'list', 'category', '', 'q', $current_q, 'sort', $current_sort, 'f', $shp_filter) }}">{{ $lang->shop_all_categories }}</a>
 		@foreach ($shp_chip_tops as $shp_ct)
 		<a class="shp-cat @if ($current_category === (int)$shp_ct->category_srl || $shp_chip_cur_top === (int)$shp_ct->category_srl) is-on @endif" href="{{ getUrl('', 'mid', $mid, 'v', 'list', 'category', $shp_ct->category_srl, 'q', $current_q, 'sort', $current_sort, 'f', $shp_filter) }}">{{ $shp_ct->title }}</a>
 		@endforeach
 	</nav>
 	@if ($shp_chip_cur_top > 0 && count($shp_chip_subs[$shp_chip_cur_top] ?? []))
-	<nav class="shp-cats shp-cats-sub" aria-label="하위 카테고리">
+	<nav class="shp-cats shp-cats-sub" aria-label="{{ $lang->shop_a11y_subcats }}">
 		@foreach ($shp_chip_subs[$shp_chip_cur_top] as $shp_cs)
 		<a class="shp-cat @if ($current_category === (int)$shp_cs->category_srl) is-on @endif" href="{{ getUrl('', 'mid', $mid, 'v', 'list', 'category', $shp_cs->category_srl, 'q', $current_q, 'sort', $current_sort, 'f', $shp_filter) }}">{{ $shp_cs->title }}</a>
 		@endforeach

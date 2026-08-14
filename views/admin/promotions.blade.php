@@ -123,7 +123,7 @@
 					<div style="padding-bottom:8px">
 						<label class="zmcpm-check"><input type="checkbox" id="zmcPmShadow" @if (($pm_bn['shadow'] ?? 'Y') !== 'N') checked @endif /> {{ lang('commerce.admin_promotions_30') }}</label>
 					</div>
-					<div style="flex:1;min-width:220px"><label>{{ lang('commerce.admin_promotions_31') }}</label><input type="text" id="zmcPmText" value="{{ $pm_bn['text'] ?? '' }}" style="width:100%" /></div>
+					<div style="flex:1;min-width:220px"><label>{{ lang('commerce.admin_promotions_31') }}</label><div class="zlf-row-wrap"><input type="text" id="zmcPmText" value="{{ $pm_bn['text'] ?? '' }}" style="width:100%" />@include('_langfield', ['lf_name' => 'banner_text', 'lf_value' => $pm_bn['text'] ?? '', 'lf_key' => 'promobn'])</div></div>
 				</div>
 			</div>
 
@@ -162,6 +162,14 @@
 </div>
 
 <script>
+	// 배너 문구도 다국어를 연결할 수 있다. 코드를 골랐으면 '$user_lang->코드' 로 담는다
+	function zmcPmTextValue() {
+		var input = document.getElementById('zmcPmText');
+		var wrap = input.closest('.zlf-row-wrap');
+		var code = wrap ? wrap.querySelector('[data-lf-code]') : null;
+		if (code && code.value.trim() !== '') { return '$user_lang->' + code.value.trim(); }
+		return input.value.trim();
+	}
 (function () {
 	// 이미지 첨부: 관리자 배너 업로드 액션으로 보내고 URL 을 hidden 에 채운다
 	var csrf = (document.querySelector('meta[name=csrf-token]') || {}).content || '';
@@ -241,7 +249,7 @@
 			main: main ? 'Y' : 'N',
 			text_color: document.getElementById('zmcPmTextColor').value,
 			shadow: document.getElementById('zmcPmShadow').checked ? 'Y' : 'N',
-			text: document.getElementById('zmcPmText').value.trim()
+			text: zmcPmTextValue()
 		});
 	});
 })();
