@@ -154,6 +154,15 @@ $lang->shop_status_expired = '期限切れ';
 
 // 메시지
 $lang->msg_shop_disabled = 'ショップは運営を停止しています。';
+$lang->nc_new_order = '新しい注文が入りました。(%s)';
+$lang->nc_claim = 'キャンセル・返品の申請が届きました。(%s)';
+$lang->nc_inquiry = '新しい商品お問い合わせが登録されました。';
+$lang->nc_paid = 'お支払いが完了しました。(%s)';
+$lang->nc_shipping = 'ご注文の商品を発送しました。(%s)';
+$lang->nc_delivered = '配送が完了しました。(%s)';
+$lang->nc_claim_done = 'キャンセル・返品の申請が処理されました。(%s)';
+$lang->nc_inquiry_answered = 'お問い合わせに回答が登録されました。';
+$lang->shop_go_console = 'ショップコンソールを開く';
 $lang->msg_shop_no_item = '商品が見つかりません。';
 $lang->msg_shop_qty_not_allowed = '購入可能な数量の範囲をご確認ください。';
 $lang->msg_shop_need_option = 'オプションを選択してください。';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = '会員ランク';
 $lang->admin_menu_stats = '統計';
 $lang->admin_menu_config = '設定';
 $lang->admin_console_title = 'ショップコンソール';
+$lang->admin_menu_open = 'メニューを開く';
+$lang->admin_menu_close = 'メニューを閉じる';
 $lang->admin_view_site = 'サイトを見る';
 $lang->admin_go_admin = 'zittme 管理者';
 $lang->admin_console_notice = '<b>ショップ専用コンソール</b>で管理してください。商品・注文・クレームの運営は別パネルで提供されます。';

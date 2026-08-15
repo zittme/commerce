@@ -9,6 +9,7 @@ use Zittme\Modules\Commerce\Models\Config as ConfigModel;
 use Zittme\Modules\Commerce\Models\Item as ItemModel;
 use Zittme\Modules\Commerce\Models\Lang as LangModel;
 use Zittme\Modules\Commerce\Models\Money as MoneyModel;
+use Zittme\Modules\Commerce\Models\Notify as NotifyModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
 use Zittme\Modules\Commerce\Models\Region as RegionModel;
 use Zittme\Modules\Commerce\Models\Stats as StatsModel;
@@ -129,7 +130,7 @@ class Admin extends Base
 		\Context::set('shop_mid', $instance ? $instance->mid : self::DEFAULT_MID);
 
 		// 개설 체크리스트 — 결제수단, 기본 설정, 카테고리, 첫 상품
-		$db = \Rhymix\Framework\DB::getInstance();
+		$db = \Zittme\Framework\DB::getInstance();
 		$saved_config = \ModuleModel::getModuleConfig('commerce');
 		$checklist = [
 			(object)[
@@ -399,9 +400,9 @@ class Admin extends Base
 		}
 
 		$dir = \RX_BASEDIR . 'files/attach/images/commerce/banner/';
-		\Rhymix\Framework\Storage::createDirectory($dir);
+		\Zittme\Framework\Storage::createDirectory($dir);
 		$filename = 'banner_' . date('YmdHis') . '_' . substr(md5((string)mt_rand()), 0, 8) . '.' . $ext;
-		if (!\Rhymix\Framework\Storage::move($file['tmp_name'], $dir . $filename))
+		if (!\Zittme\Framework\Storage::move($file['tmp_name'], $dir . $filename))
 		{
 			echo json_encode(['error' => 1, 'message' => '업로드에 실패했습니다.']); exit;
 		}
@@ -484,6 +485,15 @@ class Admin extends Base
 		}
 		// 빈 값이면 '' 로 지운다 — null 은 쿼리 빌더가 컬럼을 빼버려 SET 절 없는 UPDATE(1064)가 된다
 		$answer = trim((string)\Context::get('answer'));
+		// 알림 대상을 알아야 하므로 갱신 전에 원글을 집어 둔다
+		$asked = null;
+		if ($answer !== '')
+		{
+			$found = executeQueryArray('commerce.getInquiryList', (object)['inquiry_srl' => $inquiry_srl, 'list_count' => 1]);
+			$rows = $found->toBool() ? (array)$found->data : [];
+			$asked = count($rows) ? reset($rows) : null;
+		}
+
 		$output = executeQuery('commerce.updateInquiryAnswer', (object)[
 			'inquiry_srl' => $inquiry_srl,
 			'answer' => $answer,
@@ -492,6 +502,15 @@ class Admin extends Base
 		if (!$output->toBool())
 		{
 			return $output;
+		}
+
+		if (is_object($asked) && (int)($asked->member_srl ?? 0) > 0)
+		{
+			NotifyModel::send(
+				(int)$asked->member_srl,
+				lang('commerce.nc_inquiry_answered'),
+				NotifyModel::itemUrl((int)($asked->item_srl ?? 0))
+			);
 		}
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminQna'));
 	}
@@ -1901,7 +1920,7 @@ class Admin extends Base
 			return null;
 		}
 		$dir = \RX_BASEDIR . 'files/attach/images/commerce/' . $item_srl . '/';
-		\Rhymix\Framework\Storage::createDirectory($dir);
+		\Zittme\Framework\Storage::createDirectory($dir);
 		$filename = 'img_' . date('YmdHis') . '_' . substr(bin2hex(random_bytes(3)), 0, 4) . '.' . $ext_map[$info[2]];
 		if (!@move_uploaded_file($file['tmp_name'], $dir . $filename))
 		{
@@ -1944,7 +1963,7 @@ class Admin extends Base
 			{
 				continue;
 			}
-			\Rhymix\Framework\Storage::createDirectory($dir);
+			\Zittme\Framework\Storage::createDirectory($dir);
 			$filename = 'img_' . date('YmdHis') . '_' . substr(bin2hex(random_bytes(3)), 0, 4) . '.' . $ext_map[$info[2]];
 			if (@move_uploaded_file($tmp, $dir . $filename))
 			{
@@ -2273,7 +2292,7 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		$stmt = \Rhymix\Framework\DB::getInstance()->query(
+		$stmt = \Zittme\Framework\DB::getInstance()->query(
 			'SELECT COUNT(*) AS c FROM commerce_order_item WHERE item_srl = ?', $item_srl
 		);
 		$has_orders = $stmt && (int)($stmt->fetchObject()->c ?? 0) > 0;
@@ -2289,7 +2308,7 @@ class Admin extends Base
 		}
 		else
 		{
-			\Rhymix\Framework\DB::getInstance()->query('DELETE FROM commerce_item_option WHERE item_srl = ?', $item_srl);
+			\Zittme\Framework\DB::getInstance()->query('DELETE FROM commerce_item_option WHERE item_srl = ?', $item_srl);
 			executeQuery('commerce.deleteItem', (object)['item_srl' => $item_srl]);
 			$this->setMessage('success_deleted');
 		}
@@ -2389,7 +2408,7 @@ class Admin extends Base
 		{
 			if (!isset($keys[$key]) && ($option->status ?? 'Y') !== 'N')
 			{
-				\Rhymix\Framework\DB::getInstance()->query(
+				\Zittme\Framework\DB::getInstance()->query(
 					'UPDATE commerce_item_option SET status = ? WHERE option_srl = ?', 'N', (int)$option->option_srl
 				);
 				$hidden++;
@@ -2402,7 +2421,7 @@ class Admin extends Base
 		{
 			if (($option->status ?? 'Y') !== 'N')
 			{
-				\Rhymix\Framework\DB::getInstance()->query(
+				\Zittme\Framework\DB::getInstance()->query(
 					'UPDATE commerce_item_option SET status = ? WHERE option_srl = ?', 'N', (int)$option->option_srl
 				);
 				$put_away++;
@@ -2576,7 +2595,7 @@ class Admin extends Base
 		{
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
-		$oDB = \Rhymix\Framework\DB::getInstance();
+		$oDB = \Zittme\Framework\DB::getInstance();
 		$oDB->query('UPDATE commerce_item SET category_srl = 0 WHERE category_srl = ?', $category_srl);
 		$oDB->query('UPDATE commerce_category SET parent_srl = 0 WHERE parent_srl = ?', $category_srl);
 		executeQuery('commerce.deleteCategory', (object)['category_srl' => $category_srl]);
@@ -2759,6 +2778,7 @@ class Admin extends Base
 					]);
 				}
 				OrderModel::log($order_srl, 0, 'ship', '', self::SELLER_SHIPPING, $actor, $company . ' ' . $invoice);
+				OrderModel::notifyMail('shipping', $order);
 				break;
 
 			case 'deliver': // 배송완료
@@ -2772,6 +2792,7 @@ class Admin extends Base
 					]);
 				}
 				OrderModel::log($order_srl, 0, 'deliver', self::SELLER_SHIPPING, self::SELLER_DELIVERED, $actor);
+				OrderModel::notifyMail('delivered', $order);
 				break;
 
 			case 'cancel': // 전체 취소 (유료면 전액 환불 시도)
@@ -2828,6 +2849,7 @@ class Admin extends Base
 				'processed_date' => self::now(),
 			]);
 			OrderModel::log((int)$claim->order_srl, 0, 'claim', 'requested', 'rejected', $actor);
+			OrderModel::notifyMail('claim_done', $order);
 		}
 		elseif ($action === 'approve')
 		{
@@ -2887,13 +2909,14 @@ class Admin extends Base
 				{
 					\Zittme\Modules\Commerce\Models\Stock::release((int)$oi->item_srl, (int)$oi->option_srl, $qty);
 				}
-				\Rhymix\Framework\DB::getInstance()->query(
+				\Zittme\Framework\DB::getInstance()->query(
 					'UPDATE commerce_order_item SET claim_status = ? WHERE order_item_srl = ?',
 					'done', (int)$oi->order_item_srl
 				);
 			}
 
 			OrderModel::log((int)$claim->order_srl, 0, 'refund', 'requested', 'done', $actor, 'refund=' . $refund_amount);
+			OrderModel::notifyMail('claim_done', $order);
 		}
 		else
 		{

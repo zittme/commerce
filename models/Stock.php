@@ -25,7 +25,7 @@ class Stock
 			return false;
 		}
 
-		$oDB = \Rhymix\Framework\DB::getInstance();
+		$oDB = \Zittme\Framework\DB::getInstance();
 		if ($option_srl > 0)
 		{
 			$stmt = $oDB->query(
@@ -60,7 +60,7 @@ class Stock
 			return false;
 		}
 
-		$oDB = \Rhymix\Framework\DB::getInstance();
+		$oDB = \Zittme\Framework\DB::getInstance();
 		if ($option_srl > 0)
 		{
 			$stmt = $oDB->query(
@@ -115,7 +115,7 @@ class Stock
 			return $result;
 		}
 
-		$oDB = \Rhymix\Framework\DB::getInstance();
+		$oDB = \Zittme\Framework\DB::getInstance();
 		if ($type === 'in')
 		{
 			if ($option_srl > 0)

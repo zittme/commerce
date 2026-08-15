@@ -24,8 +24,8 @@ class Review extends Base
 		}
 		// 구매확정(하위주문 confirmed)한 상품만 리뷰 가능.
 		// 별칭 조인은 자동 프리픽스 재작성과 충돌하므로 PDO 핸들로 직접 실행한다 (Grade::getForMember 와 같은 이유)
-		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
-		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare(
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare(
 			'SELECT 1 FROM `' . $prefix . 'commerce_order_item` AS oi'
 			. ' JOIN `' . $prefix . 'commerce_order` AS o ON o.order_srl = oi.order_srl'
 			. ' JOIN `' . $prefix . 'commerce_order_seller` AS os ON os.order_seller_srl = oi.order_seller_srl'
@@ -62,7 +62,7 @@ class Review extends Base
 		{
 			return 0;
 		}
-		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
 		$sql = 'SELECT o.order_srl FROM `' . $prefix . 'commerce_order_item` AS oi'
 			. ' JOIN `' . $prefix . 'commerce_order` AS o ON o.order_srl = oi.order_srl'
 			. ' JOIN `' . $prefix . 'commerce_order_seller` AS os ON os.order_seller_srl = oi.order_seller_srl'
@@ -74,7 +74,7 @@ class Review extends Base
 			$args[] = $want_order_srl;
 		}
 		$sql .= ' ORDER BY o.order_srl DESC';
-		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare($sql);
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare($sql);
 		// 코어는 버퍼링 없는 쿼리를 쓴다. 커서를 연 채로 다른 쿼리를 부를 수 없어 먼저 전부 읽는다
 		$candidates = [];
 		if ($stmt && $stmt->execute($args))
@@ -173,7 +173,7 @@ class Review extends Base
 	 */
 	public static function hasReviewed(int $member_srl, int $item_srl, int $order_srl = 0): bool
 	{
-		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
 		$sql = 'SELECT 1 FROM `' . $prefix . 'commerce_review` WHERE member_srl = ? AND item_srl = ?';
 		$args = [$member_srl, $item_srl];
 		if ($order_srl > 0)
@@ -183,7 +183,7 @@ class Review extends Base
 			$sql .= ' AND (order_srl = ? OR order_srl = 0 OR order_srl IS NULL)';
 			$args[] = $order_srl;
 		}
-		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare($sql . ' LIMIT 1');
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare($sql . ' LIMIT 1');
 		$found = false;
 		if ($stmt && $stmt->execute($args))
 		{
@@ -247,8 +247,8 @@ class Review extends Base
 			echo json_encode(['error' => 1, 'message' => '이미지(jpg/png/gif/webp) 또는 영상(mp4/mov/webm)만 올릴 수 있습니다.']); exit;
 		}
 		$dir = \RX_BASEDIR . 'files/attach/commerce/review/' . date('Ym') . '/';
-		\Rhymix\Framework\Storage::createDirectory($dir);
-		$name = \Rhymix\Framework\Security::getRandom(24, 'alnum') . '.' . $ext;
+		\Zittme\Framework\Storage::createDirectory($dir);
+		$name = \Zittme\Framework\Security::getRandom(24, 'alnum') . '.' . $ext;
 		if (!move_uploaded_file($file['tmp_name'], $dir . $name))
 		{
 			echo json_encode(['error' => 1, 'message' => '저장에 실패했습니다.']); exit;
@@ -310,6 +310,7 @@ class Review extends Base
 		{
 			return $output;
 		}
+		ZittmeModulesCommerceModelsNotify::toAdmins(lang('commerce.nc_inquiry'), ZittmeModulesCommerceModelsNotify::consoleUrl('qna'));
 		$this->setMessage('msg_shop_inquiry_added');
 		$this->redirectToItem($item_srl);
 	}
@@ -356,8 +357,8 @@ class Review extends Base
 		{
 			return null;
 		}
-		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
-		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare(
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare(
 			'SELECT * FROM `' . $prefix . $table . '` WHERE `' . $key . '` = ? LIMIT 1'
 		);
 		$row = null;

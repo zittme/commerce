@@ -205,7 +205,7 @@ class Coupon
 		{
 			return false;
 		}
-		\Rhymix\Framework\DB::getInstance()->query(
+		\Zittme\Framework\DB::getInstance()->query(
 			'UPDATE commerce_coupon SET used_count = used_count + 1 WHERE coupon_srl = ?',
 			(int)(self::getIssue($issue_srl)->coupon_srl ?? 0)
 		);
@@ -243,7 +243,7 @@ class Coupon
 		}
 
 		// 전체 한도 — 컬럼 간 비교라 raw SQL 원자 차감
-		$stmt = \Rhymix\Framework\DB::getInstance()->query(
+		$stmt = \Zittme\Framework\DB::getInstance()->query(
 			'UPDATE commerce_coupon SET used_count = used_count + 1 WHERE coupon_srl = ? AND (total_limit = 0 OR used_count < total_limit)',
 			(int)$coupon->coupon_srl
 		);
@@ -255,7 +255,7 @@ class Coupon
 		$issue_srl = self::issueTo((int)$coupon->coupon_srl, $member_srl, $order_srl);
 		if (!$issue_srl)
 		{
-			\Rhymix\Framework\DB::getInstance()->query(
+			\Zittme\Framework\DB::getInstance()->query(
 				'UPDATE commerce_coupon SET used_count = used_count - 1 WHERE coupon_srl = ? AND used_count > 0',
 				(int)$coupon->coupon_srl
 			);
@@ -285,7 +285,7 @@ class Coupon
 	public static function releaseByOrder(int $order_srl): void
 	{
 		// 사용 카운트 되돌리기: 해당 주문의 issue 를 먼저 찾는다
-		$stmt = \Rhymix\Framework\DB::getInstance()->query(
+		$stmt = \Zittme\Framework\DB::getInstance()->query(
 			'SELECT issue_srl, coupon_srl FROM commerce_coupon_issue WHERE order_srl = ?', $order_srl
 		);
 		$rows = $stmt ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
@@ -301,7 +301,7 @@ class Coupon
 		]);
 		foreach ($rows as $row)
 		{
-			\Rhymix\Framework\DB::getInstance()->query(
+			\Zittme\Framework\DB::getInstance()->query(
 				'UPDATE commerce_coupon SET used_count = used_count - 1 WHERE coupon_srl = ? AND used_count > 0',
 				(int)$row->coupon_srl
 			);

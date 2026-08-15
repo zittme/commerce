@@ -139,6 +139,49 @@ class Order
 	}
 
 	/**
+	 * 알림센터로 보낸다. 메일과 달리 설정과 무관하게 나간다.
+	 *
+	 * 운영자는 처리할 일(신규 주문·클레임)을, 구매자는 자기 주문의 진행을 받는다.
+	 *
+	 * @param string $kind
+	 * @param object $order
+	 * @param string $memo
+	 * @return void
+	 */
+	protected static function notifyCenter(string $kind, object $order, string $memo = ''): void
+	{
+		$code = (string)$order->order_code;
+		$buyer = (int)($order->member_srl ?? 0);
+
+		switch ($kind)
+		{
+			case 'new_order':
+				Notify::toAdmins(sprintf(lang('commerce.nc_new_order'), $code), Notify::consoleUrl('orders'));
+				return;
+
+			case 'claim':
+				Notify::toAdmins(sprintf(lang('commerce.nc_claim'), $code), Notify::consoleUrl('claims'));
+				return;
+
+			case 'paid':
+				Notify::send($buyer, sprintf(lang('commerce.nc_paid'), $code), Notify::orderUrl($code));
+				return;
+
+			case 'shipping':
+				Notify::send($buyer, sprintf(lang('commerce.nc_shipping'), $code), Notify::orderUrl($code));
+				return;
+
+			case 'delivered':
+				Notify::send($buyer, sprintf(lang('commerce.nc_delivered'), $code), Notify::orderUrl($code));
+				return;
+
+			case 'claim_done':
+				Notify::send($buyer, sprintf(lang('commerce.nc_claim_done'), $code), Notify::orderUrl($code));
+				return;
+		}
+	}
+
+	/**
 	 * 주문 알림 메일 (실패해도 주문 흐름을 막지 않는다).
 	 *
 	 * kind: new_order|claim → 관리자(notify_admin=Y 일 때), received|paid → 구매자.
@@ -154,6 +197,9 @@ class Order
 		{
 			return;
 		}
+
+		// 알림센터는 메일 설정과 무관하게 보낸다. 메일을 끈 사이트도 알림은 받는다
+		self::notifyCenter($kind, $order, $memo);
 		try
 		{
 			$config = Config::getConfig();
@@ -195,7 +241,7 @@ class Order
 				$lines[] = $memo;
 			}
 
-			$mail = new \Rhymix\Framework\Mail();
+			$mail = new \Zittme\Framework\Mail();
 			$mail->addTo($to);
 			$mail->setSubject($subjects[$kind]);
 			$mail->setBody(implode("\n", $lines), 'text/plain');
@@ -249,7 +295,7 @@ class Order
 		{
 			if ((int)$item->item_srl > 0)
 			{
-				\Rhymix\Framework\DB::getInstance()->query(
+				\Zittme\Framework\DB::getInstance()->query(
 					'UPDATE commerce_item SET buy_count = buy_count + ? WHERE item_srl = ?',
 					(int)$item->qty, (int)$item->item_srl
 				);

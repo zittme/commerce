@@ -154,6 +154,15 @@ $lang->shop_status_expired = '기한 만료';
 
 // 메시지
 $lang->msg_shop_disabled = '상점이 운영 중지 상태입니다.';
+$lang->nc_new_order = '새 주문이 들어왔습니다. (%s)';
+$lang->nc_claim = '취소·반품 신청이 접수되었습니다. (%s)';
+$lang->nc_inquiry = '새 상품 문의가 등록되었습니다.';
+$lang->nc_paid = '결제가 완료되었습니다. (%s)';
+$lang->nc_shipping = '주문하신 상품이 발송되었습니다. (%s)';
+$lang->nc_delivered = '배송이 완료되었습니다. (%s)';
+$lang->nc_claim_done = '취소·반품 신청이 처리되었습니다. (%s)';
+$lang->nc_inquiry_answered = '문의하신 내용에 답변이 등록되었습니다.';
+$lang->shop_go_console = '쇼핑몰 콘솔 열기';
 $lang->msg_shop_no_item = '상품을 찾을 수 없습니다.';
 $lang->msg_shop_qty_not_allowed = '구매 가능 수량 범위를 확인해주세요.';
 $lang->msg_shop_need_option = '옵션을 선택해주세요.';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = '구매 등급';
 $lang->admin_menu_stats = '통계';
 $lang->admin_menu_config = '설정';
 $lang->admin_console_title = '쇼핑 콘솔';
+$lang->admin_menu_open = '메뉴 열기';
+$lang->admin_menu_close = '메뉴 닫기';
 $lang->admin_view_site = '사이트 보기';
 $lang->admin_go_admin = 'zittme 관리자';
 $lang->admin_console_notice = '<b>쇼핑 전용 콘솔</b>에서 관리하세요. 상품·주문·클레임 운영은 별도 패널로 제공됩니다.';

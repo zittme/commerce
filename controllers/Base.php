@@ -66,6 +66,29 @@ class Base extends \ModuleObject
 	}
 
 	/**
+	 * 상점 운영 중지 관문.
+	 *
+	 * 중지해도 화면이 열리면 손님이 담고 결제까지 시도하게 된다. 주문만 막는 것으로는
+	 * 부족해서 화면 진입에서 함께 끊는다. 관리자는 준비 상태를 봐야 하므로 통과시킨다.
+	 *
+	 * @return void
+	 */
+	protected static function assertShopEnabled(): void
+	{
+		if ((self::config()->enabled ?? 'Y') === 'Y')
+		{
+			return;
+		}
+		$logged_info = \Context::get('logged_info');
+		if ($logged_info && $logged_info->is_admin === 'Y')
+		{
+			\Context::set('shop_disabled_notice', true);
+			return;
+		}
+		throw new \Zittme\Framework\Exceptions\TargetNotFound;
+	}
+
+	/**
 	 * 스키마 자가 치유.
 	 *
 	 * 파일만 교체된 사이트에서도 동작하도록, 모듈 업데이트와 별개로 요청 경로에서
@@ -102,7 +125,7 @@ class Base extends \ModuleObject
 			if (!$oDB->isColumnExists('commerce_item', 'effective_price'))
 			{
 				$oDB->addColumn('commerce_item', 'effective_price', 'bigint', null, 0, true);
-				\Rhymix\Framework\DB::getInstance()->getHandle()
+				\Zittme\Framework\DB::getInstance()->getHandle()
 					->exec('UPDATE `' . \Zittme\Modules\Commerce\Controllers\Install::dbPrefix() . 'commerce_item` SET effective_price = CASE WHEN sale_price > 0 THEN sale_price ELSE price END');
 			}
 			// 주문 시점 SKU 스냅샷
@@ -118,7 +141,7 @@ class Base extends \ModuleObject
 			// 연결이 비어 있는 리뷰는 상품 단위(0)로 취급되므로 컬럼 추가 여부와 무관하게 보정한다
 			self::backfillReviewOrders();
 			// 진열 순서 규약: 최신이 앞, list_order = -srl. 미정렬(0)과 등록순 값(+srl)을 맞춘다
-			\Rhymix\Framework\DB::getInstance()->getHandle()
+			\Zittme\Framework\DB::getInstance()->getHandle()
 				->exec('UPDATE `' . \Zittme\Modules\Commerce\Controllers\Install::dbPrefix() . 'commerce_item` SET list_order = -item_srl WHERE list_order = 0 OR list_order = item_srl');
 			\Zittme\Framework\Cache::set('commerce_schema_ok_v6', true, 86400);
 		}
@@ -138,7 +161,7 @@ class Base extends \ModuleObject
 		try
 		{
 			$p = Install::dbPrefix();
-			$handle = \Rhymix\Framework\DB::getInstance()->getHandle();
+			$handle = \Zittme\Framework\DB::getInstance()->getHandle();
 			// 컬럼을 나중에 붙인 사이트는 기존 행이 NULL 일 수 있다. 0 과 NULL 을 함께 본다
 			$stmt = $handle->query('SELECT 1 FROM `' . $p . 'commerce_review` WHERE (order_srl = 0 OR order_srl IS NULL) AND member_srl > 0 LIMIT 1');
 			// 코어는 버퍼링 없는 쿼리를 쓴다. 다음 쿼리 전에 커서를 닫는다

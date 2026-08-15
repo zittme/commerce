@@ -126,7 +126,7 @@ class Cart
 		}
 
 		$moved = 0;
-		$db = \Rhymix\Framework\DB::getInstance();
+		$db = \Zittme\Framework\DB::getInstance();
 		foreach ($guest_rows as $row)
 		{
 			$dup = $mine[(int)$row->item_srl . ':' . (int)$row->option_srl] ?? null;

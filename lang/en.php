@@ -154,6 +154,15 @@ $lang->shop_status_expired = 'Expired';
 
 // 메시지
 $lang->msg_shop_disabled = 'The shop is currently closed.';
+$lang->nc_new_order = 'New order received. (%s)';
+$lang->nc_claim = 'A cancellation or return request was submitted. (%s)';
+$lang->nc_inquiry = 'A new product inquiry was posted.';
+$lang->nc_paid = 'Your payment is complete. (%s)';
+$lang->nc_shipping = 'Your order has shipped. (%s)';
+$lang->nc_delivered = 'Your order has been delivered. (%s)';
+$lang->nc_claim_done = 'Your cancellation or return request has been processed. (%s)';
+$lang->nc_inquiry_answered = 'Your inquiry has been answered.';
+$lang->shop_go_console = 'Open shop console';
 $lang->msg_shop_no_item = 'The product could not be found.';
 $lang->msg_shop_qty_not_allowed = 'Please check the allowed quantity range.';
 $lang->msg_shop_need_option = 'Please select an option.';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = 'Member tiers';
 $lang->admin_menu_stats = 'Statistics';
 $lang->admin_menu_config = 'Settings';
 $lang->admin_console_title = 'Shop console';
+$lang->admin_menu_open = 'Open menu';
+$lang->admin_menu_close = 'Close menu';
 $lang->admin_view_site = 'View site';
 $lang->admin_go_admin = 'zittme admin';
 $lang->admin_console_notice = 'Manage the shop from the <b>dedicated shop console</b>. Products, orders and claims are handled in a separate panel.';

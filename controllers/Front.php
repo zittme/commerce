@@ -211,13 +211,14 @@ class Front extends Base
 	 */
 	public function dispPromotion()
 	{
+		self::assertShopEnabled();
 		$slug = trim((string)\Context::get('p'));
 		$promo = $slug !== '' ? \Zittme\Modules\Commerce\Models\Promotion::get(0, $slug) : null;
 		$logged_info = \Context::get('logged_info');
 		$is_admin = $logged_info && $logged_info->is_admin === 'Y';
 		if (!$promo || (($promo->status ?? 'Y') !== 'Y' && !$is_admin))
 		{
-			throw new \Rhymix\Framework\Exceptions\TargetNotFound;
+			throw new \Zittme\Framework\Exceptions\TargetNotFound;
 		}
 
 		$now = self::now();
@@ -272,7 +273,7 @@ class Front extends Base
 		}
 		try
 		{
-			$stmt = \Rhymix\Framework\DB::getInstance()->query(
+			$stmt = \Zittme\Framework\DB::getInstance()->query(
 				'SELECT item_srl, COUNT(*) AS review_count, AVG(rating) AS rating_avg FROM commerce_review WHERE item_srl IN (' . implode(',', $srls) . ') GROUP BY item_srl'
 			);
 			$stats = [];
@@ -298,6 +299,7 @@ class Front extends Base
 	 */
 	public function dispCommerceList()
 	{
+		self::assertShopEnabled();
 		// 기획전 페이지 (?v=promo&p=슬러그)
 		if (\Context::get('v') === 'promo')
 		{
@@ -542,6 +544,7 @@ class Front extends Base
 	 */
 	public function dispCommerceItem()
 	{
+		self::assertShopEnabled();
 		$item_srl = (int)\Context::get('item_srl');
 		$item = ItemModel::get($item_srl);
 		if (!$item || in_array($item->status, ['hidden', 'stop'], true))
@@ -550,7 +553,7 @@ class Front extends Base
 		}
 
 		// 조회수 (원자 증가)
-		\Rhymix\Framework\DB::getInstance()->query(
+		\Zittme\Framework\DB::getInstance()->query(
 			'UPDATE commerce_item SET view_count = view_count + 1 WHERE item_srl = ?', $item_srl
 		);
 
@@ -653,6 +656,7 @@ class Front extends Base
 	 */
 	public function dispCommerceCart()
 	{
+		self::assertShopEnabled();
 		$resolved = CartModel::resolve();
 		\Context::set('cart', $resolved);
 		\Context::set('ship_fee', CartModel::calcShipFee($resolved));
@@ -667,6 +671,7 @@ class Front extends Base
 	 */
 	public function dispCommerceCheckout()
 	{
+		self::assertShopEnabled();
 		$resolved = CartModel::resolve();
 		$valid = array_values(array_filter($resolved->items, function($e) { return !$e->blocked; }));
 		if (!count($valid))
@@ -798,7 +803,7 @@ class Front extends Base
 		{
 			$gp = (string)\Context::get('gp');
 			$authorized = $gp !== '' && !empty($order->guest_password)
-				&& \Rhymix\Framework\Password::checkPassword($gp, $order->guest_password);
+				&& \Zittme\Framework\Password::checkPassword($gp, $order->guest_password);
 			if (!$authorized)
 			{
 				$age = time() - (strtotime(sprintf(
@@ -851,6 +856,7 @@ class Front extends Base
 	 */
 	public function dispCommerceMyOrders()
 	{
+		self::assertShopEnabled();
 		$logged_info = \Context::get('logged_info');
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 

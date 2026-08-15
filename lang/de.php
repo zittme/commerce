@@ -154,6 +154,15 @@ $lang->shop_status_expired = 'Abgelaufen';
 
 // 메시지
 $lang->msg_shop_disabled = 'Der Shop ist geschlossen.';
+$lang->nc_new_order = 'Neue Bestellung eingegangen. (%s)';
+$lang->nc_claim = 'Eine Storno- oder Ruckgabeanfrage ist eingegangen. (%s)';
+$lang->nc_inquiry = 'Eine neue Produktanfrage wurde gestellt.';
+$lang->nc_paid = 'Ihre Zahlung ist abgeschlossen. (%s)';
+$lang->nc_shipping = 'Ihre Bestellung wurde versandt. (%s)';
+$lang->nc_delivered = 'Ihre Bestellung wurde zugestellt. (%s)';
+$lang->nc_claim_done = 'Ihre Storno- oder Ruckgabeanfrage wurde bearbeitet. (%s)';
+$lang->nc_inquiry_answered = 'Ihre Anfrage wurde beantwortet.';
+$lang->shop_go_console = 'Shop-Konsole offnen';
 $lang->msg_shop_no_item = 'Das Produkt wurde nicht gefunden.';
 $lang->msg_shop_qty_not_allowed = 'Bitte prüfen Sie die zulässige Menge.';
 $lang->msg_shop_need_option = 'Bitte wählen Sie eine Option.';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = 'Mitgliedsstufen';
 $lang->admin_menu_stats = 'Statistik';
 $lang->admin_menu_config = 'Einstellungen';
 $lang->admin_console_title = 'Shop-Konsole';
+$lang->admin_menu_open = 'Menu offnen';
+$lang->admin_menu_close = 'Menu schliessen';
 $lang->admin_view_site = 'Website ansehen';
 $lang->admin_go_admin = 'zittme Administration';
 $lang->admin_console_notice = 'Verwalten Sie den Shop in der <b>eigenen Shop-Konsole</b>. Produkte, Bestellungen und Reklamationen laufen über ein separates Panel.';

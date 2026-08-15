@@ -154,6 +154,15 @@ $lang->shop_status_expired = '已过期';
 
 // 메시지
 $lang->msg_shop_disabled = '商店已停止运营。';
+$lang->nc_new_order = '收到新订单。(%s)';
+$lang->nc_claim = '收到取消或退货申请。(%s)';
+$lang->nc_inquiry = '有新的商品咨询。';
+$lang->nc_paid = '支付已完成。(%s)';
+$lang->nc_shipping = '您的订单已发货。(%s)';
+$lang->nc_delivered = '配送已完成。(%s)';
+$lang->nc_claim_done = '取消或退货申请已处理。(%s)';
+$lang->nc_inquiry_answered = '您的咨询已有回复。';
+$lang->shop_go_console = '打开商城控制台';
 $lang->msg_shop_no_item = '找不到该商品。';
 $lang->msg_shop_qty_not_allowed = '请确认可购买的数量范围。';
 $lang->msg_shop_need_option = '请选择选项。';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = '会员等级';
 $lang->admin_menu_stats = '统计';
 $lang->admin_menu_config = '设置';
 $lang->admin_console_title = '商城控制台';
+$lang->admin_menu_open = '打开菜单';
+$lang->admin_menu_close = '关闭菜单';
 $lang->admin_view_site = '查看网站';
 $lang->admin_go_admin = 'zittme 管理员';
 $lang->admin_console_notice = '请在<b>商城专用控制台</b>中管理。商品、订单与售后运营由独立面板提供。';

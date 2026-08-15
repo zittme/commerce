@@ -25,7 +25,7 @@ class Credit
 		{
 			return 0;
 		}
-		$stmt = \Rhymix\Framework\DB::getInstance()->query(
+		$stmt = \Zittme\Framework\DB::getInstance()->query(
 			'SELECT balance FROM commerce_credit_balance WHERE member_srl = ?', $member_srl
 		);
 		$row = $stmt ? $stmt->fetchObject() : null;
@@ -48,7 +48,7 @@ class Credit
 		{
 			return false;
 		}
-		$db = \Rhymix\Framework\DB::getInstance();
+		$db = \Zittme\Framework\DB::getInstance();
 
 		// 잔액 행 보장 (동시 생성은 PK 충돌로 한쪽만 성공 — 이후 UPDATE 는 공통)
 		try
@@ -108,7 +108,7 @@ class Credit
 		{
 			return false;
 		}
-		$stmt = \Rhymix\Framework\DB::getInstance()->query(
+		$stmt = \Zittme\Framework\DB::getInstance()->query(
 			'UPDATE commerce_credit_balance SET balance = balance - ?, upddate = ? WHERE member_srl = ? AND balance >= ?',
 			$amount, Base::now(), $member_srl, $amount
 		);
@@ -177,7 +177,7 @@ class Credit
 		}
 
 		// 적립분 회수 (이 주문의 earn 합계)
-		$stmt = \Rhymix\Framework\DB::getInstance()->query(
+		$stmt = \Zittme\Framework\DB::getInstance()->query(
 			'SELECT COALESCE(SUM(amount), 0) AS s FROM commerce_credit_log WHERE order_srl = ? AND type = ?',
 			$order_srl, 'earn'
 		);

@@ -54,7 +54,7 @@ class Promotion
 	 */
 	public static function itemsOf(int $promo_srl, bool $only_visible = true): array
 	{
-		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
 		$sql = 'SELECT i.*, pi.list_order AS promo_order'
 			. ' FROM `' . $prefix . 'commerce_promotion_item` pi'
 			. ' JOIN `' . $prefix . 'commerce_item` i ON i.item_srl = pi.item_srl'
@@ -64,7 +64,7 @@ class Promotion
 			$sql .= " AND i.status IN ('sale', 'soldout')";
 		}
 		$sql .= ' ORDER BY pi.list_order ASC, pi.promo_item_srl ASC';
-		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare($sql);
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare($sql);
 		return ($stmt && $stmt->execute([$promo_srl])) ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
 	}
 
@@ -100,8 +100,8 @@ class Promotion
 	 */
 	public static function promoSrlsOfItem(int $item_srl): array
 	{
-		$prefix = (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
-		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->prepare(
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare(
 			'SELECT promo_srl FROM `' . $prefix . 'commerce_promotion_item` WHERE item_srl = ?'
 		);
 		if (!$stmt || !$stmt->execute([$item_srl]))

@@ -154,6 +154,15 @@ $lang->shop_status_expired = 'Хугацаа дууссан';
 
 // 메시지
 $lang->msg_shop_disabled = 'Дэлгүүр түр зогссон байна.';
+$lang->nc_new_order = 'Шинэ захиалга ирлээ. (%s)';
+$lang->nc_claim = 'Цуцлах, буцаах хүсэлт ирлээ. (%s)';
+$lang->nc_inquiry = 'Шинэ барааны асуулт ирлээ.';
+$lang->nc_paid = 'Төлбөр амжилттай. (%s)';
+$lang->nc_shipping = 'Захиалга илгээгдлээ. (%s)';
+$lang->nc_delivered = 'Хүргэлт дууслаа. (%s)';
+$lang->nc_claim_done = 'Цуцлах, буцаах хүсэлт шийдэгдлээ. (%s)';
+$lang->nc_inquiry_answered = 'Таны асуултад хариу өглөө.';
+$lang->shop_go_console = 'Дэлгүүрийн консол нээх';
 $lang->msg_shop_no_item = 'Бараа олдсонгүй.';
 $lang->msg_shop_qty_not_allowed = 'Зөвшөөрөгдөх тоо ширхгийн хязгаарыг шалгана уу.';
 $lang->msg_shop_need_option = 'Сонголтоо сонгоно уу.';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = 'Гишүүний зэрэглэл';
 $lang->admin_menu_stats = 'Статистик';
 $lang->admin_menu_config = 'Тохиргоо';
 $lang->admin_console_title = 'Дэлгүүрийн консол';
+$lang->admin_menu_open = 'Цэс нээх';
+$lang->admin_menu_close = 'Цэс хаах';
 $lang->admin_view_site = 'Сайтыг харах';
 $lang->admin_go_admin = 'zittme админ';
 $lang->admin_console_notice = '<b>Дэлгүүрийн тусгай консол</b>-оос удирдана уу. Бараа, захиалга, гомдлын ажиллагааг тусдаа самбараар гүйцэтгэнэ.';

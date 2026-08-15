@@ -154,6 +154,15 @@ $lang->shop_status_expired = 'Expirée';
 
 // 메시지
 $lang->msg_shop_disabled = 'La boutique est fermée.';
+$lang->nc_new_order = 'Nouvelle commande recue. (%s)';
+$lang->nc_claim = 'Une demande d annulation ou de retour a ete recue. (%s)';
+$lang->nc_inquiry = 'Une nouvelle question produit a ete postee.';
+$lang->nc_paid = 'Votre paiement est termine. (%s)';
+$lang->nc_shipping = 'Votre commande a ete expediee. (%s)';
+$lang->nc_delivered = 'Votre commande a ete livree. (%s)';
+$lang->nc_claim_done = 'Votre demande d annulation ou de retour a ete traitee. (%s)';
+$lang->nc_inquiry_answered = 'Votre question a recu une reponse.';
+$lang->shop_go_console = 'Ouvrir la console boutique';
 $lang->msg_shop_no_item = 'Produit introuvable.';
 $lang->msg_shop_qty_not_allowed = 'Veuillez vérifier la plage de quantité autorisée.';
 $lang->msg_shop_need_option = 'Veuillez choisir une option.';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = 'Niveaux de membre';
 $lang->admin_menu_stats = 'Statistiques';
 $lang->admin_menu_config = 'Réglages';
 $lang->admin_console_title = 'Console de la boutique';
+$lang->admin_menu_open = 'Ouvrir le menu';
+$lang->admin_menu_close = 'Fermer le menu';
 $lang->admin_view_site = 'Voir le site';
 $lang->admin_go_admin = 'Administration zittme';
 $lang->admin_console_notice = 'Gérez depuis la <b>console dédiée à la boutique</b>. Les produits, commandes et réclamations sont traités dans un panneau distinct.';

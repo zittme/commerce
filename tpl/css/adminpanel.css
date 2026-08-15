@@ -42,3 +42,6 @@
 .shp-adm-banner-tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
 .shp-adm-banner-tools button { width: 24px; height: 24px; border: 1px solid #d5d8de; border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; line-height: 1; color: #555; }
 .shp-adm-banner-tools button:hover { background: #f0f2f5; }
+
+.shp-adm-console { display: block; margin-top: 10px; padding: 10px; border-radius: 9px; background: #191f28; color: #fff !important; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none !important; }
+.shp-adm-console:hover { background: #2677e3; }

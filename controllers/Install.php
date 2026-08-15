@@ -183,7 +183,7 @@ class Install extends Base
 		try
 		{
 			// 0 = 미정렬, list_order = item_srl(양수) = 과거 등록순 보정값. 둘 다 최신-앞 규약(-srl)으로 바꿔야 한다
-			$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()
+			$stmt = \Zittme\Framework\DB::getInstance()->getHandle()
 				->query('SELECT COUNT(*) FROM `' . self::dbPrefix() . 'commerce_item` WHERE list_order = 0 OR list_order = item_srl');
 			if (!$stmt)
 			{
@@ -226,7 +226,7 @@ class Install extends Base
 				if (self::isGradeRateInt())
 				{
 					// SHOW/ALTER 는 프레임워크의 자동 프리픽스 재작성과 충돌하므로 PDO 핸들로 직접 실행
-					\Rhymix\Framework\DB::getInstance()->getHandle()->exec(
+					\Zittme\Framework\DB::getInstance()->getHandle()->exec(
 						'ALTER TABLE `' . self::dbPrefix() . 'commerce_grade` MODIFY `credit_rate` DECIMAL(6,2) NOT NULL DEFAULT 0'
 					);
 				}
@@ -242,7 +242,7 @@ class Install extends Base
 		{
 			try
 			{
-				\Rhymix\Framework\DB::getInstance()->getHandle()
+				\Zittme\Framework\DB::getInstance()->getHandle()
 					->exec('UPDATE `' . self::dbPrefix() . 'commerce_item` SET list_order = -item_srl WHERE list_order = 0 OR list_order = item_srl');
 			}
 			catch (\Throwable $e)
@@ -258,7 +258,7 @@ class Install extends Base
 		{
 			try
 			{
-				\Rhymix\Framework\DB::getInstance()->getHandle()
+				\Zittme\Framework\DB::getInstance()->getHandle()
 					->exec('UPDATE `' . self::dbPrefix() . 'commerce_item` SET effective_price = CASE WHEN sale_price > 0 THEN sale_price ELSE price END WHERE effective_price = 0 OR effective_price IS NULL');
 			}
 			catch (\Throwable $e)
@@ -283,7 +283,7 @@ class Install extends Base
 	 */
 	public static function dbPrefix(): string
 	{
-		return (string)(\Rhymix\Framework\Config::get('db.master.prefix') ?? '');
+		return (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
 	}
 
 	/**
@@ -295,7 +295,7 @@ class Install extends Base
 	 */
 	protected static function isGradeRateInt(): bool
 	{
-		$stmt = \Rhymix\Framework\DB::getInstance()->getHandle()->query(
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->query(
 			'SHOW COLUMNS FROM `' . self::dbPrefix() . 'commerce_grade` LIKE \'credit_rate\''
 		);
 		$col = null;

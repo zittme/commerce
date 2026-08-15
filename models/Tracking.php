@@ -75,7 +75,7 @@ class Tracking
 		}
 		try
 		{
-			$response = \Rhymix\Framework\HTTP::get('https://info.sweettracker.co.kr/api/v1/trackingInfo', [
+			$response = \Zittme\Framework\HTTP::get('https://info.sweettracker.co.kr/api/v1/trackingInfo', [
 				't_key' => $key,
 				't_code' => $code,
 				't_invoice' => $invoice,
@@ -184,7 +184,7 @@ class Tracking
 
 		try
 		{
-			$stmt = \Rhymix\Framework\DB::getInstance()->query(
+			$stmt = \Zittme\Framework\DB::getInstance()->query(
 				'SELECT order_seller_srl, order_srl, status, shipping_company, shipping_invoice'
 				. ' FROM commerce_order_seller'
 				. " WHERE status IN ('preparing', 'shipping') AND shipping_invoice != '' LIMIT 20"

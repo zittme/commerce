@@ -7,6 +7,7 @@
 	</columns>
 	<conditions>
 		<condition operation="equal" column="item_srl" var="item_srl" />
+		<condition operation="equal" column="inquiry_srl" var="inquiry_srl" pipe="and" />
 	</conditions>
 	<navigation>
 		<index var="sort_index" default="inquiry_srl" order="desc" />

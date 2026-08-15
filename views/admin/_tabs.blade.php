@@ -83,7 +83,22 @@ body { -webkit-font-smoothing: antialiased; color: var(--zmc-ink); }
 .rsva .rsva-filter { padding: 14px 16px; background: #fff; border: 1px solid var(--zmc-line); border-radius: 14px; margin-bottom: 16px; }
 .rsva .rsva-card { border-radius: 16px; box-shadow: 0 1px 2px rgba(25,31,40,.03); }
 .rsva small { color: var(--zmc-sub); }
-@media (max-width: 900px) { .zmc-side { width: 62px; padding: 18px 9px; } .zmc-logo { padding: 0 6px 16px; } .zmc-logo span, .zmc-nav a span, .zmc-side-foot { display: none; } .zmc-top { margin-left: 62px; padding: 14px 16px; } .rsva { margin-left: 62px; padding: 18px 16px 70px; } }
+/* ── 좁은 화면: 메뉴 버튼으로 여는 서랍 ── */
+.zmc-menu-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--zmc-line); border-radius: 10px; background: #fff; color: var(--zmc-ink); cursor: pointer; }
+.zmc-menu-btn svg { display: block; }
+.zmc-side-dim { display: none; position: fixed; inset: 0; z-index: 99; background: rgba(16,20,28,.45); }
+.zmc-side-dim.is-open { display: block; }
+.zmc-side-close { display: none; margin-left: auto; padding: 4px; border: 0; background: none; color: var(--zmc-sub); cursor: pointer; }
+
+@media (max-width: 900px) {
+	/* 아이콘이 없어 글자만 숨기면 빈 막대가 된다. 아예 밀어 두고 버튼으로 연다 */
+	.zmc-side { width: 264px; transform: translateX(-100%); transition: transform .18s ease; }
+	.zmc-side.is-open { transform: translateX(0); box-shadow: 0 0 40px rgba(16,20,28,.25); }
+	.zmc-side-close { display: block; }
+	.zmc-top { margin-left: 0; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+	.zmc-menu-btn { display: inline-flex; }
+	.rsva { margin-left: 0; padding: 16px 14px 70px; }
+}
 </style>
 @php
 $zmc_menu = [];
@@ -95,7 +110,10 @@ $zmc_active_alias = ['order_view' => 'orders', 'item_edit' => 'items'];
 $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 @endphp
 <aside class="zmc-side">
-	<div class="zmc-logo"><b>zittme</b> <span>{{ lang('commerce.admin_console_title') }}</span></div>
+	<div class="zmc-logo">
+		<b>zittme</b> <span>{{ lang('commerce.admin_console_title') }}</span>
+		<button type="button" class="zmc-side-close" id="zmcSideClose" aria-label="{{ lang('commerce.admin_menu_close') }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
+	</div>
 	<nav class="zmc-nav">
 		@foreach ($zmc_menu as $key => $label)
 		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole', 'p', $key) }}" class="{{ $zmc_current === $key ? 'is-active' : '' }}"><span>{{ $label }}</span></a>
@@ -106,7 +124,27 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 		<a href="{{ getUrl('', 'mid', '', 'module', 'admin', 'act', '') }}" target="_blank">{{ lang('commerce.admin_go_admin') }}</a>
 	</div>
 </aside>
-<div class="zmc-top"><h2>{{ $zmc_menu[$zmc_current] ?? '' }}</h2></div>
+<div class="zmc-side-dim" id="zmcSideDim"></div>
+<div class="zmc-top">
+	<button type="button" class="zmc-menu-btn" id="zmcMenuBtn" aria-label="{{ lang('commerce.admin_menu_open') }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2 4.5h14M2 9h14M2 13.5h14"/></svg></button>
+	<h2>{{ $zmc_menu[$zmc_current] ?? '' }}</h2>
+</div>
+<script>
+(function () {
+	var side = document.querySelector('.zmc-side');
+	var dim = document.getElementById('zmcSideDim');
+	var btn = document.getElementById('zmcMenuBtn');
+	if (!side || !dim || !btn) return;
+	function open() { side.classList.add('is-open'); dim.classList.add('is-open'); }
+	function close() { side.classList.remove('is-open'); dim.classList.remove('is-open'); }
+	btn.addEventListener('click', open);
+	dim.addEventListener('click', close);
+	var closeBtn = document.getElementById('zmcSideClose');
+	if (closeBtn) closeBtn.addEventListener('click', close);
+	document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
+</script>
+
 <script>
 (function () {
 	function toP(n) { return n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(); }

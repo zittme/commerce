@@ -46,13 +46,13 @@ class Stats
 	}
 
 	/**
-	 * @return \Rhymix\Framework\Helpers\DBHelper|\Rhymix\Framework\DB
+	 * @return \Zittme\Framework\Helpers\DBHelper|\Zittme\Framework\DB
 	 */
 	protected static function db()
 	{
 		// 통계는 관리 대시보드 첫 화면에서 돌므로, 컬럼이 없는 구버전 DB 를 먼저 치유한다
 		\Zittme\Modules\Commerce\Controllers\Base::ensureCurrencySchema();
-		return \Rhymix\Framework\DB::getInstance();
+		return \Zittme\Framework\DB::getInstance();
 	}
 
 	/**
@@ -218,13 +218,16 @@ class Stats
 	 */
 	public static function byRegion(string $from, string $to): array
 	{
+		// 구매자가 고른 행정구역(state)이 있으면 그것을 쓴다. 주소 첫 낱말은
+		// 국내 옛 주문과 목록이 없는 나라를 위한 대비책이다
 		$stmt = self::db()->query(
-			'SELECT SUBSTRING_INDEX(TRIM(a.address1), " ", 1) AS region,
+			'SELECT a.country AS country, a.state AS state,
+			        SUBSTRING_INDEX(TRIM(a.address1), " ", 1) AS head,
 			        COUNT(*) AS cnt, COALESCE(SUM(' . self::krwExpr('o.payment_price', 'o') . '), 0) AS amount
 			 FROM commerce_order AS o
 			 INNER JOIN commerce_order_address AS a ON a.order_srl = o.order_srl
 			 WHERE o.status = ? AND o.paid_date BETWEEN ? AND ?
-			 GROUP BY region',
+			 GROUP BY country, state, head',
 			'paid', self::bound($from), self::bound($to, true)
 		);
 
@@ -232,7 +235,7 @@ class Stats
 		$merged = [];
 		while ($row = $stmt->fetchObject())
 		{
-			$region = self::normalizeRegion((string)$row->region);
+			$region = self::regionLabel((string)$row->country, (string)$row->state, (string)$row->head);
 			if (!isset($merged[$region]))
 			{
 				$merged[$region] = (object)['region' => $region, 'orders' => 0, 'sales' => 0];
@@ -244,6 +247,34 @@ class Stats
 		$rows = array_values($merged);
 		usort($rows, function($a, $b) { return $b->sales <=> $a->sales; });
 		return $rows;
+	}
+
+	/**
+	 * 집계에 쓸 지역 이름.
+	 *
+	 * 해외는 나라 이름을 앞에 붙인다. 같은 이름의 주가 여러 나라에 있어 섞이면 못 가린다.
+	 *
+	 * @param string $country
+	 * @param string $state
+	 * @param string $head 주소 첫 낱말 (대비책)
+	 * @return string
+	 */
+	protected static function regionLabel(string $country, string $state, string $head): string
+	{
+		$country = strtoupper(trim($country)) ?: 'KR';
+		$state = trim($state);
+
+		if ($state !== '')
+		{
+			$name = Region::name($state);
+			return $country === 'KR' ? self::normalizeRegion($name) : ($country . ' · ' . $name);
+		}
+
+		if ($country !== 'KR')
+		{
+			return $country;
+		}
+		return self::normalizeRegion($head);
 	}
 
 	/**

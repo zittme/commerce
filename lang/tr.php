@@ -154,6 +154,15 @@ $lang->shop_status_expired = 'Süresi doldu';
 
 // 메시지
 $lang->msg_shop_disabled = 'Mağaza kapalı.';
+$lang->nc_new_order = 'Yeni siparis geldi. (%s)';
+$lang->nc_claim = 'Iptal veya iade talebi alindi. (%s)';
+$lang->nc_inquiry = 'Yeni bir urun sorusu geldi.';
+$lang->nc_paid = 'Odemeniz tamamlandi. (%s)';
+$lang->nc_shipping = 'Siparisiniz kargolandi. (%s)';
+$lang->nc_delivered = 'Siparisiniz teslim edildi. (%s)';
+$lang->nc_claim_done = 'Iptal veya iade talebiniz islendi. (%s)';
+$lang->nc_inquiry_answered = 'Sorunuz yanitlandi.';
+$lang->shop_go_console = 'Magaza konsolunu ac';
 $lang->msg_shop_no_item = 'Ürün bulunamadı.';
 $lang->msg_shop_qty_not_allowed = 'Lütfen izin verilen adet aralığını kontrol edin.';
 $lang->msg_shop_need_option = 'Lütfen bir seçenek seçin.';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = 'Üyelik seviyeleri';
 $lang->admin_menu_stats = 'İstatistik';
 $lang->admin_menu_config = 'Ayarlar';
 $lang->admin_console_title = 'Mağaza konsolu';
+$lang->admin_menu_open = 'Menuyu ac';
+$lang->admin_menu_close = 'Menuyu kapat';
 $lang->admin_view_site = 'Siteyi görüntüle';
 $lang->admin_go_admin = 'zittme yönetimi';
 $lang->admin_console_notice = 'Yönetimi <b>mağazaya özel konsoldan</b> yapın. Ürün, sipariş ve talep işlemleri ayrı bir panelde sunulur.';

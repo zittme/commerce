@@ -62,7 +62,7 @@ class Order extends Base
 			{
 				return new \BaseObject(-1, 'msg_shop_need_password');
 			}
-			$guest_password = \Rhymix\Framework\Password::hashPassword($raw);
+			$guest_password = \Zittme\Framework\Password::hashPassword($raw);
 		}
 
 		if (\Context::get('agree_privacy') !== 'Y')
@@ -343,7 +343,7 @@ class Order extends Base
 			$new_phone = preg_replace('/[^0-9+]/', '', $orderer_phone);
 			if ($new_phone !== '' && $new_phone !== (string)($logged_info->phone_number ?? ''))
 			{
-				\Rhymix\Framework\DB::getInstance()->query(
+				\Zittme\Framework\DB::getInstance()->query(
 					'UPDATE member SET phone_number = ? WHERE member_srl = ?',
 					$new_phone, (int)$logged_info->member_srl
 				);
@@ -457,7 +457,7 @@ class Order extends Base
 		}
 		$raw = (string)\Context::get('guest_password');
 		if ((int)$order->member_srl > 0 || $raw === '' || empty($order->guest_password)
-			|| !\Rhymix\Framework\Password::checkPassword($raw, $order->guest_password))
+			|| !\Zittme\Framework\Password::checkPassword($raw, $order->guest_password))
 		{
 			return new \BaseObject(-1, 'msg_shop_wrong_password');
 		}
@@ -492,7 +492,7 @@ class Order extends Base
 		{
 			$raw = (string)\Context::get('guest_password');
 			if ($raw === '' || empty($order->guest_password)
-				|| !\Rhymix\Framework\Password::checkPassword($raw, $order->guest_password))
+				|| !\Zittme\Framework\Password::checkPassword($raw, $order->guest_password))
 			{
 				return new \BaseObject(-1, 'msg_shop_wrong_password');
 			}
@@ -560,7 +560,7 @@ class Order extends Base
 		{
 			$raw = (string)\Context::get('guest_password');
 			if ($raw === '' || empty($order->guest_password)
-				|| !\Rhymix\Framework\Password::checkPassword($raw, $order->guest_password))
+				|| !\Zittme\Framework\Password::checkPassword($raw, $order->guest_password))
 			{
 				return new \BaseObject(-1, 'msg_shop_wrong_password');
 			}
@@ -637,7 +637,7 @@ class Order extends Base
 		// 품목을 신청 상태로 표시 (중복 신청 방지)
 		foreach ($targets as $t)
 		{
-			\Rhymix\Framework\DB::getInstance()->query(
+			\Zittme\Framework\DB::getInstance()->query(
 				'UPDATE commerce_order_item SET claim_status = ? WHERE order_item_srl = ?',
 				'requested', (int)$t['order_item_srl']
 			);

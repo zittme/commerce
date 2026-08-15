@@ -154,6 +154,15 @@ $lang->shop_status_expired = 'Срок истёк';
 
 // 메시지
 $lang->msg_shop_disabled = 'Магазин закрыт.';
+$lang->nc_new_order = 'Поступил новый заказ. (%s)';
+$lang->nc_claim = 'Получен запрос на отмену или возврат. (%s)';
+$lang->nc_inquiry = 'Поступил новый вопрос о товаре.';
+$lang->nc_paid = 'Оплата завершена. (%s)';
+$lang->nc_shipping = 'Ваш заказ отправлен. (%s)';
+$lang->nc_delivered = 'Заказ доставлен. (%s)';
+$lang->nc_claim_done = 'Запрос на отмену или возврат обработан. (%s)';
+$lang->nc_inquiry_answered = 'На ваш вопрос ответили.';
+$lang->shop_go_console = 'Открыть консоль магазина';
 $lang->msg_shop_no_item = 'Товар не найден.';
 $lang->msg_shop_qty_not_allowed = 'Проверьте допустимое количество.';
 $lang->msg_shop_need_option = 'Выберите вариант.';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = 'Уровни участников';
 $lang->admin_menu_stats = 'Статистика';
 $lang->admin_menu_config = 'Настройки';
 $lang->admin_console_title = 'Консоль магазина';
+$lang->admin_menu_open = 'Открыть меню';
+$lang->admin_menu_close = 'Закрыть меню';
 $lang->admin_view_site = 'Открыть сайт';
 $lang->admin_go_admin = 'Администрирование zittme';
 $lang->admin_console_notice = 'Управляйте из <b>отдельной консоли магазина</b>. Товары, заказы и претензии ведутся в отдельной панели.';

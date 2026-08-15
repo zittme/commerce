@@ -154,6 +154,15 @@ $lang->shop_status_expired = 'Hết hạn';
 
 // 메시지
 $lang->msg_shop_disabled = 'Cửa hàng đang ngừng hoạt động.';
+$lang->nc_new_order = 'Co don hang moi. (%s)';
+$lang->nc_claim = 'Da nhan yeu cau huy hoac tra hang. (%s)';
+$lang->nc_inquiry = 'Co cau hoi san pham moi.';
+$lang->nc_paid = 'Thanh toan hoan tat. (%s)';
+$lang->nc_shipping = 'Don hang da duoc gui di. (%s)';
+$lang->nc_delivered = 'Da giao hang thanh cong. (%s)';
+$lang->nc_claim_done = 'Yeu cau huy hoac tra hang da duoc xu ly. (%s)';
+$lang->nc_inquiry_answered = 'Cau hoi cua ban da duoc tra loi.';
+$lang->shop_go_console = 'Mo bang dieu khien cua hang';
 $lang->msg_shop_no_item = 'Không tìm thấy sản phẩm.';
 $lang->msg_shop_qty_not_allowed = 'Vui lòng kiểm tra khoảng số lượng cho phép.';
 $lang->msg_shop_need_option = 'Vui lòng chọn tùy chọn.';
@@ -251,6 +260,8 @@ $lang->admin_menu_grades = 'Hạng thành viên';
 $lang->admin_menu_stats = 'Thống kê';
 $lang->admin_menu_config = 'Thiết lập';
 $lang->admin_console_title = 'Bảng quản trị cửa hàng';
+$lang->admin_menu_open = 'Mo menu';
+$lang->admin_menu_close = 'Dong menu';
 $lang->admin_view_site = 'Xem trang web';
 $lang->admin_go_admin = 'Quản trị zittme';
 $lang->admin_console_notice = 'Hãy quản lý trong <b>bảng quản trị riêng của cửa hàng</b>. Sản phẩm, đơn hàng và khiếu nại được xử lý ở bảng riêng.';
