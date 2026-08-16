@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = 'Tổng đơn từ';
 $lang->cfg_zone_tier_fee = 'Phụ phí mức này';
 $lang->cfg_zone_region_ph = 'Tìm khu vực';
 $lang->cfg_zone_search_empty = 'Không có kết quả';
+$lang->shop_currency_select = 'Chon tien te';
+$lang->shop_currency_keep = 'Giu nguyen';
+$lang->shop_grade_total = 'Tong %s';
+$lang->shop_add_option_guide = 'Ve san pham them';

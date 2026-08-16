@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = 'Sipariş tutarı';
 $lang->cfg_zone_tier_fee = 'Bu kademenin ek ücreti';
 $lang->cfg_zone_region_ph = 'Bölge ara';
 $lang->cfg_zone_search_empty = 'Eşleşme yok';
+$lang->shop_currency_select = 'Para birimi sec';
+$lang->shop_currency_keep = 'Oldugu gibi';
+$lang->shop_grade_total = 'Toplam %s';
+$lang->shop_add_option_guide = 'Ek urunler hakkinda';

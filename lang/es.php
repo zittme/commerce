@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = 'Importe desde';
 $lang->cfg_zone_tier_fee = 'Recargo de este tramo';
 $lang->cfg_zone_region_ph = 'Buscar región';
 $lang->cfg_zone_search_empty = 'Sin coincidencias';
+$lang->shop_currency_select = 'Elegir moneda';
+$lang->shop_currency_keep = 'Mantener asi';
+$lang->shop_grade_total = 'Total %s';
+$lang->shop_add_option_guide = 'Sobre los extras';

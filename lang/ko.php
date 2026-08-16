@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = '구매 금액 기준';
 $lang->cfg_zone_tier_fee = '이 구간의 추가금';
 $lang->cfg_zone_region_ph = '시·도 검색';
 $lang->cfg_zone_search_empty = '일치하는 항목이 없습니다';
+$lang->shop_currency_select = '통화 선택';
+$lang->shop_currency_keep = '그대로 보기';
+$lang->shop_grade_total = '누적 %s';
+$lang->shop_add_option_guide = '추가상품 안내';

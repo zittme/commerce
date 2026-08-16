@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = 'Захиалгын дүн';
 $lang->cfg_zone_tier_fee = 'Энэ шатны нэмэлт';
 $lang->cfg_zone_region_ph = 'Бүс хайх';
 $lang->cfg_zone_search_empty = 'Тохирох зүйл алга';
+$lang->shop_currency_select = 'Валют сонгох';
+$lang->shop_currency_keep = 'Хэвээр нь';
+$lang->shop_grade_total = 'Нийт %s';
+$lang->shop_add_option_guide = 'Нэмэлт барааны тайлбар';

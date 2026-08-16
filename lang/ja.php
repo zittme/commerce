@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = '購入金額の基準';
 $lang->cfg_zone_tier_fee = 'この区分の追加料金';
 $lang->cfg_zone_region_ph = '都道府県を検索';
 $lang->cfg_zone_search_empty = '一致する項目がありません';
+$lang->shop_currency_select = '通貨を選択';
+$lang->shop_currency_keep = 'そのまま表示';
+$lang->shop_grade_total = '累計 %s';
+$lang->shop_add_option_guide = '追加商品の案内';

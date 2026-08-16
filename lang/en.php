@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = 'Order total from';
 $lang->cfg_zone_tier_fee = 'Surcharge for this tier';
 $lang->cfg_zone_region_ph = 'Search a region';
 $lang->cfg_zone_search_empty = 'No matches';
+$lang->shop_currency_select = 'Select currency';
+$lang->shop_currency_keep = 'Keep as is';
+$lang->shop_grade_total = 'Total %s';
+$lang->shop_add_option_guide = 'About add-ons';

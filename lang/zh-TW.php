@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = '訂單金額起';
 $lang->cfg_zone_tier_fee = '該區間的加價';
 $lang->cfg_zone_region_ph = '搜尋縣市';
 $lang->cfg_zone_search_empty = '沒有符合項目';
+$lang->shop_currency_select = '選擇貨幣';
+$lang->shop_currency_keep = '保持原樣';
+$lang->shop_grade_total = '累計 %s';
+$lang->shop_add_option_guide = '附加商品說明';

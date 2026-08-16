@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = 'Сумма заказа от';
 $lang->cfg_zone_tier_fee = 'Наценка порога';
 $lang->cfg_zone_region_ph = 'Поиск региона';
 $lang->cfg_zone_search_empty = 'Совпадений нет';
+$lang->shop_currency_select = 'Выбор валюты';
+$lang->shop_currency_keep = 'Оставить как есть';
+$lang->shop_grade_total = 'Всего %s';
+$lang->shop_add_option_guide = 'О дополнительных товарах';

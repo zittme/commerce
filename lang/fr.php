@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = 'Montant à partir de';
 $lang->cfg_zone_tier_fee = 'Supplément de ce palier';
 $lang->cfg_zone_region_ph = 'Rechercher une région';
 $lang->cfg_zone_search_empty = 'Aucun résultat';
+$lang->shop_currency_select = 'Choisir la devise';
+$lang->shop_currency_keep = 'Garder tel quel';
+$lang->shop_grade_total = 'Total %s';
+$lang->shop_add_option_guide = 'A propos des extras';

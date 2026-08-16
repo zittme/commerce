@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = '订单金额起';
 $lang->cfg_zone_tier_fee = '该区间的加价';
 $lang->cfg_zone_region_ph = '搜索省份';
 $lang->cfg_zone_search_empty = '没有匹配项';
+$lang->shop_currency_select = '选择货币';
+$lang->shop_currency_keep = '保持原样';
+$lang->shop_grade_total = '累计 %s';
+$lang->shop_add_option_guide = '附加商品说明';

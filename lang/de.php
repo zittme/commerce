@@ -1142,3 +1142,7 @@ $lang->cfg_zone_tier_from = 'Bestellwert ab';
 $lang->cfg_zone_tier_fee = 'Aufpreis dieser Stufe';
 $lang->cfg_zone_region_ph = 'Region suchen';
 $lang->cfg_zone_search_empty = 'Keine Treffer';
+$lang->shop_currency_select = 'Wahrung wahlen';
+$lang->shop_currency_keep = 'Unverandert';
+$lang->shop_grade_total = 'Gesamt %s';
+$lang->shop_add_option_guide = 'Uber Zusatzartikel';
