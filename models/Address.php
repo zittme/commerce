@@ -35,7 +35,68 @@ class Address
 	public static function needsCountry(): bool
 	{
 		$config = Config::getConfig();
-		return self::mode() !== 'kr' || ($config->allow_overseas ?? 'N') === 'Y';
+		// 해외로 보내지 않으면 고를 나라가 하나뿐이다. 입력 방식과는 무관하다
+		return ($config->allow_overseas ?? 'N') === 'Y';
+	}
+
+	/**
+	 * 받는 사람 연락처에 국가번호 칸을 둘지.
+	 *
+	 * @return bool
+	 */
+	public static function needsPhoneCode(): bool
+	{
+		$config = Config::getConfig();
+		$value = (string)($config->use_phone_cc ?? 'auto');
+		if ($value === 'Y')
+		{
+			return true;
+		}
+		if ($value === 'N')
+		{
+			return false;
+		}
+		return ($config->allow_overseas ?? 'N') === 'Y';
+	}
+
+	/**
+	 * 주·도를 반드시 고르게 할지. 그 나라에 주·도 목록이 없으면 막지 않는다.
+	 *
+	 * @param string $country
+	 * @return bool
+	 */
+	public static function requiresState(string $country = ''): bool
+	{
+		$config = Config::getConfig();
+		if (($config->require_state ?? 'N') !== 'Y')
+		{
+			return false;
+		}
+		return Region::has(strtoupper(trim($country)) ?: self::baseCountry());
+	}
+
+	/**
+	 * 쇼핑몰이 자리한 나라. 설정이 없으면 KR 로 본다 (기존 설치본은 그대로 동작한다).
+	 *
+	 * @return string
+	 */
+	public static function baseCountry(): string
+	{
+		$config = Config::getConfig();
+		$country = strtoupper(trim((string)($config->base_country ?? '')));
+		return preg_match('/^[A-Z]{2}$/', $country) ? $country : 'KR';
+	}
+
+	/**
+	 * 배송지가 쇼핑몰과 같은 나라인가.
+	 *
+	 * @param string $country
+	 * @return bool
+	 */
+	public static function isDomestic(string $country): bool
+	{
+		$country = strtoupper(trim($country));
+		return $country === '' || $country === self::baseCountry();
 	}
 
 	/**
@@ -55,7 +116,7 @@ class Address
 		{
 			return false;
 		}
-		return strtoupper(trim($country)) !== 'KR';
+		return !self::isDomestic($country);
 	}
 
 	/**
@@ -74,7 +135,8 @@ class Address
 			return trim((string)$value);
 		};
 
-		$country = strtoupper($get('country')) ?: 'KR';
+		$country = strtoupper($get('country')) ?: self::baseCountry();
+		$domestic = self::isDomestic($country);
 		$parts = [];
 
 		if ($country === 'KR')
@@ -92,9 +154,15 @@ class Address
 			$parts[] = $get('address1');
 			$parts[] = $get('address2');
 			$parts[] = $get('city');
-			$parts[] = $get('state');
+			// 저장된 값은 MX-CMX 같은 코드다. 사람이 읽는 이름으로 바꿔 적는다
+			$state = $get('state');
+			if ($state !== '')
+			{
+				$parts[] = Region::name($state);
+			}
 			$parts[] = $get('zipcode');
-			if ($with_country)
+			// 같은 나라 안에서 오가는 주문에는 나라 이름을 적지 않는다
+			if ($with_country && !$domestic)
 			{
 				$parts[] = self::countryName($country);
 			}

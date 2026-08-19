@@ -41,12 +41,17 @@
 								@endforeach
 							</select>
 						</div>
+						@else
+						{{-- 고를 나라가 하나뿐이라 감췄다. 세금·배송비 계산은 이 값을 쓴다 --}}
+						<input type="hidden" name="country" id="shpCountry" value="{{ $shop_base_country }}" />
 						@endif
 						<div class="shp-row"><label>{{ $lang->shop_receiver }}</label><input type="text" name="receiver_name" placeholder="{{ $lang->shop_same_as_orderer }}" /></div>
 						<div class="shp-row">
 							<label>{{ $lang->shop_receiver_phone }}</label>
 							<div class="shp-phone-row">
+								@if ($shop_need_phone_cc)
 								<input type="text" class="shp-intl-only" name="phone_cc" placeholder="{{ $lang->shop_phone_cc ?? '국가번호' }}" />
+								@endif
 								<input type="tel" name="receiver_phone" placeholder="{{ $lang->shop_same_as_orderer }}" />
 							</div>
 						</div>
@@ -61,7 +66,7 @@
 						<div class="shp-row" style="grid-column:1/-1"><label>{{ $lang->shop_address }} *</label><input type="text" name="address1" required /></div>
 						<div class="shp-row" style="grid-column:1/-1"><label>{{ $lang->shop_address_detail }}</label><input type="text" name="address2" /></div>
 						<div class="shp-row shp-intl-only"><label>{{ $lang->shop_city ?? '도시' }} *</label><input type="text" name="city" /></div>
-						<div class="shp-row shp-intl-only"><label>{{ $lang->shop_state ?? '주 · 도' }}</label>
+						<div class="shp-row shp-intl-only"><label>{{ $lang->shop_state ?? '주 · 도' }}@if ($shop_require_state) *@endif</label>
 							{{-- 행정구역 목록이 있는 나라는 검색해서 고른다. 손으로 적으면 배송비 규칙과 어긋난다 --}}
 							<div class="zmc-pick" id="shpStatePick">
 								<input type="text" id="shpStateInput" placeholder="{{ $lang->cfg_zone_region_ph }}" />
@@ -113,12 +118,12 @@
 					@endforeach
 				</div>
 
-				@if ($is_member && $shp_currency === ($shp_base_currency ?? 'KRW'))
+				@if ($is_member && $shp_currency === ($shp_base_currency ?? 'KRW') && ($shop_use_coupon || $shop_use_credit))
 				{{-- 쿠폰·적립금 — KRW 원장 전용이라 외화 주문서에서는 숨긴다 --}}
 				<div class="shp-box">
-					<h3>{{ $lang->shop_coupon }} · {{ $lang->shop_credit }}</h3>
+					<h3>@if ($shop_use_coupon){{ $lang->shop_coupon }}@endif@if ($shop_use_coupon && $shop_use_credit) · @endif@if ($shop_use_credit){{ $lang->shop_credit }}@endif</h3>
 					<div class="shp-form-grid">
-						@if (!empty($my_coupons))
+						@if ($shop_use_coupon && !empty($my_coupons))
 						<div class="shp-row">
 							<label>{{ $lang->shop_coupon_select }}</label>
 							<select name="coupon_issue_srl" id="shpCouponSelect">
@@ -129,20 +134,27 @@
 							</select>
 						</div>
 						@endif
+						@if ($shop_use_coupon)
 						<div class="shp-row">
 							<label>{{ $lang->shop_coupon_code }}</label>
 							<input type="text" name="coupon_code" id="shpCouponCode" autocomplete="off" placeholder="{{ $lang->shop_coupon_code_ph }}" />
 						</div>
-						@if ($credit_balance > 0)
+						@endif
+						@if ($shop_use_credit && $credit_balance > 0)
 						@php $shp_credit_min = max(0, (int)($shop_config->credit_min_use ?? 0)); @endphp
 						<div class="shp-row">
 							<label>{{ $lang->shop_credit_use }} ({{ $lang->shop_credit_balance }}: {{ shop_money_base($credit_balance) }})</label>
-							<input type="number" name="use_credit" id="shpUseCredit" min="0" max="{{ $credit_balance }}" value="0" data-min-use="{{ $shp_credit_min }}" />
+							{{-- 사람이 읽는 단위로 받는다. 최소 단위 값을 그대로 두면 8 을 넣었을 때 0.08 이 된다 --}}
+							<input type="number" name="use_credit" id="shpUseCredit" min="0" step="1"
+								max="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$credit_balance) }}"
+								value="0"
+								data-min-use="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$shp_credit_min) }}"
+								data-scale="{{ \Zittme\Modules\Commerce\Models\Money::isZeroDecimal() ? 1 : 100 }}" />
 							<small style="display:block;margin-top:4px;font-size:12px;color:#6b7684">@if ($shp_credit_min > 0){{ sprintf($lang->shop_credit_use_min, shop_money_base($shp_credit_min)) }} @endif{{ $lang->shop_credit_use_note }}</small>
 						</div>
 						@endif
 					</div>
-					<small style="display:block;margin-top:6px;font-size:12px;color:#6b7684">{{ $lang->shop_coupon_help }}</small>
+					@if ($shop_use_coupon)<small style="display:block;margin-top:6px;font-size:12px;color:#6b7684">{{ $lang->shop_coupon_help }}</small>@endif
 				</div>
 				@endif
 			</div>
@@ -180,6 +192,8 @@
 
 	<script>
 	(function () {
+		var baseCountry = {!! json_encode($shop_base_country ?? 'KR') !!};
+
 		// 저장된 배송지 불러오기: 선택하면 배송지 입력칸을 채운다
 		var addrSel = document.getElementById('shpAddrSelect');
 		function setVal(name, value) {
@@ -265,7 +279,7 @@
 			var addrEl = document.querySelector('input[name="address1"]');
 			var region = addrEl ? normRegion(addrEl.value.trim().split(' ')[0]) : '';
 			var countryEl = document.querySelector('[name="country"]');
-			var country = (countryEl ? countryEl.value : 'KR').toUpperCase() || 'KR';
+			var country = (countryEl ? countryEl.value : baseCountry).toUpperCase() || baseCountry;
 
 			for (var i = 0; i < extraZones.length; i++) {
 				var fee = parseInt(extraZones[i].fee, 10) || 0;
@@ -282,7 +296,7 @@
 					}
 				}
 
-				var zoneCountry = String(extraZones[i].country || '').toUpperCase() || 'KR';
+				var zoneCountry = String(extraZones[i].country || '').toUpperCase() || baseCountry;
 				if (zoneCountry !== country) continue;
 
 				// 행정구역 코드로 맞춘다 (구매자도 같은 목록에서 고른다)
@@ -290,7 +304,7 @@
 				if (zoneRegion && buyerRegion && zoneRegion.toUpperCase() === buyerRegion.toUpperCase()) return fee;
 
 				// 해외는 지역을 지정하지 않았으면 나라 단위로 적용한다
-				if (country !== 'KR') {
+				if (country !== baseCountry) {
 					if (!zoneRegion) return fee;
 					continue;
 				}
@@ -337,10 +351,12 @@
 				discount += parseInt(couponSel.options[couponSel.selectedIndex].getAttribute('data-discount') || '0', 10) || 0;
 			}
 			if (creditInput) {
+				// 화면은 사람이 읽는 단위, 계산은 최소 단위로 한다
+				var creditScale = parseInt(creditInput.getAttribute('data-scale') || '1', 10) || 1;
 				// 최소 사용 금액 미만이면 서버에서 무시되므로 미리보기에도 반영하지 않는다
-				var creditMin = parseInt(creditInput.getAttribute('data-min-use') || '0', 10) || 0;
-				var creditMax = parseInt(creditInput.getAttribute('max') || '0', 10) || 0;
-				var wantCredit = Math.max(0, parseInt(creditInput.value, 10) || 0);
+				var creditMin = Math.round((parseFloat(creditInput.getAttribute('data-min-use')) || 0) * creditScale);
+				var creditMax = Math.round((parseFloat(creditInput.getAttribute('max')) || 0) * creditScale);
+				var wantCredit = Math.max(0, Math.round((parseFloat(creditInput.value) || 0) * creditScale));
 				if (creditMax > 0 && wantCredit > creditMax) wantCredit = creditMax;
 				if (wantCredit < creditMin) wantCredit = 0;
 				discount += wantCredit;
@@ -431,6 +447,14 @@
 				var addr1 = val('address1');
 				if (f && f.v === '' && addr1 && addr1.v === '') return fail(f, {!! json_encode($lang->shop_v_zip) !!});
 				if (addr1 && addr1.v === '') return fail(addr1, {!! json_encode($lang->shop_v_address) !!});
+				@if ($shop_require_state)
+				var stateRow = checkoutForm.querySelector('.shp-row.shp-intl-only #shpStateInput');
+				f = val('state');
+				// 주·도 칸이 화면에 있을 때만 본다. 국내 입력에서는 감춰져 있다
+				if (f && f.v === '' && stateRow && stateRow.offsetParent !== null) {
+					return fail({ el: stateRow }, {!! json_encode($lang->msg_shop_state_required) !!});
+				}
+				@endif
 				f = val('guest_password');
 				if (f && f.v.length < 4) return fail(f, {!! json_encode($lang->shop_v_guest_pw) !!});
 				var agree = checkoutForm.querySelector('[name="agree_privacy"]');
@@ -472,6 +496,7 @@
 <script>
 (function () {
 	var mode = {!! json_encode($shop_address_mode) !!};
+	var baseCountry = {!! json_encode($shop_base_country ?? 'KR') !!};
 	var form = document.querySelector('.shp-checkout form') || document.forms[0];
 	if (!form) return;
 	var country = document.getElementById('shpCountry');
@@ -479,7 +504,7 @@
 	function isOverseas() {
 		if (mode === 'intl') return true;
 		if (mode === 'kr') return false;
-		return country ? country.value.toUpperCase() !== 'KR' : false;
+		return country ? country.value.toUpperCase() !== baseCountry : false;
 	}
 
 	function apply() {

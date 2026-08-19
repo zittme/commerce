@@ -98,6 +98,19 @@
 	.shp-form-grid { grid-template-columns: 1fr; }
 	.shp-table { display: block; overflow-x: auto; }
 	.shp-title { font-size: 21px; }
+
+	/* 분류와 정렬은 언어에 따라 문구가 길어진다. 접어 내리지 말고 옆으로 넘겨 본다 */
+	.shp-cats, .shp-sort {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		padding-bottom: 2px;
+	}
+	.shp-cats::-webkit-scrollbar, .shp-sort::-webkit-scrollbar { display: none; }
+	.shp-cats > *, .shp-sort > * { flex: 0 0 auto; white-space: nowrap; }
+	.shp-sort { margin-left: 0; width: 100%; }
 }
 
 /* 상품 이미지 갤러리 */

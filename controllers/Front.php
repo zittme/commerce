@@ -676,6 +676,15 @@ class Front extends Base
 		$valid = array_values(array_filter($resolved->items, function($e) { return !$e->blocked; }));
 		if (!count($valid))
 		{
+			// 결제 화면을 닫았다 돌아온 경우. 빈 장바구니 대신 진행 중이던 주문으로 안내한다
+			$pending = self::findPendingOrder();
+			if ($pending)
+			{
+				$this->setMessage('msg_shop_pending_order_exists');
+				$this->setRedirectUrl(getNotEncodedUrl('', 'mid', (string)\Context::get('mid'),
+					'act', 'dispCommerceOrderResult', 'code', $pending->order_code));
+				return;
+			}
 			return new \BaseObject(-1, 'msg_shop_cart_empty');
 		}
 
@@ -692,12 +701,22 @@ class Front extends Base
 			$addr_output = executeQuery('commerce.getAddressList', (object)['member_srl' => $member_srl]);
 			if ($addr_output->toBool() && !empty($addr_output->data))
 			{
+				// 해외로 보내지 않는 곳이면 다른 나라 배송지는 고를 수 없다.
+				// 목록에 두면 골랐을 때 입력 칸이 통째로 바뀌어 버린다
+				$only_base = !AddressModel::needsCountry();
 				foreach (is_array($addr_output->data) ? $addr_output->data : [$addr_output->data] as $addr)
 				{
-					if (!empty($addr->address_srl))
+					if (empty($addr->address_srl))
 					{
-						$my_addresses[] = $addr;
+						continue;
 					}
+					// 나라 칸이 비어 있으면 그 칸이 생기기 전에 저장된 한국 배송지다
+					$addr_country = strtoupper(trim((string)($addr->country ?? ''))) ?: 'KR';
+					if ($only_base && $addr_country !== AddressModel::baseCountry())
+					{
+						continue;
+					}
+					$my_addresses[] = $addr;
 				}
 			}
 		}
@@ -759,7 +778,12 @@ class Front extends Base
 		\Context::set('pay_available', self::isPayAvailable());
 		\Context::set('shop_config', self::config());
 		\Context::set('shop_address_mode', AddressModel::mode());
+		\Context::set('shop_base_country', AddressModel::baseCountry());
 		\Context::set('shop_need_country', AddressModel::needsCountry());
+		\Context::set('shop_need_phone_cc', AddressModel::needsPhoneCode());
+		\Context::set('shop_require_state', AddressModel::requiresState());
+		\Context::set('shop_use_coupon', self::config()->use_coupon !== 'N');
+		\Context::set('shop_use_credit', self::config()->use_credit !== 'N');
 		\Context::set('shop_countries', AddressModel::countries());
 
 		// 행정구역은 목록에서 골라야 배송비 규칙과 어긋나지 않는다. 목록이 있는 나라만 넘긴다
@@ -780,6 +804,80 @@ class Front extends Base
 	/**
 	 * 주문 결과·상세.
 	 */
+	/**
+	 * 지금 사람이 결제를 마치지 않고 남겨 둔 주문. 없으면 null.
+	 *
+	 * 결제 화면에서 뒤로 가거나 창을 닫으면 주문은 결제 대기로 남는다.
+	 * 빈 장바구니를 보여 주는 대신 그 주문으로 안내한다.
+	 *
+	 * @return ?object
+	 */
+	protected static function findPendingOrder(): ?object
+	{
+		$logged_info = \Context::get('logged_info');
+		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
+		if ($member_srl <= 0)
+		{
+			return null;
+		}
+
+		// 만료되기 전에 만든 것만 본다. 이미 지난 것은 되살릴 수 없다
+		$minutes = max(10, (int)(self::config()->pending_minutes ?? 60));
+		$stmt = \Zittme\Framework\DB::getInstance()->query(
+			'SELECT order_srl, order_code FROM commerce_order'
+			. ' WHERE member_srl = ? AND status = ? AND regdate >= ?'
+			. ' ORDER BY order_srl DESC LIMIT 1',
+			$member_srl, self::ORDER_PENDING, date('YmdHis', time() - 60 * $minutes)
+		);
+		$row = $stmt ? ($stmt->fetchObject() ?: null) : null;
+		if ($stmt)
+		{
+			$stmt->closeCursor();
+		}
+		return ($row && !empty($row->order_code)) ? $row : null;
+	}
+
+	/**
+	 * 주문한 상품을 지금 사람의 장바구니에서 뺀다.
+	 *
+	 * 회원은 결제완료 시점(Order::clearCartOf)에 이미 빠진다. 비회원은 세션 키를
+	 * PG 콜백에서 알 수 없어 결과 화면인 여기서 뺀다.
+	 *
+	 * @param object $order
+	 * @return void
+	 */
+	protected static function clearOrderedFromCart(object $order): void
+	{
+		$owner = CartModel::owner();
+		if ($owner->member_srl <= 0 && $owner->session_key === '')
+		{
+			return;
+		}
+
+		$ordered = [];
+		foreach (OrderModel::getItems((int)$order->order_srl) as $item)
+		{
+			$ordered[(int)$item->item_srl . ':' . (int)$item->option_srl] = true;
+		}
+		if (!count($ordered))
+		{
+			return;
+		}
+
+		$remove = [];
+		foreach (CartModel::rows($owner) as $row)
+		{
+			if (isset($ordered[(int)$row->item_srl . ':' . (int)$row->option_srl]))
+			{
+				$remove[] = (int)$row->cart_srl;
+			}
+		}
+		if (count($remove))
+		{
+			CartModel::removeMany($remove);
+		}
+	}
+
 	public function dispCommerceOrderResult()
 	{
 		$code = trim((string)\Context::get('code'));
@@ -820,6 +918,10 @@ class Front extends Base
 		}
 
 		\Zittme\Modules\Commerce\Models\Tracking::syncShipping();
+
+		// 여기까지 왔으면 결제 화면을 지나온 것이다. 이제 장바구니를 비운다.
+		// 주문을 만들 때 비우면 결제 화면에서 뒤로 갔을 때 담아 둔 것을 잃는다
+		self::clearOrderedFromCart($order);
 
 		\Context::set('order', $order);
 		\Context::set('order_items', OrderModel::getItems((int)$order->order_srl));

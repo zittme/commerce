@@ -57,7 +57,19 @@ class Config
 		'credit_min_use' => 0,
 		// 알림
 		'notify_admin' => 'N',
+		// 관리자 알림 받는 메일. 쉼표나 줄바꿈으로 여러 개
 		'notify_admin_email' => '',
+		// 관리자 알림을 함께 받을 회원그룹 (0 = 쓰지 않음).
+		// 담당자가 바뀌어도 그룹만 관리하면 된다
+		'notify_admin_group' => 0,
+		// 사건별 발송 여부. admin_* 은 운영자, buyer_* 는 구매자
+		'notify_admin_new_order' => 'Y',
+		'notify_admin_claim' => 'Y',
+		'notify_buyer_received' => 'Y',
+		'notify_buyer_paid' => 'Y',
+		'notify_buyer_shipping' => 'Y',
+		'notify_buyer_delivered' => 'N',
+		'notify_buyer_claim_done' => 'Y',
 		// 거래명세서에 찍히는 판매자 정보
 		'biz_name' => '',
 		'biz_ceo' => '',
@@ -73,10 +85,22 @@ class Config
 		'vat_rate' => 10,
 		// 상품 가격이 부가세 포함가인지 (Y = 역산, N = 표시가에 가산)
 		'price_includes_tax' => 'Y',
+		// 쇼핑몰이 자리한 나라. 배송지가 이 나라면 국내 주문으로 본다.
+		// 주소에 나라 이름을 붙일지, 수출(영세율)로 볼지가 여기서 갈린다
+		'base_country' => 'KR',
 		// 해외 배송 — 켜면 주문서에 배송 국가를 고르게 하고, 국외 주문은 영세율로 본다
 		'allow_overseas' => 'N',
 		// 배송지 입력 방식 — kr(우편번호 검색) / intl(자유 입력) / both(국가에 따라 전환)
 		'address_mode' => 'kr',
+		// 받는 사람 연락처에 국가번호 칸을 둘지 — auto(해외배송 켤 때만) / Y / N
+		'use_phone_cc' => 'auto',
+		// 주·도를 반드시 고르게 할지. 추가 배송비를 주·도로 나눠 받는 곳에서 쓴다
+		'require_state' => 'N',
+		'use_coupon' => 'Y',
+		'use_credit' => 'Y',
+		// 배송완료 뒤 며칠이 지나면 구매확정으로 볼지. 0 = 쓰지 않음(구매자가 직접 누른다).
+		// 청약철회 기간이 나라마다 달라 기본은 꺼 둔다
+		'auto_confirm_days' => 0,
 		// 다통화 판매 — KRW 외 판매 통화 목록 (예: ['USD', 'JPY']). 환율은 짓미페이 공용 환율을 쓴다
 		'currencies' => [],
 		// 외화 가격 미등록 상품 처리 — convert(환율 자동 환산) / none(그 통화로 판매 안 함)

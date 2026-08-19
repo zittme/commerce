@@ -8,6 +8,9 @@
 	<column name="credit_rate" type="float" notnull="notnull" default="0" />
 	<!-- 등급 달성 시 자동 발급할 쿠폰 (0 = 없음) -->
 	<column name="coupon_srl" type="bigint" notnull="notnull" default="0" />
+	<!-- 이 등급인 회원을 넣어 둘 코어 회원그룹 (0 = 연동 안 함).
+	     한 그룹은 한 등급에만 걸 수 있다 -->
+	<column name="group_srl" type="bigint" notnull="notnull" default="0" />
 	<!-- 등급별 상품 할인: '' 없음 / amount 정액(원) / percent 정률(%) -->
 	<column name="discount_type" type="varchar" size="10" default="" />
 	<column name="discount_value" type="float" notnull="notnull" default="0" />

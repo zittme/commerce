@@ -33,6 +33,8 @@
 						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_promo_delete_ask') }}')">
 							<input type="hidden" name="module" value="admin" />
 							<input type="hidden" name="act" value="procCommerceAdminDeletePromotion" />
+							{{-- 저장한 뒤 보던 자리로 돌아온다. 없으면 쪽수와 검색 조건이 날아간다 --}}
+							<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
 							<input type="hidden" name="promo_srl" value="{{ $pm->promo_srl }}" />
 							<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_promotions_13') }}</button>
 						</form>
@@ -54,6 +56,7 @@
 		<form action="{{ getUrl('') }}" method="post" id="zmcPromoForm">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminInsertPromotion" />
+			<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
 			@if ($promo_edit)<input type="hidden" name="promo_srl" value="{{ $promo_edit->promo_srl }}" />@endif
 			<input type="hidden" name="banner" id="zmcPromoBanner" value="{{ $promo_edit->banner ?? '' }}" />
 			<input type="hidden" name="item_srls" id="zmcPromoItems" value="" />

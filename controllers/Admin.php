@@ -6,6 +6,7 @@ use Zittme\Modules\Commerce\Models\Address as AddressModel;
 use Zittme\Modules\Commerce\Models\Badge as BadgeModel;
 use Zittme\Modules\Commerce\Models\Combo as ComboModel;
 use Zittme\Modules\Commerce\Models\Config as ConfigModel;
+use Zittme\Modules\Commerce\Models\Grade as GradeModel;
 use Zittme\Modules\Commerce\Models\Item as ItemModel;
 use Zittme\Modules\Commerce\Models\Lang as LangModel;
 use Zittme\Modules\Commerce\Models\Money as MoneyModel;
@@ -31,9 +32,13 @@ class Admin extends Base
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
 		'privacy_text', 'privacy_version', 'retention_days',
 		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note', 'biz_logo',
-		'biz_tax_mode', 'vat_rate', 'price_includes_tax', 'allow_overseas', 'address_mode',
+		'biz_tax_mode', 'vat_rate', 'price_includes_tax', 'base_country', 'allow_overseas', 'address_mode',
+		'use_phone_cc', 'require_state', 'use_coupon', 'use_credit', 'auto_confirm_days',
 		'currencies', 'currency_fallback',
-		'notify_admin', 'notify_admin_email',
+		'notify_admin', 'notify_admin_email', 'notify_admin_group',
+		'notify_admin_new_order', 'notify_admin_claim',
+		'notify_buyer_received', 'notify_buyer_paid', 'notify_buyer_shipping',
+		'notify_buyer_delivered', 'notify_buyer_claim_done',
 	];
 
 	// 다국어 버튼으로 문구를 연결할 수 있는 설정 항목
@@ -934,6 +939,35 @@ class Admin extends Base
 	}
 
 	/**
+	 * CSV 의 주소 칸. 우편번호와 주소2 는 각각 다른 칸에 담기므로 여기서는 뺀다.
+	 *
+	 * @param object $address
+	 * @return string
+	 */
+	protected static function csvAddressLine(object $address): string
+	{
+		$country = strtoupper((string)($address->country ?? '')) ?: AddressModel::baseCountry();
+		$parts = [(string)($address->address1 ?? '')];
+
+		// 한국 주소는 시·도가 주소1 에 들어 있다. 그 밖의 나라는 칸이 따로다
+		if ($country !== 'KR')
+		{
+			$parts[] = (string)($address->city ?? '');
+			$state = (string)($address->state ?? '');
+			if ($state !== '')
+			{
+				$parts[] = RegionModel::name($state);
+			}
+		}
+		if (!AddressModel::isDomestic($country))
+		{
+			$parts[] = AddressModel::countryName($country);
+		}
+
+		return trim(implode(' ', array_filter($parts, function($part) { return trim($part) !== ''; })));
+	}
+
+	/**
 	 * 주문 CSV 내보내기 — 택배사 송장 업로드용.
 	 *
 	 * 선택한 주문(order_srls)이 있으면 그것만, 없으면 현재 검색 조건 전체를 내린다.
@@ -1032,9 +1066,9 @@ class Admin extends Base
 				(string)$order->orderer_phone,
 				(string)$order->orderer_email,
 				$address ? (string)$address->receiver_name : '',
-				$address ? ZittmeModulesCommerceModelsAddress::formatPhone($address) : '',
+				$address ? AddressModel::formatPhone($address) : '',
 				$address ? (string)$address->zipcode : '',
-				$address ? trim((string)$address->address1 . (strtoupper((string)($address->country ?? 'KR')) !== 'KR' ? ' ' . trim((string)($address->city ?? '') . ' ' . (string)($address->state ?? '') . ' ' . ZittmeModulesCommerceModelsAddress::countryName((string)$address->country)) : '')) : '',
+				$address ? self::csvAddressLine($address) : '',
 				$address ? (string)$address->address2 : '',
 				$address ? (string)$address->delivery_memo : '',
 				implode(' / ', $names),
@@ -1395,8 +1429,9 @@ class Admin extends Base
 	 */
 	public function dispCommerceAdminGrades()
 	{
-		\Context::set('grades', \Zittme\Modules\Commerce\Models\Grade::getList());
+		\Context::set('grades', GradeModel::getList());
 		\Context::set('grade_coupons', \Zittme\Modules\Commerce\Models\Coupon::getList());
+		\Context::set('grade_groups', \MemberModel::getGroups());
 		$this->renderView('grades', 'grades');
 	}
 
@@ -1427,11 +1462,19 @@ class Admin extends Base
 			$discount_value = 0;
 		}
 
+		$group_srl = max(0, (int)\Context::get('group_srl'));
+		if ($group_srl > 0 && GradeModel::groupTaken($group_srl, $grade_srl))
+		{
+			return new \BaseObject(-1, 'msg_shop_grade_group_taken');
+		}
+		$old_group = $grade_srl > 0 ? GradeModel::groupOf($grade_srl) : 0;
+
 		$args = (object)[
 			'title' => self::langValue('title', mb_substr($title, 0, 80)),
 			'min_spend' => max(0, MoneyModel::inputToMinor(\Context::get('min_spend'))),
 			'credit_rate' => max(0, min(100, round((float)\Context::get('credit_rate'), 2))),
 			'coupon_srl' => max(0, (int)\Context::get('coupon_srl')),
+			'group_srl' => $group_srl,
 			'discount_type' => $discount_type,
 			'discount_value' => $discount_value,
 		];
@@ -1451,6 +1494,10 @@ class Admin extends Base
 		{
 			return $output;
 		}
+
+		// 연동을 걸거나 바꾸면 이미 이 등급인 회원도 함께 옮긴다. 다음 구매까지 기다릴 수 없다
+		GradeModel::applyGroupToMembers((int)$args->grade_srl, $old_group, $group_srl);
+
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminGrades'));
 	}
 
@@ -1464,6 +1511,9 @@ class Admin extends Base
 		{
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
+		// 등급이 사라지면 그 등급으로 넣어 둔 회원도 그룹에서 뺀다
+		GradeModel::applyGroupToMembers($grade_srl, GradeModel::groupOf($grade_srl), 0);
+
 		executeQuery('commerce.deleteGrade', (object)['grade_srl' => $grade_srl]);
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminGrades'));
 	}
@@ -1721,6 +1771,11 @@ class Admin extends Base
 		\Context::set('shop_instance', $module_info);
 		\Context::set('shop_skins', \ModuleModel::getSkins(\RX_BASEDIR . 'modules/commerce') ?: []);
 		\Context::set('shop_mskins', \ModuleModel::getSkins(\RX_BASEDIR . 'modules/commerce', 'm.skins') ?: []);
+
+		// 레이아웃 — 스킨과 한자리에서 고르게 둔다. 모듈 관리 화면까지 찾아가지 않아도 된다
+		$layout_model = getModel('layout');
+		\Context::set('shop_layouts', $layout_model->getLayoutList(0, 'P') ?: []);
+		\Context::set('shop_mlayouts', $layout_model->getLayoutList(0, 'M') ?: []);
 		$this->renderView('config', 'config');
 	}
 
@@ -1751,6 +1806,19 @@ class Admin extends Base
 			$module_info->mskin = $mskin;
 			$module_info->is_mskin_fix = ($mskin === '/USE_DEFAULT/' || $mskin === '/USE_RESPONSIVE/') ? 'N' : 'Y';
 		}
+
+		// 레이아웃 — -1 은 사이트 기본, -2 는 모바일에서 PC 설정을 따름
+		$layout_srl = \Context::get('layout_srl');
+		if ($layout_srl !== null && $layout_srl !== '')
+		{
+			$module_info->layout_srl = (int)$layout_srl;
+		}
+		$mlayout_srl = \Context::get('mlayout_srl');
+		if ($mlayout_srl !== null && $mlayout_srl !== '')
+		{
+			$module_info->mlayout_srl = (int)$mlayout_srl;
+		}
+
 		$module_info->isMenuCreate = false;
 
 		$output = \ModuleController::getInstance()->updateModule($module_info);

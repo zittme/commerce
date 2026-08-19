@@ -307,7 +307,7 @@ class Cart
 	public static function extraShipFee(string $zipcode, string $address1 = '', string $country = 'KR', string $state = '', string $city = '', int $item_total = 0): int
 	{
 		$zipcode = preg_replace('/[^0-9]/', '', $zipcode);
-		$country = strtoupper(trim($country)) ?: 'KR';
+		$country = strtoupper(trim($country)) ?: Address::baseCountry();
 		$region = $address1 !== '' ? Stats::normalizeRegion(explode(' ', trim($address1))[0]) : '';
 
 		$zones = json_decode((string)(Base::config()->ship_extra_zones ?? '[]'), true);
@@ -340,7 +340,7 @@ class Cart
 			}
 
 			// 국가를 비워 둔 예전 설정은 국내 규칙으로 본다
-			$zone_country = strtoupper(trim((string)($zone['country'] ?? ''))) ?: 'KR';
+			$zone_country = strtoupper(trim((string)($zone['country'] ?? ''))) ?: Address::baseCountry();
 			if ($zone_country !== $country)
 			{
 				continue;
@@ -355,7 +355,7 @@ class Cart
 			}
 
 			// 해외는 지역을 지정하지 않았으면 나라 단위로 적용한다
-			if ($country !== 'KR')
+			if (!Address::isDomestic($country))
 			{
 				if ($zone_region === '')
 				{

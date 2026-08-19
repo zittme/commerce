@@ -2,6 +2,7 @@
 
 namespace Zittme\Modules\Commerce\Controllers;
 
+use Zittme\Modules\Commerce\Models\Address as AddressModel;
 use Zittme\Modules\Commerce\Models\Cart as CartModel;
 use Zittme\Modules\Commerce\Models\Coupon as CouponModel;
 use Zittme\Modules\Commerce\Models\Credit as CreditModel;
@@ -88,6 +89,12 @@ class Order extends Base
 			}
 		}
 
+		// 주·도를 반드시 받는 곳. 화면 검사만으로는 우회된다
+		if (AddressModel::requiresState((string)\Context::get('country')) && trim((string)\Context::get('state')) === '')
+		{
+			return new \BaseObject(-1, 'msg_shop_state_required');
+		}
+
 		$item_total = $resolved->item_total;
 		$delivery_fee = CartModel::calcShipFee($resolved);
 		// 지역 추가 배송비. 지역별 면제 기준을 보므로 상품 금액도 함께 넘긴다
@@ -144,6 +151,17 @@ class Order extends Base
 			\Context::set('use_credit', 0);
 		}
 
+		// 설정에서 껐으면 화면에 칸이 없다. 값을 직접 보내 할인을 받는 길도 막는다
+		if (self::config()->use_coupon === 'N')
+		{
+			\Context::set('coupon_issue_srl', 0);
+			\Context::set('coupon_code', '');
+		}
+		if (self::config()->use_credit === 'N')
+		{
+			\Context::set('use_credit', 0);
+		}
+
 		// 쿠폰 (회원 전용) — 원자 점유. 이 아래에서 실패하면 재고와 함께 반환한다
 		$discount_total = 0;
 		$coupon_issue_srl = (int)\Context::get('coupon_issue_srl');
@@ -189,7 +207,8 @@ class Order extends Base
 
 		// 적립금 사용 (회원 전용, 원자 차감 — 잔액 부족이면 실패)
 		$credit_used = 0;
-		$want_credit = max(0, (int)\Context::get('use_credit'));
+		// 화면은 사람이 읽는 단위로 받는다. 다른 금액과 같이 최소 단위로 바꿔 쓴다
+		$want_credit = max(0, \Zittme\Modules\Commerce\Models\Money::inputToMinor(\Context::get('use_credit')));
 		if ($member_srl > 0 && $want_credit > 0)
 		{
 			$min_use = max(0, (int)(self::config()->credit_min_use ?? 0));
@@ -395,8 +414,8 @@ class Order extends Base
 		OrderModel::notifyMail('new_order', $notify_order);
 		OrderModel::notifyMail('received', $notify_order);
 
-		// 주문된 항목만 장바구니에서 제거
-		CartModel::removeMany(array_map(function($e) { return $e->cart_srl; }, $entries));
+		// 장바구니는 여기서 비우지 않는다. 결제 화면에서 뒤로 가면 담아 둔 것을 잃는다.
+		// 결제가 끝나고 결과 화면에 닿았을 때 비운다 (markPaid 와 dispCommerceOrderResult)
 
 		$mid = (string)\Context::get('mid') ?: (self::getDefaultInstance()->mid ?? self::DEFAULT_MID);
 		$result_url = getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order_code);
@@ -658,7 +677,13 @@ class Order extends Base
 		$country = strtoupper(trim($country));
 		if (strlen($country) !== 2 || !ctype_alpha($country))
 		{
-			return 'KR';
+			return AddressModel::baseCountry();
+		}
+		// 해외로 보내지 않는 곳이면 다른 나라 값이 들어와도 받지 않는다.
+		// 화면에서 감추는 것만으로는 값을 직접 보내는 것을 막지 못한다
+		if (!AddressModel::needsCountry() && !AddressModel::isDomestic($country))
+		{
+			return AddressModel::baseCountry();
 		}
 		return $country;
 	}

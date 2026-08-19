@@ -7,10 +7,13 @@ use Zittme\Modules\Commerce\Controllers\Base;
 /**
  * 구매 등급 — 누적 결제완료 금액 기준으로 자동 산정 (cafe24 식).
  *
- * 코어 회원그룹·포인트와 무관한 커머스 자체 등급이다.
+ * 포인트와 무관한 커머스 자체 등급이다.
  * 결제완료/취소 시 recalc() 가 호출되어 등급이 자동으로 오르내리고,
  * 등급이 오르면 등급 쿠폰을 1회 자동 발급한다.
  * 등급별 적립률(credit_rate)이 있으면 기본 적립률 대신 적용된다.
+ *
+ * 등급에 코어 회원그룹(group_srl)을 걸어 두면 그 등급인 회원이 그 그룹에 들어간다.
+ * 등급 전용 게시판이나 상품처럼 접근을 막는 일은 그 그룹으로 한다.
  */
 class Grade
 {
@@ -133,8 +136,14 @@ class Grade
 			);
 		}
 
-		// 등급 상승 시 등급 쿠폰 자동 발급 (해당 쿠폰을 받은 적 없을 때만)
 		$was_srl = $current ? (int)$current->grade_srl : 0;
+
+		if ($new_srl !== $was_srl)
+		{
+			self::syncGroup($member_srl, $was_srl, $new_srl);
+		}
+
+		// 등급 상승 시 등급 쿠폰 자동 발급 (해당 쿠폰을 받은 적 없을 때만)
 		if ($new_grade && $new_srl !== $was_srl && (int)$new_grade->coupon_srl > 0)
 		{
 			$cnt = executeQuery('commerce.countCouponUses', (object)[
@@ -146,6 +155,141 @@ class Grade
 				Coupon::issueTo((int)$new_grade->coupon_srl, $member_srl);
 			}
 		}
+	}
+
+	/**
+	 * 등급에 걸린 회원그룹 번호. 연동이 없으면 0.
+	 *
+	 * @param int $grade_srl
+	 * @return int
+	 */
+	public static function groupOf(int $grade_srl): int
+	{
+		if ($grade_srl <= 0)
+		{
+			return 0;
+		}
+		foreach (self::getList() as $grade)
+		{
+			if ((int)$grade->grade_srl === $grade_srl)
+			{
+				return (int)($grade->group_srl ?? 0);
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * 등급이 바뀐 회원을 예전 등급의 그룹에서 빼고 새 등급의 그룹에 넣는다.
+	 *
+	 * 커머스가 손대는 것은 등급에 걸린 그룹뿐이다. 관리자가 직접 넣은 회원까지
+	 * 건드리지 않도록, 등급 전용 그룹을 따로 두라고 설정 화면에 적어 두었다.
+	 *
+	 * @param int $member_srl
+	 * @param int $was_srl 예전 등급 번호 (0 = 없음)
+	 * @param int $new_srl 새 등급 번호 (0 = 없음)
+	 * @return void
+	 */
+	public static function syncGroup(int $member_srl, int $was_srl, int $new_srl): void
+	{
+		if ($member_srl <= 0)
+		{
+			return;
+		}
+
+		$was_group = self::groupOf($was_srl);
+		$new_group = self::groupOf($new_srl);
+
+		if ($was_group === $new_group)
+		{
+			return;
+		}
+
+		if ($was_group > 0)
+		{
+			\MemberController::removeMemberFromGroup($member_srl, $was_group);
+		}
+		if ($new_group > 0)
+		{
+			\MemberController::addMemberToGroup($member_srl, $new_group);
+		}
+	}
+
+	/**
+	 * 어느 등급에 속한 회원 번호 목록.
+	 *
+	 * @param int $grade_srl
+	 * @return array
+	 */
+	public static function membersOf(int $grade_srl): array
+	{
+		if ($grade_srl <= 0)
+		{
+			return [];
+		}
+		$stmt = \Zittme\Framework\DB::getInstance()->query(
+			'SELECT member_srl FROM commerce_member_grade WHERE grade_srl = ?',
+			$grade_srl
+		);
+		$rows = $stmt ? ($stmt->fetchAll(\PDO::FETCH_COLUMN) ?: []) : [];
+		return array_map('intval', $rows);
+	}
+
+	/**
+	 * 연동을 새로 걸거나 바꿨을 때 그 등급 회원들을 한 번에 반영한다.
+	 *
+	 * @param int $grade_srl
+	 * @param int $old_group 바뀌기 전 그룹 (0 = 없음)
+	 * @param int $new_group 바뀐 뒤 그룹 (0 = 없음)
+	 * @return int 손댄 회원 수
+	 */
+	public static function applyGroupToMembers(int $grade_srl, int $old_group, int $new_group): int
+	{
+		if ($old_group === $new_group)
+		{
+			return 0;
+		}
+
+		$members = self::membersOf($grade_srl);
+		foreach ($members as $member_srl)
+		{
+			if ($old_group > 0)
+			{
+				\MemberController::removeMemberFromGroup($member_srl, $old_group);
+			}
+			if ($new_group > 0)
+			{
+				\MemberController::addMemberToGroup($member_srl, $new_group);
+			}
+		}
+		return count($members);
+	}
+
+	/**
+	 * 이미 다른 등급이 쓰고 있는 그룹인지. 빼고 넣는 것이 엇갈리므로 한 그룹은 한 등급에만 건다.
+	 *
+	 * @param int $group_srl
+	 * @param int $except_grade_srl 지금 저장 중인 등급 (자기 자신은 제외)
+	 * @return bool
+	 */
+	public static function groupTaken(int $group_srl, int $except_grade_srl = 0): bool
+	{
+		if ($group_srl <= 0)
+		{
+			return false;
+		}
+		foreach (self::getList() as $grade)
+		{
+			if ((int)$grade->grade_srl === $except_grade_srl)
+			{
+				continue;
+			}
+			if ((int)($grade->group_srl ?? 0) === $group_srl)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

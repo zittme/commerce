@@ -7,7 +7,8 @@ namespace Zittme\Modules\Commerce\Models;
  *
  * 규칙
  *  - 상품의 tax_type 이 free 면 면세, 그 외는 과세로 본다.
- *  - 배송 국가가 국내(KR)가 아니면 수출로 보아 전 품목을 영세율(세액 0)로 처리한다.
+ *  - 배송 국가가 쇼핑몰이 자리한 나라(설정의 기준 국가)와 다르면 수출로 보아
+ *    전 품목을 영세율(세액 0)로 처리한다.
  *  - 사업자 구분이 exempt(면세)·simplified(간이)면 세액을 계산하지 않는다.
  *  - 가격이 부가세 포함가면 역산하고, 별도면 표시가에 세액을 얹는다.
  *  - 반올림 오차는 마지막 과세 항목에서 흡수해 합계가 결제금액과 어긋나지 않게 한다.
@@ -47,13 +48,13 @@ class Tax
 	 * @param object $config 커머스 설정
 	 * @param array<int, object> $items 주문 품목 (tax_type, subtotal)
 	 * @param int $delivery_fee 배송비 (과세로 본다)
-	 * @param string $country 배송 국가 (KR 이 아니면 영세율)
+	 * @param string $country 배송 국가 (기준 국가와 다르면 영세율)
 	 * @return object {enabled, zero_rated, rate, lines, taxable_supply, vat, free_supply, delivery_supply, delivery_vat, total_supply, total_vat}
 	 */
-	public static function breakdown(object $config, array $items, int $delivery_fee = 0, string $country = 'KR'): object
+	public static function breakdown(object $config, array $items, int $delivery_fee = 0, string $country = ''): object
 	{
 		$enabled = self::isEnabled($config);
-		$zero_rated = strtoupper($country) !== 'KR';
+		$zero_rated = !Address::isDomestic($country);
 		$rate = self::rate($config);
 		$included = ($config->price_includes_tax ?? 'Y') !== 'N';
 

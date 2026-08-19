@@ -134,8 +134,40 @@ class Order
 		}
 		$sellers = $sellers ?? self::getSellerOrders((int)$order->order_srl);
 		$st = count($sellers) ? (string)$sellers[0]->status : '';
+
+		// 배송완료 뒤 설정한 날이 지나면 확정으로 본다. 상태를 미리 바꿔 두지 않고 볼 때 계산한다
+		if ($st === Base::SELLER_DELIVERED && self::isAutoConfirmed($sellers[0] ?? null))
+		{
+			return Base::SELLER_CONFIRMED;
+		}
+
 		return in_array($st, [Base::SELLER_PREPARING, Base::SELLER_SHIPPING, Base::SELLER_DELIVERED, Base::SELLER_CONFIRMED], true)
 			? $st : Base::ORDER_PAID;
+	}
+
+	/**
+	 * 배송완료 뒤 설정한 날이 지났는가. 설정이 0 이면 자동 확정을 쓰지 않는다.
+	 *
+	 * 구매확정은 하위주문 상태를 바꾸는 것뿐이라, 미리 돌려 둘 필요 없이 볼 때 계산하면 된다.
+	 *
+	 * @param ?object $seller 하위주문 (delivered_date 를 본다)
+	 * @return bool
+	 */
+	public static function isAutoConfirmed(?object $seller): bool
+	{
+		$days = max(0, (int)(Base::config()->auto_confirm_days ?? 0));
+		if ($days <= 0 || !$seller)
+		{
+			return false;
+		}
+		$delivered = preg_replace('/\D/', '', (string)($seller->delivered_date ?? ''));
+		if (strlen($delivered) < 8)
+		{
+			return false;
+		}
+		$at = strtotime(substr($delivered, 0, 4) . '-' . substr($delivered, 4, 2) . '-' . substr($delivered, 6, 2)
+			. ' ' . substr($delivered . '000000', 8, 2) . ':' . substr($delivered . '000000', 10, 2) . ':00');
+		return $at > 0 && (time() - $at) >= $days * 86400;
 	}
 
 	/**
@@ -191,6 +223,60 @@ class Order
 	 * @param ?object $order
 	 * @param string $memo
 	 */
+	/**
+	 * 이 사건에 메일을 보낼지. 설정에 값이 없으면 보내는 것으로 본다.
+	 *
+	 * @param string $kind
+	 * @param bool $to_admin
+	 * @return bool
+	 */
+	protected static function notifyEnabled(string $kind, bool $to_admin): bool
+	{
+		$config = Config::getConfig();
+		if ($to_admin && ($config->notify_admin ?? 'N') !== 'Y')
+		{
+			return false;
+		}
+		$key = ($to_admin ? 'notify_admin_' : 'notify_buyer_') . $kind;
+		return ($config->{$key} ?? 'Y') !== 'N';
+	}
+
+	/**
+	 * 관리자 알림을 받을 메일 주소. 직접 적은 것 + 지정한 회원그룹의 회원.
+	 *
+	 * 담당자가 여럿이거나 자주 바뀌는 곳을 위해 그룹으로도 받을 수 있게 한다.
+	 *
+	 * @return array
+	 */
+	protected static function adminRecipients(): array
+	{
+		$config = Config::getConfig();
+		$list = preg_split('/[\s,;]+/', (string)($config->notify_admin_email ?? '')) ?: [];
+
+		$group_srl = (int)($config->notify_admin_group ?? 0);
+		if ($group_srl > 0)
+		{
+			// 별칭 조인은 프레임워크의 자동 프리픽스 재작성과 충돌한다 (Grade::getForMember 와 같은 이유)
+			$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+			$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare(
+				'SELECT m.email_address FROM `' . $prefix . 'member_group_member` AS mg'
+				. ' JOIN `' . $prefix . 'member` AS m ON m.member_srl = mg.member_srl'
+				. ' WHERE mg.group_srl = ?'
+			);
+			if ($stmt && $stmt->execute([$group_srl]))
+			{
+				$list = array_merge($list, $stmt->fetchAll(\PDO::FETCH_COLUMN) ?: []);
+				$stmt->closeCursor();
+			}
+		}
+
+		$list = array_map('trim', $list);
+		$list = array_filter($list, function($mail) {
+			return $mail !== '' && filter_var($mail, \FILTER_VALIDATE_EMAIL) !== false;
+		});
+		return array_values(array_unique($list));
+	}
+
 	public static function notifyMail(string $kind, ?object $order, string $memo = ''): void
 	{
 		if (!$order)
@@ -202,50 +288,55 @@ class Order
 		self::notifyCenter($kind, $order, $memo);
 		try
 		{
-			$config = Config::getConfig();
 			$to_admin = in_array($kind, ['new_order', 'claim'], true);
-			$to = $to_admin
-				? (($config->notify_admin ?? 'N') === 'Y' ? trim((string)($config->notify_admin_email ?? '')) : '')
-				: trim((string)($order->orderer_email ?? ''));
-			if ($to === '' || !filter_var($to, \FILTER_VALIDATE_EMAIL))
+			if (!self::notifyEnabled($kind, $to_admin))
+			{
+				return;
+			}
+
+			$recipients = $to_admin
+				? self::adminRecipients()
+				: array_filter([trim((string)($order->orderer_email ?? ''))], function($mail) {
+					return filter_var($mail, \FILTER_VALIDATE_EMAIL) !== false;
+				});
+			if (!count($recipients))
 			{
 				return;
 			}
 
 			$site = \Context::getSiteTitle() ?: 'Zittme';
-			$subjects = [
-				'new_order' => '[' . $site . '] 신규 주문 접수 - ' . $order->order_code,
-				'claim' => '[' . $site . '] 취소·반품 신청 - ' . $order->order_code,
-				'received' => '[' . $site . '] 주문이 접수되었습니다 - ' . $order->order_code,
-				'paid' => '[' . $site . '] 결제가 완료되었습니다 - ' . $order->order_code,
-			];
-			if (!isset($subjects[$kind]))
+			$subject = sprintf(lang('commerce.mail_subject_' . $kind), $site, $order->order_code);
+			if ($subject === '' || strpos($subject, 'mail_subject_') !== false)
 			{
 				return;
 			}
 
 			$lines = [];
-			$lines[] = '주문번호: ' . $order->order_code;
-			$lines[] = '주문자: ' . $order->orderer_name . ($order->orderer_phone ? ' (' . $order->orderer_phone . ')' : '');
+			$lines[] = lang('commerce.mail_order_code') . ': ' . $order->order_code;
+			$lines[] = lang('commerce.mail_orderer') . ': ' . $order->orderer_name
+				. ($order->orderer_phone ? ' (' . $order->orderer_phone . ')' : '');
 			foreach (self::getItems((int)$order->order_srl) as $item)
 			{
 				$lines[] = '- ' . $item->item_name . ($item->option_name ? ' / ' . $item->option_name : '') . ' x ' . (int)$item->qty;
 			}
-			$lines[] = '결제 금액: ' . shop_money_in((int)$order->payment_price, $order->currency ?? 'KRW');
+			$lines[] = lang('commerce.mail_payment') . ': ' . shop_money_in((int)$order->payment_price, $order->currency ?? 'KRW');
 			if ($kind === 'new_order' && $order->status === Base::ORDER_PENDING)
 			{
-				$lines[] = '상태: 결제 대기 (무통장 주문이면 입금 확인이 필요합니다)';
+				$lines[] = lang('commerce.mail_pending_note');
 			}
 			if ($memo !== '')
 			{
 				$lines[] = $memo;
 			}
 
-			$mail = new \Zittme\Framework\Mail();
-			$mail->addTo($to);
-			$mail->setSubject($subjects[$kind]);
-			$mail->setBody(implode("\n", $lines), 'text/plain');
-			$mail->send();
+			foreach ($recipients as $to)
+			{
+				$mail = new \Zittme\Framework\Mail();
+				$mail->addTo($to);
+				$mail->setSubject($subject);
+				$mail->setBody(implode("\n", $lines), 'text/plain');
+				$mail->send();
+			}
 		}
 		catch (\Throwable $e)
 		{
@@ -308,11 +399,41 @@ class Order
 		{
 			Credit::earnForOrder($order);
 			Grade::recalc((int)$order->member_srl);
+			self::clearCartOf($order);
 		}
 
 		self::log($order_srl, 0, 'pay', $recovered ? Base::ORDER_EXPIRED : Base::ORDER_PENDING, Base::ORDER_PAID, 0, $recovered ? 'recovered from expired (deposit confirmed)' : '');
 		self::notifyMail('paid', $order);
 		return true;
+	}
+
+	/**
+	 * 주문한 상품을 장바구니에서 뺀다.
+	 *
+	 * 주문을 만들 때가 아니라 결제가 끝난 뒤에 부른다. 만들 때 비우면 결제 화면에서
+	 * 뒤로 갔을 때 담아 둔 것을 잃는다.
+	 *
+	 * PG 콜백 안에서도 불리므로 세션에 기대지 않는다. 비회원은 세션 키를 알 수 없어
+	 * 결과 화면에서 한 번 더 부른다.
+	 *
+	 * @param object $order
+	 * @return void
+	 */
+	public static function clearCartOf(object $order): void
+	{
+		$member_srl = (int)($order->member_srl ?? 0);
+		if ($member_srl <= 0)
+		{
+			return;
+		}
+		$db = \Zittme\Framework\DB::getInstance();
+		foreach (self::getItems((int)$order->order_srl) as $item)
+		{
+			$db->query(
+				'DELETE FROM commerce_cart WHERE member_srl = ? AND item_srl = ? AND option_srl = ?',
+				$member_srl, (int)$item->item_srl, (int)$item->option_srl
+			);
+		}
 	}
 
 	/**

@@ -3,6 +3,7 @@
 namespace Zittme\Modules\Commerce\Controllers;
 
 use Zittme\Modules\Commerce\Models\Item as ItemModel;
+use Zittme\Modules\Commerce\Models\Notify as NotifyModel;
 
 /**
  * 리뷰·문의 (proc).
@@ -25,14 +26,31 @@ class Review extends Base
 		// 구매확정(하위주문 confirmed)한 상품만 리뷰 가능.
 		// 별칭 조인은 자동 프리픽스 재작성과 충돌하므로 PDO 핸들로 직접 실행한다 (Grade::getForMember 와 같은 이유)
 		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$args = [$member_srl, $item_srl, 'paid'];
+
+		// 자동 확정을 쓰면 배송완료 뒤 기간이 지난 것도 확정으로 본다. 화면 표시와 같은 기준이다
+		$auto_days = max(0, (int)(self::config()->auto_confirm_days ?? 0));
+		if ($auto_days > 0)
+		{
+			$cond = ' AND (os.status = ? OR (os.status = ? AND os.delivered_date <> \'\' AND os.delivered_date <= ?))';
+			$args[] = 'confirmed';
+			$args[] = 'delivered';
+			$args[] = date('YmdHis', time() - $auto_days * 86400);
+		}
+		else
+		{
+			$cond = ' AND os.status = ?';
+			$args[] = 'confirmed';
+		}
+
 		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare(
 			'SELECT 1 FROM `' . $prefix . 'commerce_order_item` AS oi'
 			. ' JOIN `' . $prefix . 'commerce_order` AS o ON o.order_srl = oi.order_srl'
 			. ' JOIN `' . $prefix . 'commerce_order_seller` AS os ON os.order_seller_srl = oi.order_seller_srl'
-			. ' WHERE o.member_srl = ? AND oi.item_srl = ? AND o.status = ? AND os.status = ? LIMIT 1'
+			. ' WHERE o.member_srl = ? AND oi.item_srl = ? AND o.status = ?' . $cond . ' LIMIT 1'
 		);
 		$found = false;
-		if ($stmt && $stmt->execute([$member_srl, $item_srl, 'paid', 'confirmed']))
+		if ($stmt && $stmt->execute($args))
 		{
 			$found = (bool)$stmt->fetchColumn();
 			$stmt->closeCursor();
@@ -66,8 +84,23 @@ class Review extends Base
 		$sql = 'SELECT o.order_srl FROM `' . $prefix . 'commerce_order_item` AS oi'
 			. ' JOIN `' . $prefix . 'commerce_order` AS o ON o.order_srl = oi.order_srl'
 			. ' JOIN `' . $prefix . 'commerce_order_seller` AS os ON os.order_seller_srl = oi.order_seller_srl'
-			. ' WHERE o.member_srl = ? AND oi.item_srl = ? AND o.status = ? AND os.status = ?';
-		$args = [$member_srl, $item_srl, 'paid', 'confirmed'];
+			. ' WHERE o.member_srl = ? AND oi.item_srl = ? AND o.status = ?';
+		$args = [$member_srl, $item_srl, 'paid'];
+
+		// 자동 확정을 쓰면 배송완료 뒤 기간이 지난 것도 확정으로 본다. 화면 표시와 같은 기준이다
+		$auto_days = max(0, (int)(self::config()->auto_confirm_days ?? 0));
+		if ($auto_days > 0)
+		{
+			$sql .= ' AND (os.status = ? OR (os.status = ? AND os.delivered_date <> \'\' AND os.delivered_date <= ?))';
+			$args[] = 'confirmed';
+			$args[] = 'delivered';
+			$args[] = date('YmdHis', time() - $auto_days * 86400);
+		}
+		else
+		{
+			$sql .= ' AND os.status = ?';
+			$args[] = 'confirmed';
+		}
 		if ($want_order_srl > 0)
 		{
 			$sql .= ' AND o.order_srl = ?';
@@ -310,7 +343,7 @@ class Review extends Base
 		{
 			return $output;
 		}
-		ZittmeModulesCommerceModelsNotify::toAdmins(lang('commerce.nc_inquiry'), ZittmeModulesCommerceModelsNotify::consoleUrl('qna'));
+		NotifyModel::toAdmins(lang('commerce.nc_inquiry'), NotifyModel::consoleUrl('qna'));
 		$this->setMessage('msg_shop_inquiry_added');
 		$this->redirectToItem($item_srl);
 	}

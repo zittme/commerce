@@ -125,7 +125,43 @@
 				<div><label>{{ lang('commerce.admin_config_53') }}</label><input type="text" name="privacy_version" maxlength="20" value="{{ $shop_config->privacy_version }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_54') }}</label><input type="number" name="retention_days" min="0" max="3650" value="{{ $shop_config->retention_days }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_55') }}</label><select name="notify_admin"><option value="N" @if($shop_config->notify_admin === 'N') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if($shop_config->notify_admin === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></div>
-				<div><label>{{ lang('commerce.admin_config_58') }}</label><input type="email" name="notify_admin_email" value="{{ $shop_config->notify_admin_email }}" /></div>
+				<div>
+					<label>{{ lang('commerce.admin_config_58') }}</label>
+					<input type="text" name="notify_admin_email" value="{{ $shop_config->notify_admin_email }}" style="min-width:280px" />
+					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_notify_email_help') }}</p>
+				</div>
+				<div>
+					<label>{{ lang('commerce.shop_notify_group') }}</label>
+					<select name="notify_admin_group">
+						<option value="0">{{ lang('commerce.shop_use_off') }}</option>
+						@foreach (\MemberModel::getGroups() as $ng)
+						<option value="{{ $ng->group_srl }}" @if((int)($shop_config->notify_admin_group ?? 0) === (int)$ng->group_srl) selected @endif>{{ Context::replaceUserLang($ng->title, true) }}</option>
+						@endforeach
+					</select>
+					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_notify_group_help') }}</p>
+				</div>
+			</div>
+
+			{{-- 사건마다 켜고 끈다. 값이 없으면 보내는 것으로 본다 --}}
+			<h4 style="margin:18px 0 8px;font-size:14px">{{ lang('commerce.shop_notify_events') }}</h4>
+			<div class="rsva-inline">
+				@foreach ([
+					'notify_admin_new_order' => 'shop_notify_new_order',
+					'notify_admin_claim' => 'shop_notify_claim',
+					'notify_buyer_received' => 'shop_notify_received',
+					'notify_buyer_paid' => 'shop_notify_paid',
+					'notify_buyer_shipping' => 'shop_notify_shipping',
+					'notify_buyer_delivered' => 'shop_notify_delivered',
+					'notify_buyer_claim_done' => 'shop_notify_claim_done',
+				] as $nk => $nlabel)
+				<div>
+					<label>{{ lang('commerce.' . $nlabel) }}</label>
+					<select name="{{ $nk }}">
+						<option value="Y" @if(($shop_config->$nk ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.shop_use_on') }}</option>
+						<option value="N" @if(($shop_config->$nk ?? 'Y') === 'N') selected @endif>{{ lang('commerce.shop_use_off') }}</option>
+					</select>
+				</div>
+				@endforeach
 			</div>
 		</div>
 
@@ -176,11 +212,57 @@
 					</select>
 				</div>
 				<div>
+					<label>{{ lang('commerce.shop_base_country') }}</label>
+					<select name="base_country">
+						@foreach (\Zittme\Modules\Commerce\Models\Address::countries() as $bc_code => $bc_name)
+						<option value="{{ $bc_code }}" @if(($shop_config->base_country ?? 'KR') === $bc_code) selected @endif>{{ $bc_name }}</option>
+						@endforeach
+					</select>
+					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_base_country_help') }}</p>
+				</div>
+				<div>
 					<label>{{ lang('commerce.admin_config_77') }}</label>
 					<select name="allow_overseas">
 						<option value="N" @if($shop_config->allow_overseas !== 'Y') selected @endif>{{ lang('commerce.admin_config_78') }}</option>
 						<option value="Y" @if($shop_config->allow_overseas === 'Y') selected @endif>{{ lang('commerce.admin_config_79') }}</option>
 					</select>
+				</div>
+				<div>
+					<label>{{ lang('commerce.shop_use_phone_cc') }}</label>
+					<select name="use_phone_cc">
+						<option value="auto" @if(($shop_config->use_phone_cc ?? 'auto') === 'auto') selected @endif>{{ lang('commerce.shop_use_phone_cc_auto') }}</option>
+						<option value="Y" @if(($shop_config->use_phone_cc ?? 'auto') === 'Y') selected @endif>{{ lang('commerce.shop_use_phone_cc_on') }}</option>
+						<option value="N" @if(($shop_config->use_phone_cc ?? 'auto') === 'N') selected @endif>{{ lang('commerce.shop_use_phone_cc_off') }}</option>
+					</select>
+				</div>
+				<div>
+					<label>{{ lang('commerce.shop_require_state') }}</label>
+					<select name="require_state">
+						<option value="N" @if(($shop_config->require_state ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.shop_require_state_off') }}</option>
+						<option value="Y" @if(($shop_config->require_state ?? 'N') === 'Y') selected @endif>{{ lang('commerce.shop_require_state_on') }}</option>
+					</select>
+					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_require_state_help') }}</p>
+				</div>
+				<div>
+					<label>{{ lang('commerce.shop_auto_confirm') }}</label>
+					<input type="number" name="auto_confirm_days" min="0" max="365" step="1" value="{{ (int)($shop_config->auto_confirm_days ?? 0) }}" style="width:110px" />
+					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_auto_confirm_help') }}</p>
+					<p style="margin:4px 0 8px;font-size:12.5px;color:#c0392b">{{ lang('commerce.shop_auto_confirm_warn') }}</p>
+				</div>
+				<div>
+					<label>{{ lang('commerce.shop_use_coupon') }}</label>
+					<select name="use_coupon">
+						<option value="Y" @if(($shop_config->use_coupon ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.shop_use_on') }}</option>
+						<option value="N" @if(($shop_config->use_coupon ?? 'Y') === 'N') selected @endif>{{ lang('commerce.shop_use_off') }}</option>
+					</select>
+				</div>
+				<div>
+					<label>{{ lang('commerce.shop_use_credit') }}</label>
+					<select name="use_credit">
+						<option value="Y" @if(($shop_config->use_credit ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.shop_use_on') }}</option>
+						<option value="N" @if(($shop_config->use_credit ?? 'Y') === 'N') selected @endif>{{ lang('commerce.shop_use_off') }}</option>
+					</select>
+					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_use_credit_help') }}</p>
 				</div>
 				<div>
 					<label>{{ lang('commerce.shop_address_mode') }}</label>
@@ -240,6 +322,25 @@
 					<option value="/USE_DEFAULT/" @if(($shop_instance->mskin ?? '') === '/USE_DEFAULT/') selected @endif>{{ lang('commerce.admin_config_86') }}</option>
 					@foreach ($shop_mskins as $sk)
 					<option value="{{ $sk->skin }}" @if(($shop_instance->mskin ?? '') === $sk->skin) selected @endif>{{ $sk->title ?: $sk->skin }}</option>
+					@endforeach
+				</select>
+			</div>
+			<div style="min-width:220px">
+				<label>{{ lang('commerce.admin_config_layout') }}</label>
+				<select name="layout_srl" style="width:100%">
+					<option value="-1" @if((int)($shop_instance->layout_srl ?? -1) === -1) selected @endif>{{ lang('commerce.admin_config_layout_default') }}</option>
+					@foreach ($shop_layouts as $lo)
+					<option value="{{ $lo->layout_srl }}" @if((int)($shop_instance->layout_srl ?? -1) === (int)$lo->layout_srl) selected @endif>{{ $lo->title ?: $lo->layout }}</option>
+					@endforeach
+				</select>
+			</div>
+			<div style="min-width:220px">
+				<label>{{ lang('commerce.admin_config_mlayout') }}</label>
+				<select name="mlayout_srl" style="width:100%">
+					<option value="-1" @if((int)($shop_instance->mlayout_srl ?? -1) === -1) selected @endif>{{ lang('commerce.admin_config_layout_default') }}</option>
+					<option value="-2" @if((int)($shop_instance->mlayout_srl ?? -1) === -2) selected @endif>{{ lang('commerce.admin_config_layout_follow_pc') }}</option>
+					@foreach ($shop_mlayouts as $lo)
+					<option value="{{ $lo->layout_srl }}" @if((int)($shop_instance->mlayout_srl ?? -1) === (int)$lo->layout_srl) selected @endif>{{ $lo->title ?: $lo->layout }}</option>
 					@endforeach
 				</select>
 			</div>

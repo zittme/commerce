@@ -30,8 +30,8 @@
 				@foreach ($credit_logs as $cl)
 				<tr>
 					<td><small>{{ zdate($cl->regdate, 'Y.m.d H:i') }}</small></td>
-					<td style="{{ $cl->amount >= 0 ? 'color:#2677e3' : 'color:#c0392b' }};font-weight:600">{{ $cl->amount >= 0 ? '+' : '' }}{{ number_format($cl->amount) }}</td>
-					<td>{{ number_format($cl->balance_after) }}</td>
+					<td style="{{ $cl->amount >= 0 ? 'color:#2677e3' : 'color:#c0392b' }};font-weight:600">{{ $cl->amount >= 0 ? '+' : '' }}{{ shop_money_base($cl->amount) }}</td>
+					<td>{{ shop_money_base($cl->balance_after) }}</td>
 					<td>{{ ['earn'=>lang('commerce.adm_credit_earn'),'spend'=>lang('commerce.adm_credit_spend'),'refund'=>lang('commerce.adm_credit_refund'),'earn_cancel'=>lang('commerce.adm_credit_earn_cancel'),'admin'=>lang('commerce.adm_credit_admin')][$cl->type] ?? $cl->type }}</td>
 					<td>{{ $cl->order_srl > 0 ? $cl->order_srl : '-' }}</td>
 					<td>{{ $cl->memo ?: '-' }}</td>
@@ -58,8 +58,8 @@
 					{{-- 닉네임 표시, 클릭 시 회원 정보(새 탭) --}}
 					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispMemberAdminInsert', 'member_srl', $cl->member_srl) }}" target="_blank">{{ $cl->member_name !== '' ? $cl->member_name : ('#' . $cl->member_srl) }}</a>
 				</td>
-					<td style="{{ $cl->amount >= 0 ? 'color:#2677e3' : 'color:#c0392b' }};font-weight:600">{{ $cl->amount >= 0 ? '+' : '' }}{{ number_format($cl->amount) }}</td>
-					<td>{{ number_format($cl->balance_after) }}</td>
+					<td style="{{ $cl->amount >= 0 ? 'color:#2677e3' : 'color:#c0392b' }};font-weight:600">{{ $cl->amount >= 0 ? '+' : '' }}{{ shop_money_base($cl->amount) }}</td>
+					<td>{{ shop_money_base($cl->balance_after) }}</td>
 					<td>{{ ['earn'=>lang('commerce.adm_credit_earn'),'spend'=>lang('commerce.adm_credit_spend'),'refund'=>lang('commerce.adm_credit_refund'),'earn_cancel'=>lang('commerce.adm_credit_earn_cancel'),'admin'=>lang('commerce.adm_credit_admin')][$cl->type] ?? $cl->type }}</td>
 				</tr>
 				@endforeach
