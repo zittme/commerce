@@ -33,6 +33,10 @@
 .rsva-inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
 .rsva-inline > div { min-width: 90px; }
 .rsva-empty { padding: 32px 0; text-align: center; color: #6b7684; font-size: 13px; }
+.rsva-pagenav { display: flex; justify-content: center; align-items: center; gap: 4px; margin: 16px 0 4px; }
+.rsva-pagenav a { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 6px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #4e5968 !important; text-decoration: none !important; }
+.rsva-pagenav a:hover { background: #f4f6f9; color: #2677e3 !important; }
+.rsva-pagenav a.is-active { background: #2677e3; color: #fff !important; }
 .rsva-weekdays { display: flex; gap: 6px; flex-wrap: wrap; }
 .rsva-weekdays label { display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; border: 1px solid #e5e8ee; border-radius: 8px; font-size: 12px; cursor: pointer; margin: 0; font-weight: 500; }
 @media (max-width: 768px) { .rsva-table { display: block; overflow-x: auto; } }
@@ -56,6 +60,17 @@ body { -webkit-font-smoothing: antialiased; color: var(--zmc-ink); }
 .zmc-nav a:hover { background: #f4f6f9; color: var(--zmc-ink) !important; }
 .zmc-nav a.is-active { background: var(--zmc-brand-soft); color: var(--zmc-brand) !important; font-weight: 700; }
 .zmc-nav a.is-active::before { content: ''; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 3px; background: var(--zmc-brand); }
+/* ── 그룹 메뉴 ── */
+.zmc-group { margin-bottom: 3px; }
+.zmc-group-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 14px; border: 0; border-radius: 10px; background: none; font-size: 14.5px; font-weight: 600; font-family: inherit; color: #4e5968; cursor: pointer; transition: background .12s, color .12s; }
+.zmc-group-btn:hover { background: #f4f6f9; color: var(--zmc-ink); }
+.zmc-group-btn.is-current { color: var(--zmc-ink); font-weight: 700; }
+.zmc-group-arrow { flex-shrink: 0; transition: transform .15s; }
+.zmc-group.is-open .zmc-group-arrow { transform: rotate(180deg); }
+.zmc-sub { display: none; padding: 2px 0 4px; }
+.zmc-group.is-open .zmc-sub { display: block; }
+.zmc-nav .zmc-sub a { padding: 8px 14px 8px 26px; font-size: 13.5px; font-weight: 500; }
+.zmc-nav .zmc-sub a.is-active { font-weight: 700; }
 .zmc-side-foot { padding-top: 14px; border-top: 1px solid var(--zmc-line); }
 .zmc-side-foot a { display: block; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 500; color: #8b95a1 !important; text-decoration: none !important; }
 .zmc-side-foot a:hover { color: var(--zmc-brand) !important; background: #f4f6f9; }
@@ -106,6 +121,20 @@ foreach (['dashboard', 'orders', 'items', 'stock', 'categories', 'badges', 'prom
 {
 	$zmc_menu[$zmc_key] = lang('commerce.admin_menu_' . $zmc_key);
 }
+$zmc_menu['config'] = lang('commerce.cfg_tab_general');
+foreach (['shipping', 'display', 'rewards', 'notify', 'policy'] as $zmc_key)
+{
+	$zmc_menu['config_' . $zmc_key] = lang('commerce.cfg_tab_' . $zmc_key);
+}
+$zmc_tree = [
+	['key' => 'dashboard'],
+	['group' => 'orders', 'items' => ['orders', 'claims']],
+	['group' => 'items', 'items' => ['items', 'stock', 'categories', 'badges']],
+	['group' => 'benefits', 'items' => ['coupons', 'promotions', 'credits', 'grades']],
+	['key' => 'qna'],
+	['key' => 'stats'],
+	['group' => 'config', 'items' => ['config', 'config_shipping', 'config_display', 'config_rewards', 'config_notify', 'config_policy']],
+];
 $zmc_active_alias = ['order_view' => 'orders', 'item_edit' => 'items'];
 $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 @endphp
@@ -115,8 +144,23 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 		<button type="button" class="zmc-side-close" id="zmcSideClose" aria-label="{{ lang('commerce.admin_menu_close') }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
 	</div>
 	<nav class="zmc-nav">
-		@foreach ($zmc_menu as $key => $label)
-		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole', 'p', $key) }}" class="{{ $zmc_current === $key ? 'is-active' : '' }}"><span>{{ $label }}</span></a>
+		@foreach ($zmc_tree as $node)
+		@if (isset($node['key']))
+		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole', 'p', $node['key']) }}" class="{{ $zmc_current === $node['key'] ? 'is-active' : '' }}"><span>{{ $zmc_menu[$node['key']] }}</span></a>
+		@else
+		@php $zmc_group_open = in_array($zmc_current, $node['items'], true); @endphp
+		<div class="zmc-group {{ $zmc_group_open ? 'is-open' : '' }}">
+			<button type="button" class="zmc-group-btn {{ $zmc_group_open ? 'is-current' : '' }}">
+				<span>{{ lang('commerce.admin_menu_group_' . $node['group']) }}</span>
+				<svg class="zmc-group-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg>
+			</button>
+			<div class="zmc-sub">
+				@foreach ($node['items'] as $key)
+				<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole', 'p', $key) }}" class="{{ $zmc_current === $key ? 'is-active' : '' }}"><span>{{ $zmc_menu[$key] }}</span></a>
+				@endforeach
+			</div>
+		</div>
+		@endif
 		@endforeach
 	</nav>
 	<div class="zmc-side-foot">
@@ -142,6 +186,9 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 	var closeBtn = document.getElementById('zmcSideClose');
 	if (closeBtn) closeBtn.addEventListener('click', close);
 	document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+	document.querySelectorAll('.zmc-group-btn').forEach(function (b) {
+		b.addEventListener('click', function () { b.parentElement.classList.toggle('is-open'); });
+	});
 })();
 </script>
 

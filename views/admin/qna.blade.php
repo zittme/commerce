@@ -37,6 +37,7 @@
 				@endforeach
 			</tbody>
 		</table>
+		@include('_pagenav', ['pn' => $qna_review_navigation, 'pn_param' => 'r_page'])
 		@endif
 	</div>
 
@@ -85,6 +86,7 @@
 				@endforeach
 			</tbody>
 		</table>
+		@include('_pagenav', ['pn' => $qna_inquiry_navigation, 'pn_param' => 'i_page'])
 		@endif
 	</div>
 </div>

@@ -17,14 +17,16 @@
 			@if (!empty($item->summary))
 			<p class="shp-detail-summary">{{ $item->summary }}</p>
 			@endif
+			{{-- 아래 합계 계산도 위 표시가와 같은 값을 써야 한다. 등급가가 있으면 그것이 기준가다 --}}
+			@php $shp_buy_price = !empty($item->grade_price) ? (int)$item->grade_price : (int)($disp_effective_price ?? $effective_price); @endphp
 			<p class="shp-detail-price">
 				@if (!empty($item->grade_price))
-				<s>{{ shop_money($effective_price) }}</s>{{ shop_money($item->grade_price) }}
+				<s>{{ shop_item_price($item, 'effective') }}</s>{{ shop_item_price($item, 'grade') }}
 				<em class="shp-grade-tag">{{ $lang->shop_grade ?? '회원 등급' }}</em>
-				@elseif ($item->sale_price > 0 && $item->sale_price < $item->price)
-				<s>{{ shop_money($item->price) }}</s>{{ shop_money($effective_price) }}
+				@elseif (shop_item_on_sale($item))
+				<s>{{ shop_item_price($item, 'price') }}</s>{{ shop_item_price($item, 'sale') }}
 				@else
-				{{ shop_money($effective_price) }}
+				{{ shop_item_price($item, 'price') }}
 				@endif
 			</p>
 
@@ -101,9 +103,9 @@
 							@if ($shp_base_soldout)- {{ $lang->shop_soldout }}@endif
 						</option>
 						@foreach ($shp_basic_opts as $opt)
-						<option value="{{ $opt->option_srl }}" data-price-add="{{ (int)$opt->price_add }}" data-label="{{ $opt->option_label }}" data-combokey="{{ $opt->combo_key ?? '' }}" @if((int)$opt->stock <= 0) disabled @endif>
+						<option value="{{ $opt->option_srl }}" data-price-add="{{ (int)($opt->disp_price_add ?? $opt->price_add) }}" data-label="{{ $opt->option_label }}" data-combokey="{{ $opt->combo_key ?? '' }}" @if((int)$opt->stock <= 0) disabled @endif>
 							{{ $opt->option_label }}
-							@if ($opt->price_add != 0)({{ $opt->price_add > 0 ? '+' : '' }}{{ shop_money($opt->price_add) }})@endif
+							@if ($opt->price_add != 0)({{ $opt->price_add > 0 ? '+' : '' }}{{ shop_money_in((int)($opt->disp_price_add ?? $opt->price_add), $disp_currency ?? '') }})@endif
 							@if ((int)$opt->stock <= 0)- {{ $lang->shop_soldout }}@endif
 						</option>
 						@endforeach
@@ -119,9 +121,9 @@
 						{{-- 추가 옵션: 고르지 않으면 추가 상품이 없는 것 --}}
 						<option value="">{{ $lang->shop_select_option ?? '옵션을 선택해주세요' }}</option>
 						@foreach ($shp_extra_opts as $opt)
-						<option value="{{ $opt->option_srl }}" data-price-add="{{ (int)$opt->price_add }}" data-label="{{ $opt->option_label }}" @if((int)$opt->stock <= 0) disabled @endif>
+						<option value="{{ $opt->option_srl }}" data-price-add="{{ (int)($opt->disp_price_add ?? $opt->price_add) }}" data-label="{{ $opt->option_label }}" @if((int)$opt->stock <= 0) disabled @endif>
 							{{ $opt->option_label }}
-							({{ shop_money($opt->price_add) }})
+							({{ shop_money_in((int)($opt->disp_price_add ?? $opt->price_add), $disp_currency ?? '') }})
 							@if ((int)$opt->stock <= 0)- {{ $lang->shop_soldout }}@endif
 						</option>
 						@endforeach
@@ -131,7 +133,7 @@
 
 				{{-- 선택 요약: 선택 행 목록 + 수량 스테퍼 + 실시간 합계 --}}
 				<div class="shp-select-box" id="shpSelectBox"
-					data-base-price="{{ (int)$effective_price }}"
+					data-base-price="{{ $shp_buy_price }}"
 					data-item-name="{{ $item->item_name }}"
 					data-base-soldout="{{ $shp_base_soldout ? 'Y' : 'N' }}"
 					data-has-basic="{{ $shp_has_basic ? 'Y' : 'N' }}"

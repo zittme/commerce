@@ -10,9 +10,24 @@
 			<option value="{{ $key }}" @if($filters->status === $key) selected @endif>{{ $label }}</option>
 			@endforeach
 		</select>
+		<select name="f_ship">
+			<option value="">{{ lang('commerce.adm_filter_ship_all') }}</option>
+			<option value="to_ship" @if($filters->ship === 'to_ship') selected @endif>{{ lang('commerce.admin_dashboard_5') }}</option>
+			<option value="shipping" @if($filters->ship === 'shipping') selected @endif>{{ lang('commerce.st_sel_shipping') }}</option>
+			<option value="delivered" @if($filters->ship === 'delivered') selected @endif>{{ lang('commerce.st_sel_delivered') }}</option>
+		</select>
+		<input type="date" name="f_from" value="{{ $filters->from }}" />
+		<span style="color:#8b95a1">~</span>
+		<input type="date" name="f_to" value="{{ $filters->to }}" />
 		<input type="text" name="f_keyword" placeholder="{{ lang('commerce.admin_orders_16') }}" value="{{ $filters->keyword }}" />
+		{{-- 만료 주문은 기록으로 남기되 평소에는 접어 둔다 --}}
+		<label class="zmi-expired-toggle"><input type="checkbox" name="f_expired" value="Y" @if ($filters->expired === 'Y') checked @endif /> {{ lang('commerce.adm_orders_show_expired') }}</label>
 		<button type="submit" class="rsva-btn">{{ lang('commerce.admin_orders_2') }}</button>
 	</form>
+
+	@if ($hidden_expired > 0)
+	<p class="zmi-expired-note">{{ sprintf(lang('commerce.adm_orders_expired_hidden'), number_format($hidden_expired)) }}</p>
+	@endif
 
 	@if (empty($orders))
 	<p class="rsva-empty">{{ lang('commerce.admin_orders_3') }}</p>
@@ -21,9 +36,22 @@
 	<div class="zmi-bulk">
 		<label><input type="checkbox" id="zmiAll" /> {{ lang('commerce.admin_orders_4') }}</label>
 		<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-primary" id="zmiPrint" data-url="{{ $zmi_url }}">{{ lang('commerce.admin_orders_5') }}</button>
-		<button type="button" class="rsva-btn rsva-btn-sm" id="zmiExport" data-url="{{ getUrl('', 'mid', '', 'module', 'commerce', 'act', 'dispCommerceAdminExportOrders', 'f_status', $filters->status, 'f_keyword', $filters->keyword) }}">{{ lang('commerce.admin_orders_6') }}</button>
+		<button type="button" class="rsva-btn rsva-btn-sm" id="zmiExport" data-url="{{ getUrl('', 'mid', '', 'module', 'commerce', 'act', 'dispCommerceAdminExportOrders', 'f_status', $filters->status, 'f_keyword', $filters->keyword, 'f_from', $filters->from, 'f_to', $filters->to) }}">{{ lang('commerce.admin_orders_6') }}</button>
+		@if ($is_super_admin)
+		{{-- 되돌릴 수 없으므로 최고관리자에게만 보인다. 결제된 주문은 서버에서 다시 걸러진다 --}}
+		<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger" id="zmiDeleteOrders">{{ lang('commerce.adm_orders_delete') }}</button>
+		@endif
 		<span class="zmi-bulk-hint">{{ lang('commerce.admin_orders_7') }}</span>
 	</div>
+
+	@if ($is_super_admin)
+	<form action="{{ getUrl('') }}" method="post" id="zmiDeleteForm" style="display:none">
+		<input type="hidden" name="module" value="admin" />
+		<input type="hidden" name="act" value="procCommerceAdminDeleteOrders" />
+		<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminOrders', 'f_status', $filters->status, 'f_expired', $filters->expired) }}" />
+		<input type="hidden" name="order_srls" value="" />
+	</form>
+	@endif
 
 	<table class="rsva-table">
 		<thead><tr><th style="width:34px"></th><th>{{ lang('commerce.admin_orders_8') }}</th><th>{{ lang('commerce.admin_orders_9') }}</th><th>{{ lang('commerce.admin_orders_10') }}</th><th>{{ lang('commerce.admin_orders_11') }}</th><th>{{ lang('commerce.admin_orders_12') }}</th><th>{{ lang('commerce.admin_orders_13') }}</th><th></th></tr></thead>
@@ -39,13 +67,14 @@
 				<td>{{ $os ? (['pending'=>'-','paid'=>lang('commerce.st_sel_paid'),'preparing'=>lang('commerce.st_sel_preparing'),'shipping'=>lang('commerce.st_sel_shipping'),'delivered'=>lang('commerce.st_sel_delivered'),'cancelled'=>lang('commerce.st_order_cancelled'),'refunded'=>lang('commerce.st_sel_refunded')][$os->status] ?? $os->status) : '-' }}</td>
 				<td><small>{{ zdate($o->regdate, 'm.d H:i') }}</small></td>
 				<td>
-					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $o->order_srl) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_orders_14') }}</a>
+					<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $o->order_srl, 'f_status', $filters->status, 'f_ship', $filters->ship, 'f_keyword', $filters->keyword, 'f_from', $filters->from, 'f_to', $filters->to, 'page', (string)\Context::get('page')) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_orders_14') }}</a>
 					<a href="{{ getUrl('', 'mid', '', 'module', 'commerce', 'act', 'dispCommerceAdminOrderInvoice', 'order_srl', $o->order_srl) }}" class="rsva-btn rsva-btn-sm" target="_blank" rel="noopener" data-zmc-keep>{{ lang('commerce.admin_orders_15') }}</a>
 				</td>
 			</tr>
 			@endforeach
 		</tbody>
 	</table>
+	@include('_pagenav', ['pn' => $page_navigation])
 	@endif
 </div>
 
@@ -53,6 +82,8 @@
 .zmi-bulk { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; font-size: 13px; }
 .zmi-bulk label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .zmi-bulk-hint { color: #8b95a1; font-size: 12px; }
+.zmi-expired-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #4e5968; white-space: nowrap; }
+.zmi-expired-note { margin: 0 0 10px; padding: 9px 12px; border: 1px solid #e3e6eb; border-radius: 8px; background: #f7f8fa; font-size: 12.5px; color: #6b7684; }
 </style>
 
 <script>
@@ -76,6 +107,19 @@
 		u.searchParams.set('order_srls', srls.join(','));
 		window.open(u.toString(), '_blank', 'noopener');
 	});
+
+	var delBtn = document.getElementById('zmiDeleteOrders');
+	var delForm = document.getElementById('zmiDeleteForm');
+	if (delBtn && delForm) {
+		delBtn.addEventListener('click', function () {
+			var srls = [];
+			picks().forEach(function (el) { if (el.checked) srls.push(el.value); });
+			if (!srls.length) { alert({!! json_encode(lang('commerce.adm_orders_delete_pick')) !!}); return; }
+			if (!confirm({!! json_encode(lang('commerce.adm_orders_delete_ask')) !!}.replace('%d', srls.length))) { return; }
+			delForm.order_srls.value = srls.join(',');
+			delForm.submit();
+		});
+	}
 
 	var exportBtn = document.getElementById('zmiExport');
 	if (exportBtn) {

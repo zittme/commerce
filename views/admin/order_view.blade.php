@@ -1,7 +1,7 @@
 @include('_tabs')
 
 <div class="rsva">
-	@php $rsva_return = getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $order->order_srl); @endphp
+	@php $rsva_return = getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $order->order_srl); @endphp
 
 	<div class="rsva-panel">
 		<h3>{{ sprintf(lang('commerce.adm_order_of'), $order->order_code) }}
@@ -14,7 +14,7 @@
 			<div style="grid-column:1/-1">
 				<label>{{ lang('commerce.admin_order_view_3') }}</label>
 				<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispZittme_payAdminOrderView', 'order_srl', $pay_order->order_srl) }}" target="_blank"><strong>{{ $pay_order->order_code }}</strong></a>
+					<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispZittme_payAdminOrderView', 'order_srl', $pay_order->order_srl) }}" target="_blank"><strong>{{ $pay_order->order_code }}</strong></a>
 					<span class="rsva-st {{ $pay_order->status === 'paid' ? 'rsva-st-confirmed' : ($pay_order->status === 'pending' ? 'rsva-st-hold' : '') }}">{{ ['ready'=>lang('commerce.st_pay_ready'),'pending'=>lang('commerce.st_pay_pending'),'paid'=>lang('commerce.st_order_paid'),'cancelled'=>lang('commerce.st_order_cancelled'),'partial_cancelled'=>lang('commerce.st_pay_partial'),'failed'=>lang('commerce.st_order_failed'),'expired'=>lang('commerce.st_order_expired')][$pay_order->status] ?? $pay_order->status }}</span>
 					<small style="color:#8b95a1">{{ $pay_order->gateway }}</small>
 					@if (in_array($pay_order->status, ['ready', 'pending'], true))
@@ -100,7 +100,7 @@
 				@endforeach
 			</tbody>
 		</table>
-		<p style="margin:8px 0 0;font-size:13px"><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminClaims') }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_order_view_25') }}</a></p>
+		<p style="margin:8px 0 0;font-size:13px"><a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminClaims') }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_order_view_25') }}</a></p>
 	</div>
 	@endif
 
@@ -127,6 +127,7 @@
 	</div>
 	@endif
 
-	<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrders') }}" class="rsva-btn">{{ lang('commerce.admin_order_view_29') }}</a>
+	{{-- 목록에서 넘어온 필터·페이지를 그대로 복원한다 --}}
+	<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminOrders', 'f_status', (string)Context::get('f_status'), 'f_ship', (string)Context::get('f_ship'), 'f_keyword', (string)Context::get('f_keyword'), 'f_from', (string)Context::get('f_from'), 'f_to', (string)Context::get('f_to'), 'page', (string)Context::get('page')) }}" class="rsva-btn">{{ lang('commerce.admin_order_view_29') }}</a>
 	<a href="{{ getUrl('', 'mid', '', 'module', 'commerce', 'act', 'dispCommerceAdminOrderInvoice', 'order_srl', $order->order_srl) }}" class="rsva-btn rsva-btn-primary" target="_blank" rel="noopener" data-zmc-keep>{{ lang('commerce.admin_order_view_30') }}</a>
 </div>

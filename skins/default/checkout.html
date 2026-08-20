@@ -4,6 +4,23 @@
 <div class="shp">
 	<div class="shp-top"><h2 class="shp-title">{{ $lang->shop_checkout }}</h2></div>
 
+	@php $shp_pending = Context::get('pending_order'); @endphp
+	@if ($shp_pending)
+	<div class="shp-pending-box">
+		<p class="shp-pending-msg"><b>{{ $shp_pending->order_code }}</b> {{ !empty($shp_pending->pending_deadline) ? sprintf($lang->shop_pending_notice, zdate($shp_pending->pending_deadline, 'Y.m.d A g:i')) : $lang->shop_pending_notice_nodate }}</p>
+		@if (!empty($shp_pending->resume_pay_url))
+		<a class="shp-btn shp-btn-primary" href="{{ escape($shp_pending->resume_pay_url) }}">{{ $lang->shop_resume_pay }}</a>
+		@endif
+		<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ $lang->shop_pending_cancel_ask }}')">
+			<input type="hidden" name="module" value="commerce" />
+			<input type="hidden" name="mid" value="{{ $mid }}" />
+			<input type="hidden" name="act" value="procCommerceClaim" />
+			<input type="hidden" name="order_code" value="{{ $shp_pending->order_code }}" />
+			<button type="submit" class="shp-btn">{{ $lang->shop_cancel_order }}</button>
+		</form>
+	</div>
+	@endif
+
 	@if ($payment_price > 0 && !$pay_available)
 	<p class="shp-warn">{{ $lang->shop_pay_unavailable }}</p>
 	@else
@@ -161,7 +178,8 @@
 
 			{{-- 결제 요약 (우측 고정) --}}
 			<aside class="shp-2col-aside">
-				<div class="shp-box shp-paybox" data-item-total="{{ (int)$cart->item_total }}" data-ship-fee="{{ (int)$ship_fee }}" data-currency="{{ $shp_currency }}" data-base="{{ $shp_base_currency ?? 'KRW' }}" data-base-zero="{{ $shp_base_zero ? 1 : 0 }}" data-rate="{{ $shp_fx_rate }}" data-zero="{{ $shp_fx_zero_decimal ? 1 : 0 }}" data-symbol="{{ $shp_currency_symbol }}" data-won-suffix="{{ $shp_won_suffix ? 1 : 0 }}" data-extra-zones="{{ $shop_config->ship_extra_zones ?? '[]' }}">
+				{{-- 지역 배송비 구간은 등급 할인 전 금액으로 본다 (서버 Cart::extraShipFee 와 같은 기준) --}}
+				<div class="shp-box shp-paybox" data-item-total="{{ (int)$cart->item_total }}" data-ship-judge-total="{{ (int)($cart->item_total_listed ?? $cart->item_total) }}" data-ship-fee="{{ (int)$ship_fee }}" data-currency="{{ $shp_currency }}" data-base="{{ $shp_base_currency ?? 'KRW' }}" data-base-zero="{{ $shp_base_zero ? 1 : 0 }}" data-rate="{{ $shp_fx_rate }}" data-zero="{{ $shp_fx_zero_decimal ? 1 : 0 }}" data-symbol="{{ $shp_currency_symbol }}" data-won-suffix="{{ $shp_won_suffix ? 1 : 0 }}" data-extra-zones="{{ $shop_config->ship_extra_zones ?? '[]' }}">
 					<h3>{{ $lang->shop_pay_summary ?? '결제 금액' }}</h3>
 					<div class="shp-summary-row"><span>{{ $lang->shop_item_total }}</span><span>{{ shop_money_in($cart->item_total, $shp_currency) }}</span></div>
 					<div class="shp-summary-row" id="shpSumDiscount" hidden><span>{{ $lang->shop_discount }}</span><span class="shp-minus">-<em>0</em></span></div>
@@ -271,7 +289,7 @@
 			return name;
 		}
 		function zipExtra() {
-			var itemTotalForZone = parseInt(paybox ? paybox.getAttribute('data-item-total') : 0, 10) || 0;
+			var itemTotalForZone = parseInt(paybox ? (paybox.getAttribute('data-ship-judge-total') || paybox.getAttribute('data-item-total')) : 0, 10) || 0;
 			var stateEl = document.querySelector('input[name="state"]');
 			var buyerRegion = stateEl ? stateEl.value.trim() : '';
 			var zipEl = document.querySelector('input[name="zipcode"]');

@@ -49,6 +49,8 @@
 		<action name="dispCommerceAdminItemEdit" class="Controllers\Admin" permission="manager" />
 		<action name="dispCommerceAdminStock" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminStockAdjust" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminDeleteOrders" class="Controllers\Admin" permission="manager" />
+		<action name="procCommerceAdminSaveLowStock" class="Controllers\Admin" permission="manager" />
 		<action name="dispCommerceAdminQna" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminSaveFront" class="Controllers\Admin" permission="manager" />
 		<action name="procCommerceAdminUploadBanner" class="Controllers\Admin" permission="manager" />

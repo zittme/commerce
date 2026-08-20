@@ -14,6 +14,7 @@ use Zittme\Modules\Commerce\Models\Notify as NotifyModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
 use Zittme\Modules\Commerce\Models\Region as RegionModel;
 use Zittme\Modules\Commerce\Models\Stats as StatsModel;
+use Zittme\Modules\Commerce\Models\Stock as StockModel;
 use Zittme\Modules\Commerce\Models\Tax as TaxModel;
 
 /**
@@ -36,6 +37,7 @@ class Admin extends Base
 		'use_phone_cc', 'require_state', 'use_coupon', 'use_credit', 'auto_confirm_days',
 		'currencies', 'currency_fallback',
 		'notify_admin', 'notify_admin_email', 'notify_admin_group',
+		'notify_low_stock', 'low_stock_default',
 		'notify_admin_new_order', 'notify_admin_claim',
 		'notify_buyer_received', 'notify_buyer_paid', 'notify_buyer_shipping',
 		'notify_buyer_delivered', 'notify_buyer_claim_done',
@@ -167,6 +169,24 @@ class Admin extends Base
 		\Context::set('shop_checklist_done', count(array_filter($checklist, function($c) { return $c->done; })));
 		\Context::set('shop_stats', StatsModel::dashboard());
 
+		$recent_output = executeQueryArray('commerce.getOrderList', (object)['list_count' => 10, 'page' => 1]);
+		\Context::set('recent_orders', $recent_output->data ?: []);
+		$claim_output = executeQueryArray('commerce.getClaimList', (object)['list_count' => 10, 'page' => 1]);
+		$recent_claims = $claim_output->data ?: [];
+		$claim_orders = [];
+		foreach ($recent_claims as $rc)
+		{
+			if (!isset($claim_orders[(int)$rc->order_srl]))
+			{
+				$claim_orders[(int)$rc->order_srl] = OrderModel::get((int)$rc->order_srl);
+			}
+		}
+		\Context::set('recent_claims', $recent_claims);
+		\Context::set('recent_claim_orders', $claim_orders);
+
+		\Context::set('low_stock_rows', StockModel::lowStockRows(50));
+		\Context::set('low_stock_default', (int)(self::config()->low_stock_default ?? 0));
+
 		$this->renderView('dashboard', 'dashboard');
 	}
 
@@ -207,6 +227,9 @@ class Admin extends Base
 		\Context::set('stock_items', $items);
 		\Context::set('stock_options_map', $options_map);
 		\Context::set('stock_page_navigation', $output->page_navigation);
+		\Context::set('stock_low_only', \Context::get('f_low') === 'Y');
+		\Context::set('stock_low_rows', StockModel::lowStockRows(200));
+		\Context::set('stock_low_default', (int)(self::config()->low_stock_default ?? 0));
 
 		$log_item = (int)\Context::get('log_item');
 		$log_output = \Zittme\Modules\Commerce\Models\Stock::getLogs($log_item, max(1, (int)\Context::get('log_page')));
@@ -333,6 +356,91 @@ class Admin extends Base
 	}
 
 	/**
+	 * 재고 부족 알림 기준 저장 — 재고 관리 화면에서 줄마다 정한다.
+	 */
+	public function procCommerceAdminSaveLowStock()
+	{
+		$rows = json_decode((string)\Context::get('rows'), true);
+		if (!is_array($rows))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+
+		$prefix = \Zittme\Modules\Commerce\Controllers\Install::dbPrefix();
+		$handle = \Zittme\Framework\DB::getInstance()->getHandle();
+		$item_stmt = $handle->prepare('UPDATE `' . $prefix . 'commerce_item` SET low_stock = ? WHERE item_srl = ?');
+		$opt_stmt = $handle->prepare('UPDATE `' . $prefix . 'commerce_item_option` SET low_stock = ? WHERE option_srl = ?');
+
+		$saved = 0;
+		foreach ($rows as $row)
+		{
+			$limit = max(0, (int)($row['low_stock'] ?? 0));
+			$option_srl = (int)($row['option_srl'] ?? 0);
+			$item_srl = (int)($row['item_srl'] ?? 0);
+			if ($option_srl > 0 && $opt_stmt)
+			{
+				$opt_stmt->execute([$limit, $option_srl]);
+				$opt_stmt->closeCursor();
+				$saved++;
+			}
+			elseif ($item_srl > 0 && $item_stmt)
+			{
+				$item_stmt->execute([$limit, $item_srl]);
+				$item_stmt->closeCursor();
+				$saved++;
+			}
+		}
+
+		// 기준이 바뀌면 이미 알린 표시도 다시 판정해야 한다
+		foreach ($rows as $row)
+		{
+			$item_srl = (int)($row['item_srl'] ?? 0);
+			$option_srl = (int)($row['option_srl'] ?? 0);
+			if ($item_srl > 0)
+			{
+				StockModel::checkLowStock($item_srl, $option_srl, StockModel::currentStock($item_srl, $option_srl));
+			}
+		}
+
+		$this->setMessage(sprintf(lang('commerce.adm_low_stock_saved'), $saved));
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock'));
+	}
+
+	/**
+	 * 주문 지우기 — 최고관리자만. 결제된 주문은 대상에서 빠진다.
+	 */
+	public function procCommerceAdminDeleteOrders()
+	{
+		if (($this->user->is_admin ?? '') !== 'Y')
+		{
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
+
+		$srls = array_values(array_filter(array_map('intval', explode(',', (string)\Context::get('order_srls')))));
+		if (!count($srls))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+
+		$done = 0;
+		$skipped = 0;
+		foreach (array_slice($srls, 0, 200) as $order_srl)
+		{
+			if (OrderModel::purge($order_srl))
+			{
+				$done++;
+			}
+			else
+			{
+				$skipped++;
+			}
+		}
+
+		$this->setMessage(sprintf(lang('commerce.adm_orders_deleted'), $done, $skipped));
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminOrders'));
+	}
+
+	/**
 	 * 재고 조정 처리.
 	 */
 	public function procCommerceAdminStockAdjust()
@@ -437,17 +545,13 @@ class Admin extends Base
 		\Context::set('qna_reviews', $review_output->data ?: []);
 		\Context::set('qna_review_navigation', $review_output->page_navigation);
 
-		$inquiry_output = executeQueryArray('commerce.getInquiryList', (object)[
+		// 미답변만 보기는 DB 조건이 있는 전용 쿼리를 쓴다. 화면에서 거르면 다음 페이지의 미답변을 놓친다
+		$inquiry_query = \Context::get('f_unanswered') === 'Y' ? 'commerce.getUnansweredInquiryList' : 'commerce.getInquiryList';
+		$inquiry_output = executeQueryArray($inquiry_query, (object)[
 			'list_count' => 30,
 			'page' => max(1, (int)\Context::get('i_page')),
 		]);
-		$inquiries = $inquiry_output->data ?: [];
-		// 미답변만 보기 필터 (DB 조건 없이 화면에서 거른다)
-		if (\Context::get('f_unanswered') === 'Y')
-		{
-			$inquiries = array_values(array_filter($inquiries, function($q) { return empty($q->answer); }));
-		}
-		\Context::set('qna_inquiries', $inquiries);
+		\Context::set('qna_inquiries', $inquiry_output->data ?: []);
 		\Context::set('qna_inquiry_navigation', $inquiry_output->page_navigation);
 		\Context::set('qna_unanswered', \Context::get('f_unanswered') === 'Y');
 
@@ -566,10 +670,8 @@ class Admin extends Base
 		if ($item_srl > 0)
 		{
 			$item = ItemModel::get($item_srl);
-			if (!$item)
-			{
-				return new \BaseObject(-1, 'msg_shop_no_item');
-			}
+			// 저장 전 상품도 미리 발급한 srl 로 옵션을 담을 수 있다.
+			// 행이 아직 없으면 그 srl 을 그대로 들고 등록 화면으로 이어서 연다
 			$options = ItemModel::getOptions($item_srl);
 		}
 
@@ -815,19 +917,57 @@ class Admin extends Base
 
 		$args = new \stdClass;
 		$status = trim((string)\Context::get('f_status'));
+		// 만료 주문은 기록으로 남기되 목록에서는 기본으로 감춘다. 거르개로 언제든 꺼내 본다
+		$show_expired = \Context::get('f_expired') === 'Y';
 		if ($status !== '')
 		{
 			$args->status_list = $status;
+		}
+		elseif (!$show_expired)
+		{
+			$args->status_list = implode(',', [self::ORDER_PENDING, self::ORDER_PAID, self::ORDER_CANCELLED, 'failed']);
 		}
 		$keyword = trim((string)\Context::get('f_keyword'));
 		if ($keyword !== '')
 		{
 			$args->search_keyword = '%' . $keyword . '%';
 		}
+		$from = trim((string)\Context::get('f_from'));
+		if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from))
+		{
+			$args->from_date = str_replace('-', '', $from) . '000000';
+		}
+		else
+		{
+			$from = '';
+		}
+		$to = trim((string)\Context::get('f_to'));
+		if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $to))
+		{
+			$args->to_date = str_replace('-', '', $to) . '235959';
+		}
+		else
+		{
+			$to = '';
+		}
 		$args->page = max(1, (int)\Context::get('page'));
 		$args->list_count = 20;
 
-		$output = executeQuery('commerce.getOrderList', $args);
+		// 배송 단계 필터 — 단계는 하위주문(commerce_order_seller)에 있어서 조인 쿼리를 쓴다
+		$ship = trim((string)\Context::get('f_ship'));
+		$ship_map = ['to_ship' => 'paid,preparing', 'shipping' => 'shipping', 'delivered' => 'delivered'];
+		$order_query = 'commerce.getOrderList';
+		if (isset($ship_map[$ship]))
+		{
+			$args->ship_status_list = $ship_map[$ship];
+			$order_query = 'commerce.getOrderListByShipStatus';
+		}
+		else
+		{
+			$ship = '';
+		}
+
+		$output = executeQuery($order_query, $args);
 		$orders = ($output->toBool() && !empty($output->data)) ? (is_array($output->data) ? $output->data : [$output->data]) : [];
 
 		// 하위주문 상태(배송 단계)를 함께 표시
@@ -838,10 +978,20 @@ class Admin extends Base
 			$seller_map[(int)$o->order_srl] = count($sellers) ? $sellers[0] : null;
 		}
 
+		// 감춰 둔 만료 주문이 몇 건인지 알려 준다. 사라진 것이 아니라 접혀 있을 뿐임을 보이기 위해
+		$hidden_expired = 0;
+		if ($status === '' && !$show_expired)
+		{
+			$expired_output = executeQuery('commerce.getOrderList', (object)['status_list' => self::ORDER_EXPIRED, 'list_count' => 1, 'page' => 1]);
+			$hidden_expired = (int)($expired_output->page_navigation->total_count ?? 0);
+		}
+
 		\Context::set('orders', $orders);
 		\Context::set('seller_map', $seller_map);
+		\Context::set('hidden_expired', $hidden_expired);
+		\Context::set('is_super_admin', ($this->user->is_admin ?? '') === 'Y');
 		\Context::set('page_navigation', $output->page_navigation ?? null);
-		\Context::set('filters', (object)['status' => $status, 'keyword' => $keyword]);
+		\Context::set('filters', (object)['status' => $status, 'keyword' => $keyword, 'ship' => $ship, 'from' => $from, 'to' => $to, 'expired' => $show_expired ? 'Y' : '']);
 		$this->renderView('orders', 'orders');
 	}
 
@@ -1016,6 +1166,16 @@ class Admin extends Base
 			if ($keyword !== '')
 			{
 				$args->search_keyword = '%' . $keyword . '%';
+			}
+			$from = trim((string)\Context::get('f_from'));
+			if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from))
+			{
+				$args->from_date = str_replace('-', '', $from) . '000000';
+			}
+			$to = trim((string)\Context::get('f_to'));
+			if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $to))
+			{
+				$args->to_date = str_replace('-', '', $to) . '235959';
 			}
 			// 내보내기는 한 화면 분량이 아니라 조건에 맞는 전체가 대상이다
 			$args->page = 1;
@@ -1832,68 +1992,6 @@ class Admin extends Base
 	// 처리
 
 	/**
-	 * 대표 이미지 업로드 (내용 검사 포함).
-	 *
-	 * @param int $item_srl
-	 * @param string $field
-	 * @return ?string
-	 */
-	/**
-	 * 새 상품 등록 화면에서 함께 보낸 옵션들을 등록한다.
-	 *
-	 * 상품을 먼저 저장해야만 옵션을 넣을 수 있던 흐름을 없애기 위한 것으로,
-	 * 이름이 비어 있는 줄은 건너뛴다. 추가상품 가격은 음수를 받지 않는다.
-	 *
-	 * @param int $item_srl
-	 * @return void
-	 */
-	protected function insertPendingOptions(int $item_srl): void
-	{
-		$order = 1;
-		foreach (['basic', 'extra'] as $type)
-		{
-			$labels = (array)\Context::get('new_option_label_' . $type);
-			$prices = (array)\Context::get('new_option_price_' . $type);
-			$stocks = (array)\Context::get('new_option_stock_' . $type);
-
-			foreach ($labels as $i => $label)
-			{
-				$label = trim((string)$label);
-				if ($label === '')
-				{
-					continue;
-				}
-				$price = MoneyModel::inputToMinor($prices[$i] ?? 0);
-				if ($type === 'extra' && $price < 0)
-				{
-					$price = 0;
-				}
-				executeQuery('commerce.insertOption', (object)[
-					'option_srl' => getNextSequence(),
-					'item_srl' => $item_srl,
-					'option_label' => mb_substr($label, 0, 120),
-					'option_type' => $type,
-					'price_add' => $price,
-					'stock' => max(0, (int)($stocks[$i] ?? 0)),
-					'sku' => '',
-					'list_order' => $order++,
-					'status' => 'sale',
-					'regdate' => self::now(),
-				]);
-			}
-		}
-
-		if ($order > 1)
-		{
-			executeQuery('commerce.updateItem', (object)[
-				'item_srl' => $item_srl,
-				'has_options' => 'Y',
-				'last_update' => self::now(),
-			]);
-		}
-	}
-
-	/**
 	 * 상품 이미지 즉시 업로드.
 	 *
 	 * 편집 화면에서 사진을 고르는 즉시 서버에 올려 미리보기를 보여 준다.
@@ -2168,7 +2266,8 @@ class Admin extends Base
 				}
 			}
 			$fields->thumb = $fields->thumb ?? '';
-			$fields->has_options = 'N';
+			// 등록 화면에서 옵션을 먼저 담아 두면 이 srl 로 이미 행이 들어와 있다
+			$fields->has_options = count(ItemModel::getOptions($item_srl)) ? 'Y' : 'N';
 			// 신규 상품은 재고 0으로 시작 — 수량은 재고 관리에서 입고로 채운다
 			$fields->stock = 0;
 			// 진열 순서를 정하지 않았으면 번호를 그대로 쓴다. 오름차순으로 정렬하면
@@ -2179,12 +2278,6 @@ class Admin extends Base
 			}
 			$fields->regdate = self::now();
 			$output = executeQuery('commerce.insertItem', $fields);
-
-			// 등록 화면에서 미리 담아 둔 옵션을 함께 넣는다
-			if ($output->toBool())
-			{
-				$this->insertPendingOptions($item_srl);
-			}
 
 			// 복제: 옵션도 복사
 			if ($output->toBool() && $clone_from > 0)
@@ -2339,12 +2432,20 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		$order = 1;
+		// 목록이 페이지로 잘려 와도 전체 진열 순서가 안 깨지도록,
+		// 제출된 상품들이 원래 갖고 있던 순번 슬롯 안에서만 재배치한다
+		$slots = [];
 		foreach ($srls as $srl)
+		{
+			$sort_item = ItemModel::get($srl);
+			$slots[] = $sort_item ? (int)$sort_item->list_order : 0;
+		}
+		sort($slots);
+		foreach ($srls as $i => $srl)
 		{
 			executeQuery('commerce.updateItem', (object)[
 				'item_srl' => $srl,
-				'list_order' => $order++,
+				'list_order' => $slots[$i],
 				'last_update' => self::now(),
 			]);
 		}

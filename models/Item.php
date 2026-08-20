@@ -140,6 +140,45 @@ class Item
 	}
 
 	/**
+	 * 화면에 찍을 통화의 정가·판매가 (최소단위 정수).
+	 *
+	 * 계산 쪽(effectivePriceIn)과 같은 규칙을 쓴다. 등록가가 있으면 등록가,
+	 * 없으면 설정에 따라 환산가. 표시와 결제 금액이 어긋나지 않게 한 곳에서 정한다.
+	 *
+	 * @param object $item
+	 * @param string $currency
+	 * @return array{price: int, sale_price: int, effective: int, sellable: bool}
+	 */
+	public static function displayPrices(object $item, string $currency): array
+	{
+		$price = (int)($item->price ?? 0);
+		$sale = (int)($item->sale_price ?? 0);
+		$currency = strtoupper(trim($currency));
+
+		if ($currency === '' || $currency === Money::base())
+		{
+			return ['price' => $price, 'sale_price' => $sale, 'effective' => self::effectivePrice($item), 'sellable' => true];
+		}
+
+		$rows = self::getPrices((int)$item->item_srl);
+		if (isset($rows[$currency]))
+		{
+			$price = (int)($rows[$currency]->price ?? 0);
+			$sale = (int)($rows[$currency]->sale_price ?? 0);
+			return ['price' => $price, 'sale_price' => $sale, 'effective' => $sale > 0 ? $sale : $price, 'sellable' => true];
+		}
+
+		if ((Config::getConfig()->currency_fallback ?? 'convert') !== 'convert')
+		{
+			return ['price' => 0, 'sale_price' => 0, 'effective' => 0, 'sellable' => false];
+		}
+
+		$price = max(0, Money::convertMinor($price, $currency));
+		$sale = $sale > 0 ? max(0, Money::convertMinor($sale, $currency)) : 0;
+		return ['price' => $price, 'sale_price' => $sale, 'effective' => $sale > 0 ? $sale : $price, 'sellable' => true];
+	}
+
+	/**
 	 * 지금 판매 가능한가 — 상태 + 판매기간 + 재고까지 종합 판정.
 	 *
 	 * @param object $item

@@ -206,6 +206,26 @@ class Money
 	}
 
 	/**
+	 * 상품 가격 표기 — 소수점 끝이 0 이면 떼고 보여 준다. $200.00 은 $200, $200.50 은 그대로.
+	 *
+	 * 상품 진열에서만 쓴다. 주문서·명세서·원장은 자릿수를 맞춰야 하므로 format() 을 그대로 쓴다.
+	 *
+	 * @param int $minor
+	 * @param string $currency
+	 * @return string
+	 */
+	public static function formatItem(int $minor, string $currency): string
+	{
+		$text = self::format($minor, $currency);
+		if (self::isZeroDecimal($currency))
+		{
+			return $text;
+		}
+		// 소수 두 자리가 모두 0 일 때만 뗀다. 0 을 여러 개 지우면 천 단위 구분('1,000')까지 깎인다
+		return preg_replace('/([.,])00(\D*)$/', '$2', $text);
+	}
+
+	/**
 	 * 기준 통화 금액을 현재 표시 통화로 바꿔 표기한다. 스킨의 가격 출력 공용 헬퍼.
 	 *
 	 * 환율이 없어 환산할 수 없으면 기준 통화로 표기한다 — 가격이 사라지는 것보다 낫다.
@@ -227,6 +247,24 @@ class Money
 			return self::format($amount, $base);
 		}
 		return self::format($minor, $currency);
+	}
+
+	/**
+	 * text() 와 같되 상품 진열용 표기 — 소수점 끝이 0 이면 뗀다.
+	 *
+	 * @param int $amount 기준 통화 최소단위
+	 * @return string
+	 */
+	public static function textItem(int $amount): string
+	{
+		$base = self::base();
+		$currency = self::current();
+		if ($currency === $base)
+		{
+			return self::formatItem($amount, $base);
+		}
+		$minor = self::convertMinor($amount, $currency);
+		return $minor < 0 ? self::formatItem($amount, $base) : self::formatItem($minor, $currency);
 	}
 
 	/**

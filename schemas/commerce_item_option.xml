@@ -12,6 +12,9 @@
 	<column name="stock" type="int" notnull="notnull" default="0" />
 	<column name="sku" type="varchar" size="80" />
 	<column name="list_order" type="int" notnull="notnull" default="0" />
+	<!-- 재고가 이 수 이하로 떨어지면 알린다. 0 = 설정의 기본 기준을 따른다 -->
+	<column name="low_stock" type="int" notnull="notnull" default="0" />
+	<column name="low_stock_alerted" type="char" size="1" notnull="notnull" default="N" />
 	<column name="status" type="char" size="1" notnull="notnull" default="Y" />
 	<column name="regdate" type="char" size="14" />
 </table>

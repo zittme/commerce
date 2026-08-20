@@ -29,7 +29,7 @@
 					</td>
 					<td>{{ sprintf(lang('commerce.st_unit_ea'), count(\Zittme\Modules\Commerce\Models\Promotion::itemSrlsOf((int)$pm->promo_srl))) }}</td>
 					<td style="white-space:nowrap">
-						<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminPromotions', 'promo_srl', $pm->promo_srl) }}">{{ lang('commerce.admin_promotions_12') }}</a>
+						<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminPromotions', 'promo_srl', $pm->promo_srl) }}">{{ lang('commerce.admin_promotions_12') }}</a>
 						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_promo_delete_ask') }}')">
 							<input type="hidden" name="module" value="admin" />
 							<input type="hidden" name="act" value="procCommerceAdminDeletePromotion" />
@@ -49,7 +49,7 @@
 	<div class="rsva-panel">
 		<h3>{{ $promo_edit ? sprintf(lang('commerce.adm_promo_edit'), $promo_edit->title) : lang('commerce.adm_promo_new') }}
 			@if ($promo_edit)
-			<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminPromotions') }}" style="margin-left:10px">{{ lang('commerce.admin_promotions_14') }}</a>
+			<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminPromotions') }}" style="margin-left:10px">{{ lang('commerce.admin_promotions_14') }}</a>
 			@endif
 		</h3>
 		@php $pm_bn = $promo_edit ? json_decode((string)$promo_edit->banner, true) : []; $pm_bn = is_array($pm_bn) ? $pm_bn : []; @endphp

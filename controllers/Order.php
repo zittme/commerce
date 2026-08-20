@@ -37,6 +37,18 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_login_required');
 		}
 
+		// 결제가 끝나지 않은 주문이 있으면 새로 만들지 않는다.
+		// 대기 주문이 쌓이면 그만큼 재고가 묶인다
+		OrderModel::expireStalePending();
+		$open_pending = OrderModel::findOpenPending($member_srl);
+		if ($open_pending)
+		{
+			$this->setMessage('msg_shop_pending_order_exists');
+			$this->setRedirectUrl(getNotEncodedUrl('', 'mid', (string)\Context::get('mid'),
+				'act', 'dispCommerceOrderResult', 'code', $open_pending->order_code));
+			return;
+		}
+
 		// 주문자·배송지
 		$orderer_name = trim((string)\Context::get('orderer_name'));
 		$orderer_phone = trim((string)\Context::get('orderer_phone'));
@@ -104,7 +116,8 @@ class Order extends Base
 			self::filterCountry((string)\Context::get('country')),
 			(string)\Context::get('state'),
 			(string)\Context::get('city'),
-			(int)$item_total
+			// 지역 면제 기준도 무료배송 기준과 같이 등급 할인 전 금액으로 본다
+			(int)($resolved->item_total_listed ?? $item_total)
 		);
 
 		// 재고 원자 선점 — 실패 시 이미 선점한 것 전부 롤백
@@ -248,7 +261,13 @@ class Order extends Base
 				}
 				// 품목 스냅샷(order_item)도 주문 통화로 남아야 한다. KRW 단가가 섞이면
 				// 명세서·환불 계산이 전부 어긋난다.
-				$entry->unit_price = $fx_unit + $fx_add;
+				// 등급 할인은 장바구니에서 기준 통화로 매겨 두므로 여기서 다시 매긴다.
+				// 그러지 않으면 외화 주문만 정가로 결제된다
+				$entry->unit_price = \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn(
+					$fx_unit + $fx_add,
+					$member_srl > 0 ? \Zittme\Modules\Commerce\Models\Grade::discountFor($member_srl) : null,
+					$order_currency
+				);
 				$entry->subtotal = $entry->unit_price * $entry->qty;
 				$fx_item_total += $entry->subtotal;
 			}

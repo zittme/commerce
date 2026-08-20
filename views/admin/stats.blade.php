@@ -14,7 +14,7 @@
 <div class="rsva">
 	<div class="zms-tabs">
 		@foreach ($st_tabs as $key => $label)
-		<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminStats', 't', $key, 'from', $st_from, 'to', $st_to, 'unit', $st_unit) }}" class="{{ $st_tab === $key ? 'is-on' : '' }}">{{ $label }}</a>
+		<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStats', 't', $key, 'from', $st_from, 'to', $st_to, 'unit', $st_unit) }}" class="{{ $st_tab === $key ? 'is-on' : '' }}">{{ $label }}</a>
 		@endforeach
 	</div>
 
@@ -73,7 +73,7 @@
 			<tbody>
 				@foreach ($st_rows as $r)
 				<tr>
-					<td><a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $r->item_srl) }}">{{ $r->item_name }}</a></td>
+					<td><a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $r->item_srl) }}">{{ $r->item_name }}</a></td>
 					<td>{{ number_format($r->qty) }}</td>
 					<td>{{ number_format($r->orders) }}</td>
 					<td>{{ shop_money_base($r->sales) }}</td>

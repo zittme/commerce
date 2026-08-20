@@ -71,12 +71,18 @@ class Front extends Base
 			// badges 는 번호 문자열 컬럼이다. 덮어쓰면 다음 호출에서 형이 어긋난다
 			$shop_item->badge_list = BadgeModel::ofItem($shop_item, $badge_map);
 
-			$listed = (int)($shop_item->sale_price ?? 0) > 0
-				? (int)$shop_item->sale_price
-				: (int)($shop_item->price ?? 0);
-			$graded = \Zittme\Modules\Commerce\Models\Grade::applyDiscount($listed, $grade_discount);
+			// 표시 통화의 값으로 찍는다. 등록가가 있으면 등록가, 없으면 설정에 따라 환산가 —
+			// 주문서·결제와 같은 규칙이라야 상세에서 본 금액과 결제 금액이 어긋나지 않는다
+			$disp = ItemModel::displayPrices($shop_item, $now);
+			$shop_item->disp_currency = $now;
+			$shop_item->disp_price = $disp['price'];
+			$shop_item->disp_sale_price = $disp['sale_price'];
+			$shop_item->disp_effective = $disp['effective'];
+			$shop_item->disp_sellable = $disp['sellable'];
+
+			$graded = \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn($disp['effective'], $grade_discount, $now);
 			// 등급 할인이 실제로 값을 낮췄을 때만 표시를 바꾼다
-			$shop_item->grade_price = $graded < $listed ? $graded : 0;
+			$shop_item->grade_price = $graded < $disp['effective'] ? $graded : 0;
 		}
 	}
 
@@ -643,6 +649,17 @@ class Front extends Base
 		\Context::set('shop_axes', $shop_axes);
 		\Context::set('purchasable', ItemModel::isPurchasable($item));
 		\Context::set('effective_price', ItemModel::effectivePrice($item));
+		// 상세의 금액은 표시 통화 값으로 찍는다. 옵션 추가금도 같은 통화라야 합계가 맞는다
+		$item_disp_currency = MoneyModel::current();
+		$item_disp = ItemModel::displayPrices($item, $item_disp_currency);
+		\Context::set('disp_currency', $item_disp_currency);
+		\Context::set('disp_effective_price', $item_disp['effective']);
+		foreach ($shop_options as $shop_option)
+		{
+			$shop_option->disp_price_add = $item_disp_currency === MoneyModel::base()
+				? (int)$shop_option->price_add
+				: (int)MoneyModel::convertMinor((int)$shop_option->price_add, $item_disp_currency);
+		}
 		\Context::set('adult_ok', ($item->is_adult ?? 'N') !== 'Y' || Order::isAdultVerified($member_srl));
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', self::config());
@@ -691,6 +708,16 @@ class Front extends Base
 		$logged_info = \Context::get('logged_info');
 		$ship_fee = CartModel::calcShipFee($resolved);
 
+		// 결제가 끝나지 않은 주문이 있으면 새로 만들기 전에 그 주문부터 안내한다
+		OrderModel::expireStalePending();
+		$open_pending = OrderModel::findOpenPending(($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0);
+		if ($open_pending)
+		{
+			$open_pending->pending_deadline = OrderModel::pendingDeadline($open_pending);
+			$open_pending->resume_pay_url = OrderModel::resumePayUrl($open_pending);
+		}
+		\Context::set('pending_order', $open_pending);
+
 		// 회원 보유 쿠폰 (지금 주문에 적용 가능한 것만)
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 
@@ -734,6 +761,8 @@ class Front extends Base
 		{
 			$fx_item_total = 0;
 			$fx_ok = true;
+			$fx_member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
+			$fx_discount = $fx_member_srl > 0 ? \Zittme\Modules\Commerce\Models\Grade::discountFor($fx_member_srl) : null;
 			foreach ($valid as $entry)
 			{
 				$fx_unit = \Zittme\Modules\Commerce\Models\Item::effectivePriceIn($entry->item, $fx_currency);
@@ -743,7 +772,10 @@ class Front extends Base
 					$fx_ok = false;
 					break;
 				}
-				$entry->subtotal = ($fx_unit + $fx_add) * $entry->qty;
+				// 등급 할인은 기준 통화로 매겨 둔 값이라, 통화를 바꾸면 다시 매겨야 한다
+				$fx_graded = \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn($fx_unit + $fx_add, $fx_discount, $fx_currency);
+				$entry->unit_price = $fx_graded;
+				$entry->subtotal = $fx_graded * $entry->qty;
 			}
 			if ($fx_ok)
 			{
@@ -924,6 +956,8 @@ class Front extends Base
 		self::clearOrderedFromCart($order);
 
 		\Context::set('order', $order);
+		\Context::set('pending_deadline', OrderModel::pendingDeadline($order));
+		\Context::set('resume_pay_url', OrderModel::resumePayUrl($order));
 		\Context::set('order_items', OrderModel::getItems((int)$order->order_srl));
 		$order_sellers = OrderModel::getSellerOrders((int)$order->order_srl);
 
@@ -963,6 +997,9 @@ class Front extends Base
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 
 		\Zittme\Modules\Commerce\Models\Tracking::syncShipping();
+		// 만료된 결제 대기 주문을 여기서도 정리한다. 관리자 화면에만 맡기면
+		// 아무도 들어가지 않는 동안 재고가 계속 잡혀 있다
+		OrderModel::expireStalePending();
 
 		$orders = [];
 		if ($member_srl > 0)
@@ -978,6 +1015,8 @@ class Front extends Base
 						// 리뷰 작성 버튼: 이 주문건에 아직 리뷰 안 쓴 상품이 있을 때만
 						$row->needs_review = $row->display_status === 'confirmed'
 							&& count(\Zittme\Modules\Commerce\Controllers\Review::unreviewedItems($member_srl, (int)$row->order_srl)) > 0;
+						$row->pending_deadline = OrderModel::pendingDeadline($row);
+						$row->resume_pay_url = OrderModel::resumePayUrl($row);
 						$orders[] = $row;
 					}
 				}

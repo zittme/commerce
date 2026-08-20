@@ -337,6 +337,7 @@ class Stats
 			'to_ship' => (int)$db->query('SELECT COUNT(*) FROM commerce_order_seller WHERE status IN (?, ?)', 'paid', 'preparing')->fetchColumn(),
 			'shipping' => (int)$db->query('SELECT COUNT(*) FROM commerce_order_seller WHERE status = ?', 'shipping')->fetchColumn(),
 			'claims' => (int)$db->query('SELECT COUNT(*) FROM commerce_claim WHERE status = ?', 'requested')->fetchColumn(),
+			'unanswered' => (int)$db->query("SELECT COUNT(*) FROM commerce_inquiry WHERE answer IS NULL OR answer = ''")->fetchColumn(),
 		];
 
 		return (object)[

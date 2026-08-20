@@ -23,7 +23,7 @@
 			@php $co = $order_map[(int)$c->order_srl] ?? null; @endphp
 			<tr>
 				<td>
-					@if ($co)<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $co->order_srl) }}" style="font-weight:700">{{ $co->order_code }}</a>
+					@if ($co)<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $co->order_srl) }}" style="font-weight:700">{{ $co->order_code }}</a>
 					<br /><small style="color:#9aa1ab">{{ shop_money_in($co->payment_price, $co->currency ?? 'KRW') }}</small>@endif
 				</td>
 				<td>{{ ['cancel'=>lang('commerce.st_claim_cancel'),'return'=>lang('commerce.st_claim_return'),'exchange'=>lang('commerce.st_claim_exchange')][$c->claim_type] ?? $c->claim_type }}</td>
@@ -48,5 +48,6 @@
 			@endforeach
 		</tbody>
 	</table>
+	@include('_pagenav', ['pn' => $page_navigation])
 	@endif
 </div>

@@ -158,12 +158,12 @@
 				@endif
 				<span class="shp-price">
 					@if (!empty($it->grade_price))
-					<s>{{ shop_money($it->sale_price > 0 && $it->sale_price < $it->price ? $it->sale_price : $it->price) }}</s>{{ shop_money($it->grade_price) }}
+					<s>{{ shop_item_price($it, 'effective') }}</s>{{ shop_item_price($it, 'grade') }}
 					<em class="shp-grade-tag">{{ $lang->shop_grade ?? '회원 등급' }}</em>
-					@elseif ($it->sale_price > 0 && $it->sale_price < $it->price)
-					<s>{{ shop_money($it->price) }}</s>{{ shop_money($it->sale_price) }}
+					@elseif (shop_item_on_sale($it))
+					<s>{{ shop_item_price($it, 'price') }}</s>{{ shop_item_price($it, 'sale') }}
 					@else
-					{{ shop_money($it->price) }}
+					{{ shop_item_price($it, 'price') }}
 					@endif
 				</span>
 			</span>

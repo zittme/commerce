@@ -19,7 +19,7 @@
 		</select>
 		<input type="text" name="f_keyword" placeholder="{{ lang('commerce.admin_items_11') }}" value="{{ $filters->keyword }}" />
 		<button type="submit" class="rsva-btn">{{ lang('commerce.admin_items_7') }}</button>
-		<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit') }}" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_items_8') }}</a>
+		<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit') }}" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_items_8') }}</a>
 	</form>
 
 	@if (empty($items))
@@ -54,8 +54,8 @@
 				<td>{{ $it->has_options === 'Y' ? 'Y' : '-' }}</td>
 				<td><span class="rsva-st {{ $it->status === 'sale' ? 'rsva-st-confirmed' : ($it->status === 'soldout' ? 'rsva-st-hold' : '') }}">{{ ['sale'=>lang('commerce.st_item_sale'),'soldout'=>lang('commerce.st_item_soldout'),'hidden'=>lang('commerce.st_item_hidden'),'stop'=>lang('commerce.st_item_stop')][$it->status] ?? $it->status }}</span></td>
 				<td>
-					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $it->item_srl) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_items_20') }}</a>
-					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'clone_from', $it->item_srl) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_items_21') }}</a>
+					<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $it->item_srl) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_items_20') }}</a>
+					<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'clone_from', $it->item_srl) }}" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_items_21') }}</a>
 					<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_item_delete_ask') }}')">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminDeleteItem" />
@@ -67,6 +67,7 @@
 			@endforeach
 		</tbody>
 	</table>
+	@include('_pagenav', ['pn' => $page_navigation])
 	@endif
 </div>
 

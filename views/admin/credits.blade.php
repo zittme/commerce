@@ -56,7 +56,7 @@
 					<td><small>{{ zdate($cl->regdate, 'Y.m.d H:i') }}</small></td>
 					<td>
 					{{-- 닉네임 표시, 클릭 시 회원 정보(새 탭) --}}
-					<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispMemberAdminInsert', 'member_srl', $cl->member_srl) }}" target="_blank">{{ $cl->member_name !== '' ? $cl->member_name : ('#' . $cl->member_srl) }}</a>
+					<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispMemberAdminInsert', 'member_srl', $cl->member_srl) }}" target="_blank">{{ $cl->member_name !== '' ? $cl->member_name : ('#' . $cl->member_srl) }}</a>
 				</td>
 					<td style="{{ $cl->amount >= 0 ? 'color:#2677e3' : 'color:#c0392b' }};font-weight:600">{{ $cl->amount >= 0 ? '+' : '' }}{{ shop_money_base($cl->amount) }}</td>
 					<td>{{ shop_money_base($cl->balance_after) }}</td>

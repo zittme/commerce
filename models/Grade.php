@@ -336,6 +336,29 @@ class Grade
 	}
 
 	/**
+	 * 다른 통화의 단가에 등급 할인 적용. 정액 할인은 기준 통화로 정해 두므로
+	 * 그 통화로 환산해 뺀다. 정률은 통화와 무관하다.
+	 *
+	 * @param int $price 그 통화의 최소단위 정수
+	 * @param ?object $discount
+	 * @param string $currency
+	 * @return int
+	 */
+	public static function applyDiscountIn(int $price, ?object $discount, string $currency): int
+	{
+		if (!$discount || $price <= 0)
+		{
+			return max(0, $price);
+		}
+		if ($discount->type !== 'amount')
+		{
+			return self::applyDiscount($price, $discount);
+		}
+		$off = Money::convertMinor((int)$discount->value, $currency);
+		return $off < 0 ? $price : max(0, $price - $off);
+	}
+
+	/**
 	 * 회원에게 적용되는 적립률 % — 등급 적립률 > 기본 설정.
 	 *
 	 * @param int $member_srl

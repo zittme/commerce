@@ -649,24 +649,13 @@ html { scroll-behavior: smooth; }
  * 레이아웃이 문서 뿌리에 data-theme 를 찍는 경로와, 표시가 없어 운영체제 설정만
  * 남는 경로를 모두 정의한다. 한쪽만 두면 다른 경로에서 밝은 색이 남아 글자가 묻힌다.
  */
-:root[data-theme="dark"] .shp {
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp {
 	--shp-brand-soft: rgba(38, 119, 227, .18);
 	--shp-border: #333a45;
 	--shp-text: #e6e9ee;
 	--shp-sub: #9aa3b0;
 	--shp-bg: #161a21;
 	--shp-card: #1c212a;
-}
-
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme="light"]) .shp {
-		--shp-brand-soft: rgba(38, 119, 227, .18);
-		--shp-border: #333a45;
-		--shp-text: #e6e9ee;
-		--shp-sub: #9aa3b0;
-		--shp-bg: #161a21;
-		--shp-card: #1c212a;
-	}
 }
 
 /* 등급 할인으로 낮아진 값임을 알리는 표시 */
@@ -676,46 +665,29 @@ html { scroll-behavior: smooth; }
  * 상태 배지·안내 박스처럼 색을 직접 박은 곳은 토큰으로 안 덮인다.
  * 어두운 화면에서 흰 상자가 남지 않도록 여기서 한 번에 되돌린다.
  */
-:root[data-theme="dark"] .shp .shp-badge.is-soldout,
-:root[data-theme="dark"] .shp .shp-st,
-:root[data-theme="dark"] .shp .shp-chip.is-soldout { background: rgba(255, 255, 255, .08); color: var(--shp-sub); }
-:root[data-theme="dark"] .shp .shp-badge.is-adult,
-:root[data-theme="dark"] .shp .shp-st-cancelled,
-:root[data-theme="dark"] .shp .shp-st-expired { background: rgba(192, 57, 43, .18); color: #ff9b8f; }
-:root[data-theme="dark"] .shp .shp-st-pending,
-:root[data-theme="dark"] .shp .shp-st-preparing,
-:root[data-theme="dark"] .shp .shp-promo-ended { background: rgba(234, 152, 8, .16); color: #f0b34d; }
-:root[data-theme="dark"] .shp .shp-st-shipping { background: rgba(38, 119, 227, .18); color: #7db1f5; }
-:root[data-theme="dark"] .shp .shp-st-confirmed { background: rgba(29, 122, 61, .18); color: #6fce93; }
-:root[data-theme="dark"] .shp .shp-warn { border-color: rgba(234, 152, 8, .45); background: rgba(234, 152, 8, .12); color: var(--shp-text); }
-:root[data-theme="dark"] .shp .shp-review-reward,
-:root[data-theme="dark"] .shp .shp-review-invite { border-color: rgba(38, 119, 227, .38); background: rgba(38, 119, 227, .12); }
-:root[data-theme="dark"] .shp .shp-review-reward { color: #7db1f5; }
-:root[data-theme="dark"] .shp .shp-review-invite-msg strong { color: var(--shp-text); }
-:root[data-theme="dark"] .shp .shp-btn-ghost:hover { background: rgba(255, 255, 255, .06); }
-:root[data-theme="dark"] .shp .shp-track-list li::before,
-:root[data-theme="dark"] .shp .shp-shortcuts::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); }
-:root[data-theme="dark"] .shp .shpRvFile::file-selector-button { border-color: var(--shp-border); color: var(--shp-text); }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-badge.is-soldout,
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-st,
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-chip.is-soldout { background: rgba(255, 255, 255, .08); color: var(--shp-sub); }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-badge.is-adult,
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-st-cancelled,
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-st-expired { background: rgba(192, 57, 43, .18); color: #ff9b8f; }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-st-pending,
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-st-preparing,
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-promo-ended { background: rgba(234, 152, 8, .16); color: #f0b34d; }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-st-shipping { background: rgba(38, 119, 227, .18); color: #7db1f5; }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-st-confirmed { background: rgba(29, 122, 61, .18); color: #6fce93; }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-warn { border-color: rgba(234, 152, 8, .45); background: rgba(234, 152, 8, .12); color: var(--shp-text); }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-review-reward,
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-review-invite { border-color: rgba(38, 119, 227, .38); background: rgba(38, 119, 227, .12); }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-review-reward { color: #7db1f5; }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-review-invite-msg strong { color: var(--shp-text); }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-btn-ghost:hover { background: rgba(255, 255, 255, .06); }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-track-list li::before,
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shp-shortcuts::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); }
+:is(:root[data-theme="dark"], body.color_scheme_dark) .shp .shpRvFile::file-selector-button { border-color: var(--shp-border); color: var(--shp-text); }
 
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme="light"]) .shp .shp-badge.is-soldout,
-	:root:not([data-theme="light"]) .shp .shp-st,
-	:root:not([data-theme="light"]) .shp .shp-chip.is-soldout { background: rgba(255, 255, 255, .08); color: var(--shp-sub); }
-	:root:not([data-theme="light"]) .shp .shp-badge.is-adult,
-	:root:not([data-theme="light"]) .shp .shp-st-cancelled,
-	:root:not([data-theme="light"]) .shp .shp-st-expired { background: rgba(192, 57, 43, .18); color: #ff9b8f; }
-	:root:not([data-theme="light"]) .shp .shp-st-pending,
-	:root:not([data-theme="light"]) .shp .shp-st-preparing,
-	:root:not([data-theme="light"]) .shp .shp-promo-ended { background: rgba(234, 152, 8, .16); color: #f0b34d; }
-	:root:not([data-theme="light"]) .shp .shp-st-shipping { background: rgba(38, 119, 227, .18); color: #7db1f5; }
-	:root:not([data-theme="light"]) .shp .shp-st-confirmed { background: rgba(29, 122, 61, .18); color: #6fce93; }
-	:root:not([data-theme="light"]) .shp .shp-warn { border-color: rgba(234, 152, 8, .45); background: rgba(234, 152, 8, .12); color: var(--shp-text); }
-	:root:not([data-theme="light"]) .shp .shp-review-reward,
-	:root:not([data-theme="light"]) .shp .shp-review-invite { border-color: rgba(38, 119, 227, .38); background: rgba(38, 119, 227, .12); }
-	:root:not([data-theme="light"]) .shp .shp-review-reward { color: #7db1f5; }
-	:root:not([data-theme="light"]) .shp .shp-review-invite-msg strong { color: var(--shp-text); }
-	:root:not([data-theme="light"]) .shp .shp-btn-ghost:hover { background: rgba(255, 255, 255, .06); }
-	:root:not([data-theme="light"]) .shp .shp-track-list li::before,
-	:root:not([data-theme="light"]) .shp .shp-shortcuts::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); }
-	:root:not([data-theme="light"]) .shp .shpRvFile::file-selector-button { border-color: var(--shp-border); color: var(--shp-text); }
-}
+/* 결제가 끝나지 않은 주문 안내 */
+.shp-pending-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; padding: 14px 16px; border: 1px solid #f0c36d; border-radius: 10px; background: #fdf6e6; }
+.shp-pending-msg { flex: 1 1 260px; margin: 0; font-size: 13.5px; line-height: 1.6; color: #8a6100; }
+.shp-pending-row td { background: #fdf6e6; }
+.shp-pending-row .shp-pending-msg { display: block; margin-bottom: 8px; }

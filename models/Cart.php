@@ -211,6 +211,7 @@ class Cart
 	{
 		$items = [];
 		$item_total = 0;
+		$item_total_listed = 0;
 		$tax_free_total = 0;
 
 		// 등급별 상품 할인 — 회원 주문에만 적용, 루프 밖에서 1회 조회
@@ -272,6 +273,9 @@ class Cart
 			if (!$blocked)
 			{
 				$item_total += $subtotal;
+				// 무료배송 기준은 등급 할인 전 금액으로 본다. 할인 때문에 기준을 놓치면
+				// 등급이 오를수록 배송비를 더 내는 뒤집힌 혜택이 된다
+				$item_total_listed += $unit_original * $qty;
 				if (($item->tax_type ?? 'taxable') === 'free')
 				{
 					$tax_free_total += $subtotal;
@@ -279,7 +283,12 @@ class Cart
 			}
 		}
 
-		return (object)['items' => $items, 'item_total' => $item_total, 'tax_free_total' => $tax_free_total];
+		return (object)[
+			'items' => $items,
+			'item_total' => $item_total,
+			'item_total_listed' => $item_total_listed,
+			'tax_free_total' => $tax_free_total,
+		];
 	}
 
 	/**
@@ -407,9 +416,10 @@ class Cart
 			return 0;
 		}
 
-		// 무료배송 기준액
+		// 무료배송 기준액 — 등급 할인 전 금액과 견준다 (배송비 정책은 전체 회원 대상이다)
 		$free_over = (int)($config->free_ship_over ?? 0);
-		if ($free_over > 0 && $resolved->item_total >= $free_over)
+		$judge_total = (int)($resolved->item_total_listed ?? $resolved->item_total);
+		if ($free_over > 0 && $judge_total >= $free_over)
 		{
 			return 0;
 		}

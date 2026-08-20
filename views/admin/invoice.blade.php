@@ -152,8 +152,9 @@
 				@if ($tax->free_supply > 0)
 				<div class="zmi-sum-cell"><span>{{ $tax->zero_rated ? lang('commerce.adm_supply_zero') : lang('commerce.adm_supply_free') }}</span><b>{{ shop_money_in($tax->free_supply, $order->currency ?? 'KRW') }}</b></div>
 				@endif
-				<div class="zmi-sum-cell"><span>{{ lang('commerce.admin_invoice_30') }}</span><b>{{ shop_money_in($tax->delivery_supply, $order->currency ?? 'KRW') }}</b></div>
-				<div class="zmi-sum-cell"><span>{{ lang('commerce.admin_invoice_31') }}</span><b>{{ shop_money_in($tax->total_vat, $order->currency ?? 'KRW') }}</b></div>
+				{{-- 배송비는 받은 금액 그대로 적는다. 공급가액으로 쪼개면 지정한 배송비와 달라 보인다 --}}
+				<div class="zmi-sum-cell"><span>{{ lang('commerce.admin_invoice_33') }}</span><b>{{ shop_money_in($order->delivery_fee_total, $order->currency ?? 'KRW') }}</b></div>
+				<div class="zmi-sum-cell"><span>{{ lang('commerce.admin_invoice_31') }}</span><b>{{ shop_money_in($tax->vat, $order->currency ?? 'KRW') }}</b></div>
 				@else
 				<div class="zmi-sum-cell"><span>{{ lang('commerce.admin_invoice_32') }}</span><b>{{ shop_money_in($order->item_total, $order->currency ?? 'KRW') }}</b></div>
 				<div class="zmi-sum-cell"><span>{{ lang('commerce.admin_invoice_33') }}</span><b>{{ shop_money_in($order->delivery_fee_total, $order->currency ?? 'KRW') }}</b></div>
@@ -169,6 +170,9 @@
 		</div>
 		@if ($show_tax && !$tax->zero_rated)
 		<p class="zmi-taxnote">{{ sprintf($tax->included ? lang('commerce.adm_tax_note_incl') : lang('commerce.adm_tax_note_excl'), (int)round($tax->rate * 100)) }}</p>
+		@if ($order->delivery_fee_total > 0)
+		<p class="zmi-taxnote">{{ $tax->included ? lang('commerce.adm_tax_note_ship_incl') : lang('commerce.adm_tax_note_ship_excl') }}</p>
+		@endif
 		@endif
 
 		@if ($order->memo)

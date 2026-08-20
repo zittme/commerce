@@ -1,0 +1,30 @@
+<query id="getOrderListByShipStatus" action="select">
+	<tables>
+		<table name="commerce_order" />
+		<table name="commerce_order_seller" type="join">
+			<conditions>
+				<condition operation="equal" column="commerce_order.order_srl" default="commerce_order_seller.order_srl" />
+			</conditions>
+		</table>
+	</tables>
+	<columns>
+		<column name="commerce_order.*" />
+	</columns>
+	<conditions>
+		<condition operation="in" column="commerce_order_seller.status" var="ship_status_list" />
+		<condition operation="in" column="commerce_order.status" var="status_list" pipe="and" />
+		<condition operation="more" column="commerce_order.regdate" var="from_date" pipe="and" />
+		<condition operation="less" column="commerce_order.regdate" var="to_date" pipe="and" />
+		<group pipe="and">
+			<condition operation="like" column="commerce_order.orderer_name" var="search_keyword" />
+			<condition operation="like" column="commerce_order.orderer_phone" var="search_keyword" pipe="or" />
+			<condition operation="like" column="commerce_order.order_code" var="search_keyword" pipe="or" />
+		</group>
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="commerce_order.order_srl" order="desc" />
+		<list_count var="list_count" default="20" />
+		<page_count var="page_count" default="10" />
+		<page var="page" default="1" />
+	</navigation>
+</query>

@@ -68,12 +68,16 @@
 			<h2>{{ $item ? lang('commerce.admin_item_edit_151') : (Context::get('clone_from') ? lang('commerce.admin_item_edit_152') : lang('commerce.admin_item_edit_153')) }}</h2>
 			<p>{{ lang('commerce.admin_item_edit_1') }}<span class="ie-req">*</span>{{ lang('commerce.admin_item_edit_2') }}</p>
 		</div>
-		<a href="{{ \Context::get('act') === 'dispCommerceConsole' ? getUrl('', 'act', 'dispCommerceConsole', 'p', 'items') : getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}" class="rsva-btn">{{ lang('commerce.admin_item_edit_3') }}</a>
+		<a href="{{ \Context::get('act') === 'dispCommerceConsole' ? getUrl('', 'act', 'dispCommerceConsole', 'p', 'items') : getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}" class="rsva-btn">{{ lang('commerce.admin_item_edit_3') }}</a>
 	</div>
 
 	{{-- 콘솔에서 열렸으면 저장 후에도 콘솔 주소로 돌아간다 --}}
 	@php $ie_console = \Context::get('act') === 'dispCommerceConsole'; @endphp
-	@php $ie_return = $item ? ($ie_console ? getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'item_edit', 'item_srl', $item->item_srl) : getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item->item_srl)) : ''; @endphp
+	{{-- 저장 전 상품은 옵션 조작이 화면을 떠나므로 입력값을 먼저 저장하고 옵션 자리로 돌아온다 --}}
+	@php $ie_is_new = !$item; @endphp
+	{{-- 저장 전 상품도 미리 발급한 srl 로 옵션을 담는다. 옵션 판은 등록·수정이 같은 srl 을 쓴다 --}}
+	@php $ie_item_srl = $item ? (int)$item->item_srl : (int)$editor_target_srl; @endphp
+	@php $ie_return = $ie_console ? getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'item_edit', 'item_srl', $ie_item_srl) : getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $ie_item_srl); @endphp
 	<form action="{{ getUrl('') }}" method="post" enctype="multipart/form-data" id="ieForm">
 		<input type="hidden" name="module" value="admin" />
 		<input type="hidden" name="act" value="procCommerceAdminInsertItem" />
@@ -132,7 +136,7 @@
 						<option value="{{ $srl }}" @if((int)($item->category_srl ?? 0) === $srl) selected @endif>{{ ($c->depth ?? 0) > 0 ? str_repeat('&nbsp;&nbsp;', $c->depth) . '└ ' : '' }}{{ $c->title }}</option>
 						@endforeach
 					</select>
-					<span class="ie-help">{{ lang('commerce.admin_item_edit_13') }} <a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCategories') }}" style="color:#2677e3">{{ lang('commerce.admin_item_edit_14') }}</a>{{ lang('commerce.admin_item_edit_15') }}</span>
+					<span class="ie-help">{{ lang('commerce.admin_item_edit_13') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminCategories') }}" style="color:#2677e3">{{ lang('commerce.admin_item_edit_14') }}</a>{{ lang('commerce.admin_item_edit_15') }}</span>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_16') }}</label>
@@ -189,7 +193,7 @@
 				<div id="ieStockField">
 					<label>{{ lang('commerce.admin_item_edit_30') }}</label>
 					<div style="padding:10px 0;font-size:15px;font-weight:700">{{ number_format((int)($item->stock ?? 0)) }}{{ lang('commerce.admin_item_edit_154') }}</div>
-					<span class="ie-help">{{ lang('commerce.admin_item_edit_31') }} <a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminStock') }}">{{ lang('commerce.admin_item_edit_27') }}</a> {{ lang('commerce.admin_item_edit_32') }}</span>
+					<span class="ie-help">{{ lang('commerce.admin_item_edit_31') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock') }}">{{ lang('commerce.admin_item_edit_27') }}</a> {{ lang('commerce.admin_item_edit_32') }}</span>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_33') }}</label>
@@ -214,7 +218,7 @@
 						<label><input type="radio" name="ship_fee_type" value="free" @if(($item->ship_fee_type ?? '') === 'free') checked @endif /> {{ lang('commerce.admin_item_edit_37') }}</label>
 						<label><input type="radio" name="ship_fee_type" value="fixed" @if(($item->ship_fee_type ?? '') === 'fixed') checked @endif /> {{ lang('commerce.admin_item_edit_38') }}</label>
 					</div>
-					<span class="ie-help">{{ lang('commerce.admin_item_edit_39') }} <a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminConfig') }}" style="color:#2677e3">{{ lang('commerce.admin_item_edit_40') }}</a>{{ lang('commerce.admin_item_edit_41') }}</span>
+					<span class="ie-help">{{ lang('commerce.admin_item_edit_39') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminConfig') }}" style="color:#2677e3">{{ lang('commerce.admin_item_edit_40') }}</a>{{ lang('commerce.admin_item_edit_41') }}</span>
 				</div>
 				<div id="ieShipFeeField">
 					<label>{{ lang('commerce.admin_item_edit_42') }}</label>
@@ -274,7 +278,7 @@
 						</label>
 						@endforeach
 					</div>
-					<p class="ie-help">{{ lang('commerce.admin_item_edit_56') }} <a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminBadges') }}">{{ lang('commerce.admin_item_edit_57') }}</a>{{ lang('commerce.admin_item_edit_58') }}</p>
+					<p class="ie-help">{{ lang('commerce.admin_item_edit_56') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminBadges') }}">{{ lang('commerce.admin_item_edit_57') }}</a>{{ lang('commerce.admin_item_edit_58') }}</p>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_59') }}</label>
@@ -334,6 +338,8 @@
 		@endif
 
 		<input type="hidden" name="from_console" value="{{ \Context::get('act') === 'dispCommerceConsole' ? 'Y' : 'N' }}" />
+		{{-- 옵션을 먼저 건드리면 이 값을 옵션 자리로 바꿔 저장 후 그 자리로 돌아온다 --}}
+		<input type="hidden" name="success_return_url" id="ieReturnUrl" value="" />
 		<input type="hidden" name="options_json" id="ieOptionsJson" value="" />
 	</form>
 
@@ -370,32 +376,6 @@
 		.ie-opt-ex { margin-top: 3px; padding: 7px 10px; border-radius: 8px; background: #f4f6f9; font-size: 12.5px; color: #6b7684; }
 		.ie-opt-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eef1f5; font-size: 12.5px; color: #b26a00; }
 		</style>
-		@if (!$item)
-		{{-- 새 상품도 옵션을 미리 담아 둘 수 있다. 상품을 저장할 때 함께 등록된다 --}}
-		<div class="ie-newopt" id="ieNewOpt">
-			<div class="ie-newopt-block">
-				<b>{{ lang('commerce.admin_item_edit_99') }} <small>{{ lang('commerce.admin_item_edit_100') }}</small></b>
-				<div class="ie-newopt-rows" data-type="basic"></div>
-				<button type="button" class="rsva-btn rsva-btn-sm" data-add="basic">{{ lang('commerce.admin_item_edit_101') }}</button>
-			</div>
-			<div class="ie-newopt-block">
-				<b>{{ lang('commerce.admin_item_edit_102') }} <small>{{ lang('commerce.admin_item_edit_103') }}</small></b>
-				<div class="ie-newopt-rows" data-type="extra"></div>
-				<button type="button" class="rsva-btn rsva-btn-sm" data-add="extra">{{ lang('commerce.admin_item_edit_104') }}</button>
-			</div>
-			<span class="ie-help">{{ lang('commerce.admin_item_edit_105') }} <b>{{ lang('commerce.admin_item_edit_106') }}</b>{{ lang('commerce.admin_item_edit_107') }}</span>
-		</div>
-		<style>
-		.ie-newopt-block { margin-bottom: 18px; }
-		.ie-newopt-block > b { display: block; margin-bottom: 8px; font-size: 14px; }
-		.ie-newopt-block > b small { font-weight: 500; color: #8b95a1; }
-		.ie-newopt-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
-		.ie-newopt-row input[type="text"] { flex: 1 1 220px; min-width: 0; }
-		.ie-newopt-row input[type="number"] { width: 120px; }
-		.ie-newopt-row .ie-newopt-del { padding: 6px 10px; border: 1px solid #dde3ec; border-radius: 7px; background: #fff; color: #8b95a1; cursor: pointer; }
-		.ie-newopt-row .ie-newopt-del:hover { border-color: #e5484d; color: #e5484d; }
-		</style>
-		@else
 		@php
 		$ie_opt_basic = [];
 		$ie_opt_extra = [];
@@ -426,7 +406,7 @@
 			<input type="hidden" name="act" value="procCommerceAdminUpdateOption" />
 			<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
 			<input type="hidden" name="option_srl" value="{{ $opt->option_srl }}" />
-			<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
+			<input type="hidden" name="item_srl" value="{{ $ie_item_srl }}" />
 			<input type="hidden" name="option_type" value="{{ ($opt->option_type ?? 'basic') === 'extra' ? 'extra' : 'basic' }}" />
 		</form>
 		@endforeach
@@ -483,7 +463,7 @@
 			<div id="ieAxes"></div>
 			<div style="display:flex;gap:8px;align-items:center;margin-top:8px">
 				<button type="button" class="rsva-btn rsva-btn-sm" id="ieAxisAdd">{{ lang('commerce.admin_item_edit_122') }}</button>
-				<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-primary" id="ieComboBuild" data-item="{{ $item->item_srl }}">{{ lang('commerce.admin_item_edit_116') }}</button>
+				<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-primary" id="ieComboBuild" data-item="{{ $ie_item_srl }}">{{ lang('commerce.admin_item_edit_116') }}</button>
 				<small style="color:#8b95a1">{{ lang('commerce.admin_item_edit_123') }}</small>
 			</div>
 			<input type="hidden" name="option_axes" id="ieAxesJson" value="{{ $item->option_axes ?? '' }}" form="ieForm" />
@@ -533,7 +513,7 @@
 								<input type="hidden" name="act" value="procCommerceAdminDeleteOption" />
 								<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
 								<input type="hidden" name="option_srl" value="{{ $opt->option_srl }}" />
-								<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
+								<input type="hidden" name="item_srl" value="{{ $ie_item_srl }}" />
 								<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_item_edit_132') }}</button>
 							</form>
 						</td>
@@ -546,7 +526,7 @@
 				<input type="hidden" name="module" value="admin" />
 				<input type="hidden" name="act" value="procCommerceAdminInsertOption" />
 				<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
-				<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
+				<input type="hidden" name="item_srl" value="{{ $ie_item_srl }}" />
 				<input type="hidden" name="option_type" value="basic" />
 				<div class="rsva-inline">
 					<div style="min-width:240px"><label>{{ lang('commerce.admin_item_edit_128') }}</label><div class="zlf-row-wrap"><input type="text" name="option_label" required placeholder="{{ lang('commerce.admin_item_edit_149') }}" style="width:100%" />@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => '', 'lf_key' => 'optnewbasic'])</div></div>
@@ -583,7 +563,7 @@
 								<input type="hidden" name="act" value="procCommerceAdminDeleteOption" />
 								<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
 								<input type="hidden" name="option_srl" value="{{ $opt->option_srl }}" />
-								<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
+								<input type="hidden" name="item_srl" value="{{ $ie_item_srl }}" />
 								<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_item_edit_132') }}</button>
 							</form>
 						</td>
@@ -596,7 +576,7 @@
 				<input type="hidden" name="module" value="admin" />
 				<input type="hidden" name="act" value="procCommerceAdminInsertOption" />
 				<input type="hidden" name="success_return_url" value="{{ $ie_return }}#ieOptions" />
-				<input type="hidden" name="item_srl" value="{{ $item->item_srl }}" />
+				<input type="hidden" name="item_srl" value="{{ $ie_item_srl }}" />
 				<input type="hidden" name="option_type" value="extra" />
 				<div class="rsva-inline">
 					<div style="min-width:240px"><label>{{ lang('commerce.admin_item_edit_128') }}</label><div class="zlf-row-wrap"><input type="text" name="option_label" required placeholder="{{ lang('commerce.admin_item_edit_150') }}" style="width:100%" />@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => '', 'lf_key' => 'optnewextra'])</div></div>
@@ -607,13 +587,12 @@
 				</div>
 			</form>
 		</div>
-		@endif
 	</div>
 
 	{{-- 저장 바 - 옵션까지 훑은 뒤 저장하도록 옵션 영역 아래에 둔다. 버튼은 form 속성으로 상단 폼을 제출한다 --}}
 	<div class="ie-savebar is-stuck" id="ieSavebar">
 		<button type="submit" form="ieForm" class="rsva-btn rsva-btn-primary">{{ $item ? lang('commerce.admin_item_edit_159') : lang('commerce.admin_item_edit_160') }}</button>
-		<a href="{{ \Context::get('act') === 'dispCommerceConsole' ? getUrl('', 'act', 'dispCommerceConsole', 'p', 'items') : getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}" class="rsva-btn">{{ lang('commerce.admin_item_edit_68') }}</a>
+		<a href="{{ \Context::get('act') === 'dispCommerceConsole' ? getUrl('', 'act', 'dispCommerceConsole', 'p', 'items') : getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItems') }}" class="rsva-btn">{{ lang('commerce.admin_item_edit_68') }}</a>
 		<small>{{ lang('commerce.admin_item_edit_69') }} {{ lang('commerce.admin_item_edit_161') }}</small>
 	</div>
 	<div id="ieSaveSentinel" style="height:1px"></div>
@@ -628,12 +607,20 @@
 		ieForm.addEventListener('submit', function () {
 			var rows = [];
 			document.querySelectorAll('form').forEach(function (f) {
-				var act = f.querySelector('[name=act]');
-				var srl = f.querySelector('[name=option_srl]');
-				if (!act || act.value !== 'procCommerceAdminUpdateOption' || !srl) return;
-				var pick = function (n) { var el = f.querySelector('[name=' + n + ']'); return el ? el.value : ''; };
+				// 행 입력칸은 표 안에 있고 form 속성으로만 이어져 있다.
+				// 폼 안쪽만 뒤지면 잡히지 않으므로 elements 로 읽는다
+				var pick = function (n) {
+					// 같은 이름이 여럿이면(다국어 칸 등) 값이 있는 첫 칸을 쓴다
+					var found = '';
+					Array.prototype.forEach.call(f.elements || [], function (el) {
+						if (el.name === n && found === '' && typeof el.value === 'string') { found = el.value; }
+					});
+					return found;
+				};
+				var srl = pick('option_srl');
+				if (pick('act') !== 'procCommerceAdminUpdateOption' || !srl) return;
 				rows.push({
-					option_srl: srl.value,
+					option_srl: srl,
 					option_label: pick('option_label'),
 					option_type: pick('option_type'),
 					price_add: pick('price_add'),
@@ -1066,36 +1053,46 @@
 })();
 </script>
 
+
+@if ($ie_is_new)
 <script>
 (function () {
-	// 새 상품 등록 화면의 옵션 담기. 저장할 때 상품과 함께 등록된다
-	var wrap = document.getElementById('ieNewOpt');
-	if (!wrap) return;
+	// 저장 전 상품이다. 옵션 조작은 서버로 가면서 화면을 떠나므로,
+	// 먼저 지금까지 입력한 상품을 저장하고 돌아온 뒤 이어서 하게 한다
+	var ieForm = document.getElementById('ieForm');
+	var returnUrl = document.getElementById('ieReturnUrl');
+	// 옵션 판만 가로챈다. 바깥 상자를 잡으면 상품 폼의 저장까지 막힌다
+	var anchor = document.getElementById('ieOptions');
+	var panel = anchor ? anchor.nextElementSibling : null;
+	if (!ieForm || !returnUrl || !panel) return;
 
-	function addRow(type) {
-		var box = wrap.querySelector('.ie-newopt-rows[data-type="' + type + '"]');
-		if (!box) return;
-		var row = document.createElement('div');
-		row.className = 'ie-newopt-row';
-		var priceLabel = type === 'basic' ? {!! json_encode(lang('commerce.admin_item_edit_187')) !!} : {!! json_encode(lang('commerce.admin_item_edit_188')) !!};
-		row.innerHTML =
-			'<input type="text" name="new_option_label_' + type + '[]" placeholder="' +
-				(type === 'basic' ? {!! json_encode(lang('commerce.admin_item_edit_189')) !!} : {!! json_encode(lang('commerce.admin_item_edit_190')) !!}) + '" />' +
-			'<input type="number" name="new_option_price_' + type + '[]" placeholder="' + priceLabel + '" ' +
-				(type === 'extra' ? 'min="0" ' : '') + 'value="0" />' +
-			'<input type="number" name="new_option_stock_' + type + '[]" placeholder="' + {!! json_encode(lang('commerce.admin_item_edit_192')) !!} + '" min="0" value="0" />' +
-			'<button type="button" class="ie-newopt-del" aria-label="' + {!! json_encode(lang('commerce.admin_item_edit_191')) !!} + '">&times;</button>';
-		row.querySelector('.ie-newopt-del').addEventListener('click', function () { row.remove(); });
-		box.appendChild(row);
+	var ASK = {!! json_encode(lang('commerce.admin_item_edit_193')) !!};
+	var optionReturn = {!! json_encode($ie_return . '#ieOptions') !!};
+
+	function saveFirst() {
+		if (!ieForm.reportValidity || ieForm.reportValidity()) {
+			if (!confirm(ASK)) { return; }
+			returnUrl.value = optionReturn;
+			if (typeof ieForm.requestSubmit === 'function') { ieForm.requestSubmit(); }
+			else { ieForm.submit(); }
+		}
 	}
 
-	wrap.addEventListener('click', function (e) {
-		var btn = e.target.closest('[data-add]');
-		if (btn) { addRow(btn.getAttribute('data-add')); }
-	});
+	panel.addEventListener('click', function (e) {
+		var btn = e.target.closest('button');
+		if (!btn || btn.type === 'button' && btn.id !== 'ieComboBuild' && !btn.closest('form')) { return; }
+		if (btn.id === 'ieAxisAdd' || btn.classList.contains('ie-axis-del') || btn.hasAttribute('data-axis-add')) { return; }
+		if (btn.id !== 'ieComboBuild' && btn.type !== 'submit') { return; }
+		e.preventDefault();
+		e.stopPropagation();
+		saveFirst();
+	}, true);
 
-	// 처음 한 줄씩 열어 둔다 — 바로 입력할 수 있게
-	addRow('basic');
-	addRow('extra');
+	panel.addEventListener('submit', function (e) {
+		if (e.target === ieForm) { return; }
+		e.preventDefault();
+		saveFirst();
+	}, true);
 })();
 </script>
+@endif

@@ -2,6 +2,8 @@
 
 namespace Zittme\Modules\Commerce\Models;
 
+use Zittme\Modules\Commerce\Controllers\Base;
+
 /**
  * 재고 처리. 동시 주문에서도 수량이 어긋나지 않게 한다.
  *
@@ -42,7 +44,34 @@ class Stock
 				$qty, $item_srl, 'Y', $qty
 			);
 		}
-		return $stmt !== null && $stmt->rowCount() === 1;
+		$won = $stmt !== null && $stmt->rowCount() === 1;
+		if ($won)
+		{
+			// 주문이 잡아 간 만큼 팔 수 있는 재고가 줄어든다. 이 시점에 기준을 본다
+			self::checkLowStock($item_srl, $option_srl, self::currentStock($item_srl, $option_srl));
+		}
+		return $won;
+	}
+
+	/**
+	 * 지금 남은 재고.
+	 *
+	 * @param int $item_srl
+	 * @param int $option_srl 0 이면 본품
+	 * @return int
+	 */
+	public static function currentStock(int $item_srl, int $option_srl): int
+	{
+		$oDB = \Zittme\Framework\DB::getInstance();
+		$stmt = $option_srl > 0
+			? $oDB->query('SELECT stock FROM commerce_item_option WHERE option_srl = ?', $option_srl)
+			: $oDB->query('SELECT stock FROM commerce_item WHERE item_srl = ?', $item_srl);
+		$row = $stmt ? $stmt->fetchObject() : null;
+		if ($stmt)
+		{
+			$stmt->closeCursor();
+		}
+		return $row ? (int)$row->stock : 0;
 	}
 
 	/**
@@ -75,7 +104,13 @@ class Stock
 				$qty, $item_srl, 'Y'
 			);
 		}
-		return $stmt !== null && $stmt->rowCount() === 1;
+		$won = $stmt !== null && $stmt->rowCount() === 1;
+		if ($won)
+		{
+			// 다시 채워 기준을 넘기면 알림 표시가 풀린다. 그래야 다음에 또 알린다
+			self::checkLowStock($item_srl, $option_srl, self::currentStock($item_srl, $option_srl));
+		}
+		return $won;
 	}
 
 	/**
@@ -176,7 +211,194 @@ class Stock
 		]);
 
 		$result->ok = true;
+		self::checkLowStock($item_srl, $option_srl, $result->stock_after);
 		return $result;
+	}
+
+	/**
+	 * 재고가 기준 아래로 떨어졌는지 보고, 처음 떨어졌을 때 한 번 알린다.
+	 *
+	 * 기준을 다시 넘기면 알림 표시를 풀어, 다음에 또 떨어지면 다시 알린다.
+	 * 주문마다 알림이 쏟아지지 않게 하려는 것이다.
+	 *
+	 * @param int $item_srl
+	 * @param int $option_srl 0 이면 본품 재고
+	 * @param int $stock_after 남은 재고
+	 * @return void
+	 */
+	public static function checkLowStock(int $item_srl, int $option_srl, int $stock_after): void
+	{
+		$config = Base::config();
+		if (($config->notify_low_stock ?? 'Y') !== 'Y')
+		{
+			return;
+		}
+
+		$item = Item::get($item_srl);
+		if (!$item || ($item->use_stock ?? 'Y') !== 'Y')
+		{
+			return;
+		}
+
+		$row = $item;
+		// 알림 문구에도 다국어 코드가 아니라 사람이 읽는 이름이 들어가야 한다
+		$label = Lang::text($item->item_name);
+		if ($option_srl > 0)
+		{
+			$row = null;
+			foreach (Item::getOptions($item_srl) as $opt)
+			{
+				if ((int)$opt->option_srl === $option_srl)
+				{
+					$row = $opt;
+					$label .= ' - ' . Lang::text($opt->option_label);
+					break;
+				}
+			}
+			if (!$row)
+			{
+				return;
+			}
+		}
+
+		$limit = (int)($row->low_stock ?? 0) ?: (int)($config->low_stock_default ?? 0);
+		if ($limit <= 0)
+		{
+			return;
+		}
+
+		$alerted = (string)($row->low_stock_alerted ?? 'N') === 'Y';
+		$low = $stock_after <= $limit;
+		if ($low === $alerted)
+		{
+			return;
+		}
+
+		self::markAlerted($item_srl, $option_srl, $low);
+		if (!$low)
+		{
+			return;
+		}
+
+		$url = getNotEncodedFullUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock', 'f_low', 'Y');
+		Notify::toAdmins(sprintf(lang('commerce.adm_low_stock_notify'), $label, number_format($stock_after)), $url);
+		self::mailLowStock($label, $stock_after, $limit, $url);
+	}
+
+	/**
+	 * 알림 표시 켜고 끄기.
+	 *
+	 * @param int $item_srl
+	 * @param int $option_srl
+	 * @param bool $on
+	 * @return void
+	 */
+	protected static function markAlerted(int $item_srl, int $option_srl, bool $on): void
+	{
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$table = $option_srl > 0 ? 'commerce_item_option' : 'commerce_item';
+		$key = $option_srl > 0 ? 'option_srl' : 'item_srl';
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare(
+			'UPDATE `' . $prefix . $table . '` SET low_stock_alerted = ? WHERE ' . $key . ' = ?'
+		);
+		if ($stmt)
+		{
+			$stmt->execute([$on ? 'Y' : 'N', $option_srl > 0 ? $option_srl : $item_srl]);
+			$stmt->closeCursor();
+		}
+	}
+
+	/**
+	 * 재고 부족 메일. 주문 알림에 쓰는 받는 사람 설정을 그대로 쓴다.
+	 *
+	 * @param string $label
+	 * @param int $stock
+	 * @param int $limit
+	 * @param string $url
+	 * @return void
+	 */
+	protected static function mailLowStock(string $label, int $stock, int $limit, string $url): void
+	{
+		$to = Order::adminRecipients();
+		if (!count($to))
+		{
+			return;
+		}
+
+		$body = sprintf(lang('commerce.adm_low_stock_mail_body'), $label, number_format($stock), number_format($limit)) . "\n\n" . $url;
+		foreach ($to as $address)
+		{
+			try
+			{
+				$mail = new \Zittme\Framework\Mail();
+				$mail->addTo($address);
+				$mail->setSubject(sprintf(lang('commerce.adm_low_stock_mail_subject'), $label));
+				$mail->setBody(nl2br(escape($body)));
+				$mail->send();
+			}
+			catch (\Throwable $e)
+			{
+			}
+		}
+	}
+
+	/**
+	 * 기준 이하로 떨어진 재고 목록. 품절이 먼저, 그다음 모자란 정도가 큰 순서.
+	 *
+	 * @param int $limit
+	 * @return array<int, object> {item_srl, option_srl, label, stock, low_stock}
+	 */
+	public static function lowStockRows(int $limit = 100): array
+	{
+		$config = Base::config();
+		$fallback = max(0, (int)($config->low_stock_default ?? 0));
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$handle = \Zittme\Framework\DB::getInstance()->getHandle();
+
+		$sql = 'SELECT i.item_srl, 0 AS option_srl, i.item_name AS label, i.stock,'
+			. ' CASE WHEN i.low_stock > 0 THEN i.low_stock ELSE ? END AS limit_qty'
+			. ' FROM `' . $prefix . 'commerce_item` i'
+			. " WHERE i.use_stock = 'Y' AND i.has_options = 'N' AND i.status IN ('sale', 'soldout')"
+			. ' AND (CASE WHEN i.low_stock > 0 THEN i.low_stock ELSE ? END) > 0'
+			. ' AND i.stock <= (CASE WHEN i.low_stock > 0 THEN i.low_stock ELSE ? END)'
+			. ' UNION ALL '
+			. ' SELECT i.item_srl, o.option_srl, CONCAT(i.item_name, \' - \', o.option_label) AS label, o.stock,'
+			. ' CASE WHEN o.low_stock > 0 THEN o.low_stock ELSE ? END AS limit_qty'
+			. ' FROM `' . $prefix . 'commerce_item_option` o'
+			. ' JOIN `' . $prefix . 'commerce_item` i ON i.item_srl = o.item_srl'
+			. " WHERE i.use_stock = 'Y' AND o.status = 'Y' AND i.status IN ('sale', 'soldout')"
+			. ' AND (CASE WHEN o.low_stock > 0 THEN o.low_stock ELSE ? END) > 0'
+			. ' AND o.stock <= (CASE WHEN o.low_stock > 0 THEN o.low_stock ELSE ? END)'
+			. ' ORDER BY stock ASC, limit_qty DESC LIMIT ' . max(1, $limit);
+
+		$stmt = $handle->prepare($sql);
+		if (!$stmt || !$stmt->execute(array_fill(0, 6, $fallback)))
+		{
+			return [];
+		}
+		$rows = $stmt->fetchAll(\PDO::FETCH_OBJ);
+		$stmt->closeCursor();
+		if (!$rows)
+		{
+			return [];
+		}
+
+		// 상품명·옵션명에 다국어 코드를 걸어 두었으면 지금 언어 문구로 바꿔 준다
+		foreach ($rows as $row)
+		{
+			$row->label = Lang::text($row->label);
+		}
+		return $rows;
+	}
+
+	/**
+	 * 기준 이하인 재고 건수.
+	 *
+	 * @return int
+	 */
+	public static function lowStockCount(): int
+	{
+		return count(self::lowStockRows(500));
 	}
 
 	/**

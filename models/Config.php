@@ -55,6 +55,9 @@ class Config
 		'credit_rate' => 1,
 		// 최소 사용 단위 (0 = 제한 없음)
 		'credit_min_use' => 0,
+		// 재고 부족 알림 — 줄마다 기준을 정하지 않았을 때 쓰는 기본값. 0 = 알리지 않음
+		'low_stock_default' => 5,
+		'notify_low_stock' => 'Y',
 		// 알림
 		'notify_admin' => 'N',
 		// 관리자 알림 받는 메일. 쉼표나 줄바꿈으로 여러 개

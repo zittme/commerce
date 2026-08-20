@@ -25,6 +25,25 @@
 					<td>@php $shp_ds = $o->display_status ?? $o->status; @endphp<span class="shp-st shp-st-{{ $shp_ds }}">{{ $lang->{'shop_status_' . $shp_ds} ?? $shp_ds }}</span></td>
 					<td style="white-space:nowrap"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code) }}" style="color:#2677e3;font-weight:600">{{ $lang->shop_view }}</a>@if ($shp_ds === 'confirmed' && !empty($o->needs_review)) <a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code, 'review', '1') }}" style="color:#1d7a3d;font-weight:600;margin-left:8px">{{ $lang->shop_write_review }}</a>@endif</td>
 				</tr>
+				@if ($shp_ds === 'pending')
+				<tr class="shp-pending-row">
+					<td colspan="4">
+						<p class="shp-pending-msg">{{ !empty($o->pending_deadline) ? sprintf($lang->shop_pending_notice, zdate($o->pending_deadline, 'Y.m.d A g:i')) : $lang->shop_pending_notice_nodate }}</p>
+						@if (!empty($o->resume_pay_url))
+						<a class="shp-btn shp-btn-primary shp-btn-sm" href="{{ escape($o->resume_pay_url) }}">{{ $lang->shop_resume_pay }}</a>
+						@else
+						<span class="shp-pending-msg">{{ $lang->shop_pending_expired }}</span>
+						@endif
+						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ $lang->shop_pending_cancel_ask }}')">
+							<input type="hidden" name="module" value="commerce" />
+							<input type="hidden" name="mid" value="{{ $mid }}" />
+							<input type="hidden" name="act" value="procCommerceClaim" />
+							<input type="hidden" name="order_code" value="{{ $o->order_code }}" />
+							<button type="submit" class="shp-btn shp-btn-sm">{{ $lang->shop_cancel_order }}</button>
+						</form>
+					</td>
+				</tr>
+				@endif
 				@endforeach
 			</tbody>
 		</table>

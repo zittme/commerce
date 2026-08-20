@@ -4,6 +4,18 @@
 <div class="shp shp-narrow">
 	<div class="shp-top"><h2 class="shp-title">{{ $lang->shop_order_detail }}</h2></div>
 
+	@if ($order->status === 'pending')
+	@php $shp_deadline = Context::get('pending_deadline'); $shp_resume = Context::get('resume_pay_url'); @endphp
+	<div class="shp-pending-box">
+		<p class="shp-pending-msg">{{ $shp_deadline ? sprintf($lang->shop_pending_notice, zdate($shp_deadline, 'Y.m.d A g:i')) : $lang->shop_pending_notice_nodate }}</p>
+		@if ($shp_resume)
+		<a class="shp-btn shp-btn-primary" href="{{ escape($shp_resume) }}">{{ $lang->shop_resume_pay }}</a>
+		@else
+		<p class="shp-pending-msg">{{ $lang->shop_pending_expired }}</p>
+		@endif
+	</div>
+	@endif
+
 	@php $shp_unrv = Context::get('unreviewed_items') ?: []; @endphp
 	@if (count($shp_unrv))
 	<div class="shp-review-invite {{ Context::get('review') ? 'is-hot' : '' }}">

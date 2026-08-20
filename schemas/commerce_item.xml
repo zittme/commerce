@@ -15,6 +15,10 @@
 	-->
 	<column name="stock" type="int" notnull="notnull" default="0" />
 	<column name="use_stock" type="char" size="1" notnull="notnull" default="Y" />
+	<!-- 재고가 이 수 이하로 떨어지면 알린다. 0 = 설정의 기본 기준을 따른다 -->
+	<column name="low_stock" type="int" notnull="notnull" default="0" />
+	<!-- 이미 알린 상태인지. 다시 채워 기준을 넘기면 풀려서 다음에 또 알린다 -->
+	<column name="low_stock_alerted" type="char" size="1" notnull="notnull" default="N" />
 	<column name="summary" type="varchar" size="250" />
 	<column name="content" type="bigtext" />
 	<column name="thumb" type="varchar" size="250" />

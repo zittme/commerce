@@ -32,6 +32,11 @@ class Console extends Admin
 		'grades' => 'dispCommerceAdminGrades',
 		'stats' => 'dispCommerceAdminStats',
 		'config' => 'dispCommerceAdminConfig',
+		'config_shipping' => 'dispCommerceAdminConfig',
+		'config_display' => 'dispCommerceAdminConfig',
+		'config_rewards' => 'dispCommerceAdminConfig',
+		'config_notify' => 'dispCommerceAdminConfig',
+		'config_policy' => 'dispCommerceAdminConfig',
 	];
 
 	/**

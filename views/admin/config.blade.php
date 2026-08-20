@@ -1,7 +1,37 @@
 @include('_tabs')
 @include('_langfield_assets')
 
+@php
+// 설정은 성격별로 별도 콘솔 페이지로 나뉜다. zmc_page(config_*)가 어느 구획인지 정한다
+$cfg_section_map = ['config' => 'general', 'config_shipping' => 'shipping', 'config_display' => 'display', 'config_rewards' => 'rewards', 'config_notify' => 'notify', 'config_policy' => 'policy'];
+$cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
+@endphp
 <div class="rsva">
+	<style>
+	.zmc-cfg-bar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+	.zmc-cfg-help-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #6b7684; cursor: pointer; }
+	.rsva:not(.zmc-show-help) .zmc-help { display: none !important; }
+	</style>
+	<div class="zmc-cfg-bar">
+		<label class="zmc-cfg-help-toggle"><input type="checkbox" id="zmcCfgHelp" /> {{ lang('commerce.cfg_show_help') }}</label>
+	</div>
+	<script>
+	(function () {
+		// 설명 문구는 기본 숨김. 토글 상태는 브라우저에 기억한다
+		var toggle = document.getElementById('zmcCfgHelp');
+		var wrap = toggle.closest('.rsva');
+		function apply(on) { wrap.classList.toggle('zmc-show-help', on); toggle.checked = on; }
+		var saved = false;
+		try { saved = localStorage.getItem('zmcCfgHelp') === '1'; } catch (e) {}
+		apply(saved);
+		toggle.addEventListener('change', function () {
+			apply(toggle.checked);
+			try { localStorage.setItem('zmcCfgHelp', toggle.checked ? '1' : '0'); } catch (e) {}
+		});
+	})();
+	</script>
+
+	@if ($cfg_section === 'general')
 	<form action="{{ getUrl('') }}" method="post">
 		<input type="hidden" name="module" value="admin" />
 		<input type="hidden" name="act" value="procCommerceAdminInsertConfig" />
@@ -16,7 +46,14 @@
 				<div><label>{{ lang('commerce.admin_config_12') }}</label><input type="number" name="pending_minutes" min="10" max="1440" value="{{ $shop_config->pending_minutes }}" /></div>
 			</div>
 		</div>
+		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
+	</form>
+	@endif
 
+	@if ($cfg_section === 'shipping')
+	<form action="{{ getUrl('') }}" method="post">
+		<input type="hidden" name="module" value="admin" />
+		<input type="hidden" name="act" value="procCommerceAdminInsertConfig" />
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_13') }}</h3>
 			<div class="rsva-form-grid">
@@ -27,7 +64,7 @@
 			</div>
 			<div style="margin-top:16px">
 				<label style="font-weight:700">{{ lang('commerce.admin_config_20') }}</label>
-				<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1;line-height:1.7">
+				<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1;line-height:1.7">
 					{{ lang('commerce.admin_config_21') }}
 					<a href="https://tracking.sweettracker.co.kr" target="_blank" rel="noopener" style="color:#2677e3">{{ lang('commerce.admin_config_22') }}</a>{{ lang('commerce.cfg_track_note1') }}
 					{{ lang('commerce.cfg_track_note2') }}
@@ -37,7 +74,7 @@
 			</div>
 			<div style="margin-top:16px">
 				<label style="font-weight:700">{{ lang('commerce.admin_config_26') }}</label>
-				<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1;line-height:1.7">
+				<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1;line-height:1.7">
 					{{ lang('commerce.cfg_zone_note') }}
 				</p>
 				<div id="zmcZoneRows"></div>
@@ -45,7 +82,14 @@
 				<input type="hidden" name="ship_extra_zones" id="zmcZonesJson" value="{{ $zmc_zones_display }}" />
 			</div>
 		</div>
+		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
+	</form>
+	@endif
 
+	@if ($cfg_section === 'display')
+	<form action="{{ getUrl('') }}" method="post">
+		<input type="hidden" name="module" value="admin" />
+		<input type="hidden" name="act" value="procCommerceAdminInsertConfig" />
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_29') }}</h3>
 			<div class="rsva-form-grid">
@@ -54,14 +98,19 @@
 				<div><label>{{ lang('commerce.admin_config_36') }}</label><input type="number" name="home_count" min="4" max="24" value="{{ $shop_config->home_count ?? 8 }}" /></div>
 			</div>
 			<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:13.5px">
+				{{-- 해제 상태도 저장되도록 hidden N 을 먼저 둔다 (뒤의 체크 값이 이긴다) --}}
+				<input type="hidden" name="home_show_recommend" value="N" />
 				<label><input type="checkbox" name="home_show_recommend" value="Y" @if(($shop_config->home_show_recommend ?? 'Y') === 'Y') checked @endif /> {{ lang('commerce.admin_config_37') }}</label>
+				<input type="hidden" name="home_show_new" value="N" />
 				<label><input type="checkbox" name="home_show_new" value="Y" @if(($shop_config->home_show_new ?? 'Y') === 'Y') checked @endif /> {{ lang('commerce.admin_config_38') }}</label>
+				<input type="hidden" name="home_show_popular" value="N" />
 				<label><input type="checkbox" name="home_show_popular" value="Y" @if(($shop_config->home_show_popular ?? 'Y') === 'Y') checked @endif /> {{ lang('commerce.admin_config_39') }}</label>
+				<input type="hidden" name="home_show_sale" value="N" />
 				<label><input type="checkbox" name="home_show_sale" value="Y" @if(($shop_config->home_show_sale ?? 'Y') === 'Y') checked @endif /> {{ lang('commerce.admin_config_40') }}</label>
 			</div>
 			<div style="margin-top:16px">
 				<label style="font-weight:700">{{ lang('commerce.admin_config_41') }}</label>
-				<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_config_42') }}</p>
+				<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_config_42') }}</p>
 				<style>
 				/* 배너 한 건 = 카드. 프론트 편집 패널과 같은 항목을 담는다 */
 				.zmc-banner-card { position: relative; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid #e5e8ee; border-radius: 12px; background: #fbfcfd; }
@@ -101,7 +150,14 @@
 				<input type="hidden" name="home_banners" id="zmcBannersJson" value="{{ $shop_config->home_banners ?? '[]' }}" />
 			</div>
 		</div>
+		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
+	</form>
+	@endif
 
+	@if ($cfg_section === 'rewards')
+	<form action="{{ getUrl('') }}" method="post">
+		<input type="hidden" name="module" value="admin" />
+		<input type="hidden" name="act" value="procCommerceAdminInsertConfig" />
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_44') }}</h3>
 			<div class="rsva-form-grid">
@@ -110,14 +166,23 @@
 				<div><label>{{ lang('commerce.admin_config_47') }}</label><input type="number" name="review_credit_text" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($shop_config->review_credit_text ?? 0)) }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_48') }}</label><input type="number" name="review_credit_photo" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($shop_config->review_credit_photo ?? 0)) }}" /></div>
 			</div>
-			<p style="margin:8px 0 0;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_config_49') }}</p>
+			<p class="zmc-help" style="margin:8px 0 0;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_config_49') }}</p>
 		</div>
+		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
+	</form>
+	@endif
 
-		<div class="rsva-panel">
-			<h3>{{ lang('commerce.cfg_payment') }} {{ $pay_available ? '' : ': ' . lang('commerce.cfg_pay_missing') }}</h3>
-			<p style="margin:0;font-size:13px;color:#6b7684">{{ lang('commerce.admin_config_50') }}</p>
-		</div>
+	@if ($cfg_section === 'policy')
+	<div class="rsva-panel">
+		<h3>{{ lang('commerce.cfg_payment') }} {{ $pay_available ? '' : ': ' . lang('commerce.cfg_pay_missing') }}</h3>
+		<p style="margin:0;font-size:13px;color:#6b7684">{{ lang('commerce.admin_config_50') }}</p>
+	</div>
+	@endif
 
+	@if ($cfg_section === 'notify')
+	<form action="{{ getUrl('') }}" method="post">
+		<input type="hidden" name="module" value="admin" />
+		<input type="hidden" name="act" value="procCommerceAdminInsertConfig" />
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_51') }}</h3>
 			<div class="rsva-form-grid">
@@ -128,7 +193,7 @@
 				<div>
 					<label>{{ lang('commerce.admin_config_58') }}</label>
 					<input type="text" name="notify_admin_email" value="{{ $shop_config->notify_admin_email }}" style="min-width:280px" />
-					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_notify_email_help') }}</p>
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_notify_email_help') }}</p>
 				</div>
 				<div>
 					<label>{{ lang('commerce.shop_notify_group') }}</label>
@@ -138,7 +203,13 @@
 						<option value="{{ $ng->group_srl }}" @if((int)($shop_config->notify_admin_group ?? 0) === (int)$ng->group_srl) selected @endif>{{ Context::replaceUserLang($ng->title, true) }}</option>
 						@endforeach
 					</select>
-					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_notify_group_help') }}</p>
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_notify_group_help') }}</p>
+				</div>
+				<div><label>{{ lang('commerce.cfg_notify_low_stock') }}</label><select name="notify_low_stock"><option value="Y" @if(($shop_config->notify_low_stock ?? 'Y') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->notify_low_stock ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select></div>
+				<div>
+					<label>{{ lang('commerce.cfg_low_stock_default') }}</label>
+					<input type="number" name="low_stock_default" min="0" max="9999" value="{{ (int)($shop_config->low_stock_default ?? 0) }}" style="width:110px" />
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.cfg_low_stock_default_help') }}</p>
 				</div>
 			</div>
 
@@ -164,10 +235,17 @@
 				@endforeach
 			</div>
 		</div>
+		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
+	</form>
+	@endif
 
+	@if ($cfg_section === 'policy')
+	<form action="{{ getUrl('') }}" method="post">
+		<input type="hidden" name="module" value="admin" />
+		<input type="hidden" name="act" value="procCommerceAdminInsertConfig" />
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_59') }}</h3>
-			<p class="rsva-hint">{{ lang('commerce.admin_config_60') }}</p>
+			<p class="rsva-hint zmc-help">{{ lang('commerce.admin_config_60') }}</p>
 			<div class="rsva-form-grid">
 				<div><label>{{ lang('commerce.admin_config_61') }}</label><div class="zlf-row-wrap"><input type="text" name="biz_name" maxlength="100" value="{{ $shop_config->biz_name }}" />@include('_langfield', ['lf_name' => 'biz_name', 'lf_value' => $shop_config->biz_name_raw ?? $shop_config->biz_name, 'lf_key' => 'cfgbizname'])</div></div>
 				<div><label>{{ lang('commerce.admin_config_62') }}</label><input type="text" name="biz_ceo" maxlength="60" value="{{ $shop_config->biz_ceo }}" /></div>
@@ -177,7 +255,7 @@
 				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_66') }}</label><div class="zlf-row-wrap"><textarea name="biz_note" rows="2">{{ $shop_config->biz_note }}</textarea>@include('_langfield', ['lf_name' => 'biz_note', 'lf_value' => $shop_config->biz_note_raw ?? $shop_config->biz_note, 'lf_key' => 'cfgbiznote'])</div></div>
 				<div style="grid-column:1/-1">
 					<label>{{ lang('commerce.cfg_biz_logo') }}</label>
-					<p class="zmc-hint">{{ lang('commerce.cfg_biz_logo_note') }}</p>
+					<p class="zmc-hint zmc-help">{{ lang('commerce.cfg_biz_logo_note') }}</p>
 					<div class="zmc-logo-row">
 						<span class="zmc-logo-thumb @if (empty($shop_config->biz_logo)) is-empty @endif" id="zmcLogoThumb" @if (!empty($shop_config->biz_logo)) style="background-image:url('{{ $shop_config->biz_logo }}')" @endif></span>
 						<span class="zmc-logo-acts">
@@ -193,7 +271,7 @@
 
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_67') }}</h3>
-			<p class="rsva-hint">{{ lang('commerce.admin_config_68') }}</p>
+			<p class="rsva-hint zmc-help">{{ lang('commerce.admin_config_68') }}</p>
 			<div class="rsva-form-grid">
 				<div>
 					<label>{{ lang('commerce.admin_config_69') }}</label>
@@ -218,7 +296,7 @@
 						<option value="{{ $bc_code }}" @if(($shop_config->base_country ?? 'KR') === $bc_code) selected @endif>{{ $bc_name }}</option>
 						@endforeach
 					</select>
-					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_base_country_help') }}</p>
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_base_country_help') }}</p>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_config_77') }}</label>
@@ -241,12 +319,12 @@
 						<option value="N" @if(($shop_config->require_state ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.shop_require_state_off') }}</option>
 						<option value="Y" @if(($shop_config->require_state ?? 'N') === 'Y') selected @endif>{{ lang('commerce.shop_require_state_on') }}</option>
 					</select>
-					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_require_state_help') }}</p>
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_require_state_help') }}</p>
 				</div>
 				<div>
 					<label>{{ lang('commerce.shop_auto_confirm') }}</label>
 					<input type="number" name="auto_confirm_days" min="0" max="365" step="1" value="{{ (int)($shop_config->auto_confirm_days ?? 0) }}" style="width:110px" />
-					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_auto_confirm_help') }}</p>
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_auto_confirm_help') }}</p>
 					<p style="margin:4px 0 8px;font-size:12.5px;color:#c0392b">{{ lang('commerce.shop_auto_confirm_warn') }}</p>
 				</div>
 				<div>
@@ -262,7 +340,7 @@
 						<option value="Y" @if(($shop_config->use_credit ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.shop_use_on') }}</option>
 						<option value="N" @if(($shop_config->use_credit ?? 'Y') === 'N') selected @endif>{{ lang('commerce.shop_use_off') }}</option>
 					</select>
-					<p style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_use_credit_help') }}</p>
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.shop_use_credit_help') }}</p>
 				</div>
 				<div>
 					<label>{{ lang('commerce.shop_address_mode') }}</label>
@@ -277,7 +355,7 @@
 					{{-- 통화 선택은 짓미페이 기본 설정 한 곳에서만 한다 --}}
 					@php
 					// 출력식 안에서 HTML 을 조립하면 템플릿이 style 속성을 코드로 읽는다. 여기서 만든다
-					$cfg_pay_link = '<a href="' . escape(getUrl('', 'module', 'admin', 'act', 'dispZittme_payAdminConfig')) . '" class="zmc-pay-link">' . escape(lang('commerce.cfg_pay_settings')) . '</a>';
+					$cfg_pay_link = '<a href="' . escape(getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispZittme_payAdminConfig')) . '" class="zmc-pay-link">' . escape(lang('commerce.cfg_pay_settings')) . '</a>';
 					$cfg_currency_note = sprintf(escape(lang('commerce.cfg_currency_from')), $cfg_pay_link);
 					@endphp
 					<div style="padding:8px 0;color:#6b7684;font-size:13px">
@@ -293,14 +371,16 @@
 					</select>
 				</div>
 			</div>
-			<p class="rsva-hint">{{ lang('commerce.about_shop_address_mode') }}</p>
-			<p class="rsva-hint">{{ lang('commerce.about_shop_currencies') }}</p>
-			<p class="rsva-hint">{{ lang('commerce.admin_config_80') }}</p>
+			<p class="rsva-hint zmc-help">{{ lang('commerce.about_shop_address_mode') }}</p>
+			<p class="rsva-hint zmc-help">{{ lang('commerce.about_shop_currencies') }}</p>
+			<p class="rsva-hint zmc-help">{{ lang('commerce.admin_config_80') }}</p>
 		</div>
 
 		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
 	</form>
+	@endif
 
+	@if ($cfg_section === 'display')
 	<div class="rsva-panel" style="margin-top:18px">
 		<h3>{{ lang('commerce.admin_config_82') }}</h3>
 		@if ($shop_instance)
@@ -351,6 +431,7 @@
 		<p class="rsva-empty">{{ lang('commerce.admin_config_89') }}</p>
 		@endif
 	</div>
+	@endif
 
 	<script>
 	(function () {
@@ -512,7 +593,37 @@
 		initial.forEach(addRow);
 		if (addBtn) addBtn.addEventListener('click', function () { addRow(); });
 
-		// 지역 추가 배송비 편집 (배너와 같은 방식)
+		var form = jsonEl.closest('form');
+		if (form) {
+			form.addEventListener('submit', function () {
+				var out = [];
+				rowsEl.querySelectorAll('.zmc-banner-card').forEach(function (row) {
+					var item = {};
+					Object.keys(row.zmcExtra || {}).forEach(function (k) { item[k] = row.zmcExtra[k]; });
+					item.image = row.querySelector('[data-k=image]').value.trim();
+					item.point_image = row.querySelector('[data-k=point_image]').value.trim();
+					item.url = row.querySelector('[data-k=url]').value.trim();
+					item.bg_type = row.querySelector('[data-k=bg_type]').value;
+					item.bg_color = row.querySelector('[data-k=bg_color]').value;
+					item.bg_color2 = row.querySelector('[data-k=bg_color2]').value;
+					item.text_color = row.querySelector('[data-k=text_color]').value;
+					item.shadow = row.querySelector('[data-k=shadow]').checked ? 'Y' : 'N';
+					delete item.bg_type_before;
+					// 다국어를 연결했으면 코어 규약값으로, 아니면 입력한 글자 그대로
+					['title', 'text'].forEach(function (key) {
+						var code = row.querySelector('[data-k=' + key + '_code]').value.trim();
+						item[key] = code ? (LANG_PREFIX + code) : row.querySelector('[data-k=' + key + ']').value.trim();
+					});
+					if (item.image || item.title || item.text || item.point_image) out.push(item);
+				});
+				jsonEl.value = JSON.stringify(out);
+			});
+		}
+	})();
+	</script>
+	<script>
+	(function () {
+		// 지역 추가 배송비 편집 (배너와 같은 방식) — 배송 페이지에서만 요소가 존재한다
 		var zoneRows = document.getElementById('zmcZoneRows');
 		var zonesJson = document.getElementById('zmcZonesJson');
 		var zoneAdd = document.getElementById('zmcZoneAdd');
@@ -598,62 +709,37 @@
 
 			zoneRows.appendChild(row);
 		}
-		if (zoneRows && zonesJson) {
-			var zoneInitial = [];
-			try { zoneInitial = JSON.parse(zonesJson.value) || []; } catch (e) {}
-			zoneInitial.forEach(addZone);
-			if (zoneAdd) zoneAdd.addEventListener('click', function () { addZone(); });
-		}
+		if (!zoneRows || !zonesJson) return;
+		var zoneInitial = [];
+		try { zoneInitial = JSON.parse(zonesJson.value) || []; } catch (e) {}
+		zoneInitial.forEach(addZone);
+		if (zoneAdd) zoneAdd.addEventListener('click', function () { addZone(); });
 
-		var form = jsonEl.closest('form');
-		if (form) {
-			form.addEventListener('submit', function () {
-				var out = [];
-				rowsEl.querySelectorAll('.zmc-banner-card').forEach(function (row) {
-					var item = {};
-					Object.keys(row.zmcExtra || {}).forEach(function (k) { item[k] = row.zmcExtra[k]; });
-					item.image = row.querySelector('[data-k=image]').value.trim();
-					item.point_image = row.querySelector('[data-k=point_image]').value.trim();
-					item.url = row.querySelector('[data-k=url]').value.trim();
-					item.bg_type = row.querySelector('[data-k=bg_type]').value;
-					item.bg_color = row.querySelector('[data-k=bg_color]').value;
-					item.bg_color2 = row.querySelector('[data-k=bg_color2]').value;
-					item.text_color = row.querySelector('[data-k=text_color]').value;
-					item.shadow = row.querySelector('[data-k=shadow]').checked ? 'Y' : 'N';
-					delete item.bg_type_before;
-					// 다국어를 연결했으면 코어 규약값으로, 아니면 입력한 글자 그대로
-					['title', 'text'].forEach(function (key) {
-						var code = row.querySelector('[data-k=' + key + '_code]').value.trim();
-						item[key] = code ? (LANG_PREFIX + code) : row.querySelector('[data-k=' + key + ']').value.trim();
+		var zoneForm = zonesJson.closest('form');
+		if (zoneForm) {
+			zoneForm.addEventListener('submit', function () {
+				var zones = [];
+				zoneRows.querySelectorAll('.zmc-zone-row').forEach(function (row) {
+					var zoneCountry = row.querySelector('[data-k=country]').value.trim().toUpperCase();
+					var isKR = zoneCountry === 'KR';
+					var zone = {
+						country: zoneCountry,
+						region: row.querySelector('[data-k=region]').value.trim(),
+						zips: isKR ? row.querySelector('[data-k=zips]').value.trim() : '',
+						fee: row.querySelector('[data-k=fee]').value.trim(),
+						tiers: []
+					};
+					row.querySelectorAll('.zmc-tier').forEach(function (t) {
+						var from = t.querySelector('[data-t=from]').value.trim();
+						var tfee = t.querySelector('[data-t=fee]').value.trim();
+						if (from !== '' && tfee !== '') zone.tiers.push({ from: from, fee: tfee });
 					});
-					if (item.image || item.title || item.text || item.point_image) out.push(item);
+					// 국내는 시·도나 우편번호 중 하나는 있어야 하고, 해외는 국가만으로 성립한다
+					var hasRule = isKR ? (zone.region || zone.zips) : !!zoneCountry;
+					var hasFee = parseFloat(zone.fee) > 0 || zone.tiers.length > 0;
+					if (hasRule && hasFee) zones.push(zone);
 				});
-				jsonEl.value = JSON.stringify(out);
-
-				if (zoneRows && zonesJson) {
-					var zones = [];
-					zoneRows.querySelectorAll('.zmc-zone-row').forEach(function (row) {
-						var zoneCountry = row.querySelector('[data-k=country]').value.trim().toUpperCase();
-						var isKR = zoneCountry === 'KR';
-						var zone = {
-														country: zoneCountry,
-							region: row.querySelector('[data-k=region]').value.trim(),
-							zips: isKR ? row.querySelector('[data-k=zips]').value.trim() : '',
-							fee: row.querySelector('[data-k=fee]').value.trim(),
-							tiers: []
-						};
-						row.querySelectorAll('.zmc-tier').forEach(function (t) {
-							var from = t.querySelector('[data-t=from]').value.trim();
-							var tfee = t.querySelector('[data-t=fee]').value.trim();
-							if (from !== '' && tfee !== '') zone.tiers.push({ from: from, fee: tfee });
-						});
-						// 국내는 시·도나 우편번호 중 하나는 있어야 하고, 해외는 국가만으로 성립한다
-						var hasRule = isKR ? (zone.region || zone.zips) : !!zoneCountry;
-												var hasFee = parseFloat(zone.fee) > 0 || zone.tiers.length > 0;
-						if (hasRule && hasFee) zones.push(zone);
-					});
-					zonesJson.value = JSON.stringify(zones);
-				}
+				zonesJson.value = JSON.stringify(zones);
 			});
 		}
 	})();

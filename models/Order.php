@@ -248,7 +248,7 @@ class Order
 	 *
 	 * @return array
 	 */
-	protected static function adminRecipients(): array
+	public static function adminRecipients(): array
 	{
 		$config = Config::getConfig();
 		$list = preg_split('/[\s,;]+/', (string)($config->notify_admin_email ?? '')) ?: [];
@@ -482,6 +482,100 @@ class Order
 
 		self::log($order_srl, 0, $to === Base::ORDER_EXPIRED ? 'expire' : 'cancel', '', $to, $actor_srl, $memo);
 		return true;
+	}
+
+	/**
+	 * 주문 한 건을 딸린 자료까지 지운다. 결제된 주문은 지우지 않는다 —
+	 * 매출·재고 이력과 어긋나기 때문이다. 되돌릴 수 없으므로 부르는 쪽에서 권한을 확인한다.
+	 *
+	 * @param int $order_srl
+	 * @return bool 지웠으면 true
+	 */
+	public static function purge(int $order_srl): bool
+	{
+		$order = self::get($order_srl);
+		if (!$order || in_array((string)$order->status, [Base::ORDER_PAID], true))
+		{
+			return false;
+		}
+
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$handle = \Zittme\Framework\DB::getInstance()->getHandle();
+		foreach (['commerce_order_item', 'commerce_order_address', 'commerce_order_log', 'commerce_order_seller', 'commerce_order'] as $table)
+		{
+			$stmt = $handle->prepare('DELETE FROM `' . $prefix . $table . '` WHERE order_srl = ?');
+			if ($stmt)
+			{
+				$stmt->execute([$order_srl]);
+				$stmt->closeCursor();
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * 아직 결제가 끝나지 않은 이 회원의 주문 1건. 만료 시간이 지나지 않은 것만 본다.
+	 *
+	 * @param int $member_srl
+	 * @return ?object
+	 */
+	public static function findOpenPending(int $member_srl): ?object
+	{
+		if ($member_srl <= 0)
+		{
+			return null;
+		}
+		$minutes = max(10, (int)(Base::config()->pending_minutes ?? 60));
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare(
+			'SELECT * FROM `' . $prefix . 'commerce_order`'
+			. ' WHERE member_srl = ? AND status = ? AND regdate >= ?'
+			. ' ORDER BY order_srl DESC LIMIT 1'
+		);
+		if (!$stmt || !$stmt->execute([$member_srl, Base::ORDER_PENDING, date('YmdHis', time() - 60 * $minutes)]))
+		{
+			return null;
+		}
+		$row = $stmt->fetchObject() ?: null;
+		$stmt->closeCursor();
+		return $row;
+	}
+
+	/**
+	 * 결제 대기 주문이 자동 취소되는 시각 (YmdHis). 대기 주문이 아니면 빈 문자열.
+	 *
+	 * @param object $order
+	 * @return string
+	 */
+	public static function pendingDeadline(object $order): string
+	{
+		if (($order->status ?? '') !== Base::ORDER_PENDING || empty($order->regdate))
+		{
+			return '';
+		}
+		$minutes = max(10, (int)(Base::config()->pending_minutes ?? 60));
+		return date('YmdHis', ztime((string)$order->regdate) + 60 * $minutes);
+	}
+
+	/**
+	 * 결제를 이어서 할 주소. 처음 만든 결제 건이 아직 열려 있으면 그 화면으로 돌아간다.
+	 * 결제 건이 없거나 닫혔으면 빈 문자열 (이어서 결제할 수 없다).
+	 *
+	 * @param object $order
+	 * @return string
+	 */
+	public static function resumePayUrl(object $order): string
+	{
+		if (($order->status ?? '') !== Base::ORDER_PENDING || !class_exists('\Zittme\Modules\Zittme_pay\PayService'))
+		{
+			return '';
+		}
+		$pay = \Zittme\Modules\Zittme_pay\PayService::getOrderBySource('commerce', (int)$order->order_srl);
+		if (!$pay || empty($pay->order_code) || !in_array((string)$pay->status, \Zittme\Modules\Zittme_pay\Models\Order::OPEN_STATUSES, true))
+		{
+			return '';
+		}
+		return \Zittme\Modules\Zittme_pay\PayService::getPayUrl((string)$pay->order_code);
 	}
 
 	/**

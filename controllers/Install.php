@@ -48,6 +48,11 @@ class Install extends Base
 		['commerce_address', 'country', 'varchar', 2],
 		['commerce_address', 'state', 'varchar', 80],
 		['commerce_address', 'city', 'varchar', 80],
+		// 재고 부족 알림 — 재고 관리 화면에서 줄마다 기준을 정한다
+		['commerce_item', 'low_stock', 'int', null],
+		['commerce_item', 'low_stock_alerted', 'char', 1],
+		['commerce_item_option', 'low_stock', 'int', null],
+		['commerce_item_option', 'low_stock_alerted', 'char', 1],
 		// 적립금
 		['commerce_order', 'credit_used', 'bigint', null],
 		// 등급별 상품 할인 (정액/정률)
