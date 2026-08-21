@@ -391,12 +391,12 @@
 			}
 		}
 		$ie_mode = ($item->option_mode ?? 'single') === 'combo' ? 'combo' : 'single';
-		$ie_opt_hidden = [];
-		$ie_opt_shown = [];
+		$ie_opt_shown = $ie_opt_basic;
+		// 조합 재생성 확인창에서 빠질 옵션을 미리 보여 주기 위한 현재 목록
+		$ie_opt_keys = [];
 		foreach ($ie_opt_basic as $ie_opt_row)
 		{
-			if (($ie_opt_row->status ?? 'Y') === 'N') { $ie_opt_hidden[] = $ie_opt_row; }
-			else { $ie_opt_shown[] = $ie_opt_row; }
+			$ie_opt_keys[] = ['key' => \Zittme\Modules\Commerce\Models\Combo::key($ie_opt_row->combo ?? ''), 'label' => (string)$ie_opt_row->option_label];
 		}
 		@endphp
 		{{-- 행 인라인 수정: 셀 입력은 form 속성으로 행별 폼(테이블 밖)에 연결한다 (중첩 폼 회피) --}}
@@ -475,13 +475,7 @@
 			<div class="ie-opt-warn" id="ieOptWarn" hidden>
 				{{ lang('commerce.admin_item_edit_124') }} <b>{{ lang('commerce.admin_item_edit_79') }}</b>{{ lang('commerce.admin_item_edit_125') }} <b>{{ lang('commerce.admin_item_edit_116') }}</b>{{ lang('commerce.admin_item_edit_126') }}
 			</div>
-			@if (count($ie_opt_hidden))
-			<div class="ie-opt-hidden">
-				{{ sprintf(lang('commerce.admin_item_edit_157'), count($ie_opt_hidden)) }} -
-				@foreach ($ie_opt_hidden as $ie_hid)<span>{{ $ie_hid->option_label }}</span>@endforeach
-				<small>{{ lang('commerce.admin_item_edit_127') }}</small>
-			</div>
-			@endif
+			<script type="application/json" id="ieOptKeys">{!! json_encode($ie_opt_keys, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
 			<b style="display:block;margin-bottom:4px;font-size:14px">{{ lang('commerce.admin_item_edit_99') }} <small style="font-weight:500;color:#8b95a1">{{ lang('commerce.admin_item_edit_100') }}</small></b>
 			@if (count($ie_opt_shown))
 			<table class="rsva-table" style="margin-bottom:10px">
@@ -818,7 +812,21 @@
 			if (!axes.length) { alert({!! json_encode(lang('commerce.admin_item_edit_173')) !!}); return; }
 			var total = axes.reduce(function (n, a) { return n * a.values.length; }, 1);
 			if (total > 100) { alert({!! json_encode(lang('commerce.admin_item_edit_174')) !!}.replace('%d', total)); return; }
-			if (!confirm({!! json_encode(lang('commerce.admin_item_edit_175')) !!}.replace('%d', total))) return;
+			// 새 축에 없는 기존 옵션(직접 입력 포함)은 삭제된다. 이름을 보여 주고 확인을 받는다
+			var keep = {};
+			var walk = function (i, prefix) {
+				if (i >= axes.length) { keep[prefix.join('|')] = true; return; }
+				axes[i].values.forEach(function (v) { walk(i + 1, prefix.concat([axes[i].name + '=' + v])); });
+			};
+			walk(0, []);
+			var current = [];
+			try { current = JSON.parse(document.getElementById('ieOptKeys').textContent) || []; } catch (e) {}
+			var gone = current.filter(function (o) { return !keep[o.key]; }).map(function (o) { return o.label; });
+			var ask = {!! json_encode(lang('commerce.admin_item_edit_175')) !!}.replace('%d', total);
+			if (gone.length) {
+				ask += '\n\n' + {!! json_encode(lang('commerce.admin_item_edit_127')) !!}.replace('%d', gone.length) + '\n' + gone.join(', ');
+			}
+			if (!confirm(ask)) return;
 
 			buildBtn.disabled = true;
 			exec_json('commerce.procCommerceAdminBuildCombos', { item_srl: itemSrl, option_axes: axesJson.value }, function (ret) {

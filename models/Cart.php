@@ -231,10 +231,17 @@ class Cart
 			// 다국어 연결 상품명($user_lang->코드)을 실값으로 - 주문서 표기와 주문 스냅샷이 이 값을 쓴다
 			$item->item_name = Lang::text((string)$item->item_name);
 			$option = null;
+			// 담을 때 있던 옵션이 삭제·숨김됐으면 본품으로 취급하지 않고 변경 안내만 한다
+			$changed = false;
 			if ((int)$row->option_srl > 0)
 			{
 				$output = executeQuery('commerce.getOption', (object)['option_srl' => (int)$row->option_srl]);
 				$option = ($output->toBool() && is_object($output->data) && !empty($output->data->option_srl)) ? $output->data : null;
+				if (!$option || ($option->status ?? 'Y') !== 'Y')
+				{
+					$option = null;
+					$changed = true;
+				}
 				if ($option)
 				{
 					$option->option_label = Lang::text((string)$option->option_label);
@@ -257,7 +264,7 @@ class Cart
 			$qty = max(1, (int)$row->qty);
 			$subtotal = $unit * $qty;
 			// 본품 행(option 없음)도 허용한다 — '선택 안 함' 선택지가 곧 본품이다
-			$blocked = !Item::isPurchasable($item) || !Item::isQtyAllowed($item, $qty);
+			$blocked = $changed || !Item::isPurchasable($item) || !Item::isQtyAllowed($item, $qty);
 
 			$items[] = (object)[
 				'cart_srl' => (int)$row->cart_srl,
@@ -268,6 +275,7 @@ class Cart
 				'unit_price_original' => $unit_original,
 				'subtotal' => $subtotal,
 				'blocked' => $blocked,
+				'changed' => $changed,
 			];
 
 			if (!$blocked)

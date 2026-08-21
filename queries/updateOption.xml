@@ -10,6 +10,7 @@
 		<column name="stock" var="stock" />
 		<column name="sku" var="sku" />
 		<column name="list_order" var="list_order" />
+		<column name="status" var="status" />
 	</columns>
 	<conditions>
 		<condition operation="equal" column="option_srl" var="option_srl" notnull="notnull" />

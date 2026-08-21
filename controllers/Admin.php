@@ -214,7 +214,7 @@ class Admin extends Base
 		$options_map = [];
 		foreach ($items as $stock_item)
 		{
-			$stock_options = ItemModel::getOptions((int)$stock_item->item_srl);
+			$stock_options = ItemModel::getOptions((int)$stock_item->item_srl, true);
 			// 연결된 다국어 문구는 실제 값으로 보여준다
 			LangModel::textAll($stock_options, ['option_label']);
 			// 조합 옵션 이름은 축 값에서 다시 만든다 (저장된 이름은 만든 시점 글자로 굳는다)
@@ -2545,12 +2545,13 @@ class Admin extends Base
 
 			if (isset($existing[$key]))
 			{
-				// 값은 건드리지 않고 라벨·차례만 축 정의에 맞춘다
+				// 값은 건드리지 않고 라벨·차례만 축 정의에 맞춘다. 이전 버전에서 숨겨 둔 행은 다시 켠다
 				executeQuery('commerce.updateOption', (object)[
 					'option_srl' => (int)$existing[$key]->option_srl,
 					'option_label' => $label,
 					'combo' => $combo_json,
 					'list_order' => $order,
+					'status' => 'Y',
 				]);
 				continue;
 			}
@@ -2571,30 +2572,21 @@ class Admin extends Base
 			$made++;
 		}
 
-		// 축에서 빠진 조합은 숨김 처리 (주문 이력 보존)
-		$hidden = 0;
+		// 축에서 빠진 조합과 직접 입력 옵션은 삭제한다. 주문 항목은 이름·가격을 스냅샷으로 갖고 있다.
+		// 장바구니에 남은 줄은 Cart::resolve() 가 변경 안내로 표시한다
+		$removed = 0;
 		foreach ($existing as $key => $option)
 		{
-			if (!isset($keys[$key]) && ($option->status ?? 'Y') !== 'N')
+			if (!isset($keys[$key]))
 			{
-				\Zittme\Framework\DB::getInstance()->query(
-					'UPDATE commerce_item_option SET status = ? WHERE option_srl = ?', 'N', (int)$option->option_srl
-				);
-				$hidden++;
+				executeQuery('commerce.deleteOption', (object)['option_srl' => (int)$option->option_srl]);
+				$removed++;
 			}
 		}
-
-		// 직접 입력해 둔 기본 옵션은 조합과 섞이면 안 되므로 숨긴다 (삭제하지 않는다)
-		$put_away = 0;
 		foreach ($manual as $option)
 		{
-			if (($option->status ?? 'Y') !== 'N')
-			{
-				\Zittme\Framework\DB::getInstance()->query(
-					'UPDATE commerce_item_option SET status = ? WHERE option_srl = ?', 'N', (int)$option->option_srl
-				);
-				$put_away++;
-			}
+			executeQuery('commerce.deleteOption', (object)['option_srl' => (int)$option->option_srl]);
+			$removed++;
 		}
 
 		executeQuery('commerce.updateItem', (object)[
@@ -2606,14 +2598,11 @@ class Admin extends Base
 		]);
 
 		$this->add('made', $made);
-		$this->add('hidden', $hidden);
+		$this->add('removed', $removed);
 		$this->add('total', count($combos));
-		$notes = [];
-		if ($hidden > 0) { $notes[] = '축에서 빠진 조합 ' . $hidden . '개 숨김'; }
-		if ($put_away > 0) { $notes[] = '직접 입력한 옵션 ' . $put_away . '개 숨김'; }
 		$this->setMessage(sprintf(
 			lang('commerce.admin_msg_8'),
-			count($combos), $made, count($notes) ? ', ' . implode(', ', $notes) : ''
+			count($combos), $made, $removed > 0 ? ', ' . sprintf(lang('commerce.admin_item_edit_157'), $removed) : ''
 		));
 	}
 
