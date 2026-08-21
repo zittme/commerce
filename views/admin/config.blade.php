@@ -391,8 +391,8 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<label>{{ lang('commerce.admin_config_83') }}</label>
 				<select name="skin" style="width:100%">
 					<option value="/USE_DEFAULT/" @if(($shop_instance->skin ?? '') === '/USE_DEFAULT/') selected @endif>{{ lang('commerce.admin_config_84') }}</option>
-					@foreach ($shop_skins as $sk)
-					<option value="{{ $sk->skin }}" @if(($shop_instance->skin ?? '') === $sk->skin) selected @endif>{{ $sk->title ?: $sk->skin }}</option>
+					@foreach ($shop_skins as $sk_name => $sk)
+					<option value="{{ $sk_name }}" @if(($shop_instance->skin ?? '') === $sk_name) selected @endif>{{ $sk->title ?: $sk_name }}</option>
 					@endforeach
 				</select>
 			</div>
@@ -400,8 +400,8 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<label>{{ lang('commerce.admin_config_85') }}</label>
 				<select name="mskin" style="width:100%">
 					<option value="/USE_DEFAULT/" @if(($shop_instance->mskin ?? '') === '/USE_DEFAULT/') selected @endif>{{ lang('commerce.admin_config_86') }}</option>
-					@foreach ($shop_mskins as $sk)
-					<option value="{{ $sk->skin }}" @if(($shop_instance->mskin ?? '') === $sk->skin) selected @endif>{{ $sk->title ?: $sk->skin }}</option>
+					@foreach ($shop_mskins as $sk_name => $sk)
+					<option value="{{ $sk_name }}" @if(($shop_instance->mskin ?? '') === $sk_name) selected @endif>{{ $sk->title ?: $sk_name }}</option>
 					@endforeach
 				</select>
 			</div>

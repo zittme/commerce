@@ -280,9 +280,27 @@ class Stock
 			return;
 		}
 
-		$url = getNotEncodedFullUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock', 'f_low', 'Y');
-		Notify::toAdmins(sprintf(lang('commerce.adm_low_stock_notify'), $label, number_format($stock_after)), $url);
-		self::mailLowStock($label, $stock_after, $limit, $url);
+		Deferred::call(self::class . '::lowStockTask', [
+			'label' => $label,
+			'stock' => $stock_after,
+			'limit' => $limit,
+			'url' => getNotEncodedFullUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock', 'f_low', 'Y'),
+		]);
+	}
+
+	/**
+	 * 미뤄 둔 재고 부족 알림·메일. Deferred 가 응답 뒤에 부른다.
+	 *
+	 * @param object $args {label, stock, limit, url}
+	 * @return void
+	 */
+	public static function lowStockTask(object $args): void
+	{
+		$label = (string)($args->label ?? '');
+		$stock = (int)($args->stock ?? 0);
+		$url = (string)($args->url ?? '');
+		Notify::toAdmins(sprintf(lang('commerce.adm_low_stock_notify'), $label, number_format($stock)), $url);
+		self::mailLowStock($label, $stock, (int)($args->limit ?? 0), $url);
 	}
 
 	/**

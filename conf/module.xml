@@ -98,6 +98,10 @@
 		<action name="procCommerceAdminDeleteGrade" class="Controllers\Admin" permission="manager" />
 	</actions>
 
+	<classes>
+		<class type="install" name="Controllers\Install" />
+	</classes>
+
 	<menus>
 		<menu name="commerce">
 			<title xml:lang="ko">커머스</title>

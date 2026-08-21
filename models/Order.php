@@ -279,11 +279,43 @@ class Order
 
 	public static function notifyMail(string $kind, ?object $order, string $memo = ''): void
 	{
-		if (!$order)
+		if (!$order || (int)($order->order_srl ?? 0) <= 0)
 		{
 			return;
 		}
 
+		Deferred::call(self::class . '::notifyMailTask', [
+			'kind' => $kind,
+			'order_srl' => (int)$order->order_srl,
+			'memo' => $memo,
+		]);
+	}
+
+	/**
+	 * 미뤄 둔 알림·메일 발송. Deferred 가 응답 뒤에 부른다.
+	 *
+	 * @param object $args {kind, order_srl, memo}
+	 * @return void
+	 */
+	public static function notifyMailTask(object $args): void
+	{
+		$order = self::get((int)($args->order_srl ?? 0));
+		if ($order)
+		{
+			self::notifyMailNow((string)($args->kind ?? ''), $order, (string)($args->memo ?? ''));
+		}
+	}
+
+	/**
+	 * 알림센터와 메일을 지금 보낸다.
+	 *
+	 * @param string $kind
+	 * @param object $order
+	 * @param string $memo
+	 * @return void
+	 */
+	protected static function notifyMailNow(string $kind, object $order, string $memo = ''): void
+	{
 		// 알림센터는 메일 설정과 무관하게 보낸다. 메일을 끈 사이트도 알림은 받는다
 		self::notifyCenter($kind, $order, $memo);
 		try
