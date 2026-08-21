@@ -6,7 +6,21 @@
 		<form action="./" method="get" class="rsva-filter">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="dispCommerceAdminStock" />
-			<input type="text" name="f_keyword" value="{{ Context::get('f_keyword') }}" placeholder="{{ lang('commerce.admin_stock_27') }}" />
+			<select name="f_category">
+				<option value="">{{ lang('commerce.admin_stock_29') }}</option>
+				@foreach ($stock_categories as $sc_srl => $sc)
+				<option value="{{ $sc_srl }}" @if ((int)$stock_filters->category === (int)$sc_srl) selected @endif>{{ $sc->title }}</option>
+				@endforeach
+			</select>
+			<select name="f_field">
+				<option value="name" @if ($stock_filters->field === 'name') selected @endif>{{ lang('commerce.admin_stock_27') }}</option>
+				<option value="code" @if ($stock_filters->field === 'code') selected @endif>{{ lang('commerce.admin_stock_30') }}</option>
+				<option value="stock" @if ($stock_filters->field === 'stock') selected @endif>{{ lang('commerce.admin_stock_31') }}</option>
+			</select>
+			<input type="text" name="f_keyword" value="{{ $stock_filters->keyword }}" placeholder="{{ lang('commerce.admin_stock_32') }}" />
+			<input type="date" name="f_from" value="{{ $stock_filters->from !== '' ? substr($stock_filters->from, 0, 4) . '-' . substr($stock_filters->from, 4, 2) . '-' . substr($stock_filters->from, 6, 2) : '' }}" title="{{ lang('commerce.admin_stock_33') }}" />
+			<span>~</span>
+			<input type="date" name="f_to" value="{{ $stock_filters->to !== '' ? substr($stock_filters->to, 0, 4) . '-' . substr($stock_filters->to, 4, 2) . '-' . substr($stock_filters->to, 6, 2) : '' }}" title="{{ lang('commerce.admin_stock_33') }}" />
 			<button type="submit" class="rsva-btn">{{ lang('commerce.admin_stock_2') }}</button>
 		</form>
 		<p style="margin:0 0 10px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_stock_3') }}</p>
@@ -56,6 +70,8 @@
 			<input type="hidden" name="item_srl" value="{{ $si->item_srl }}" />
 			<input type="hidden" name="option_srl" value="0" />
 			<input type="hidden" name="f_keyword" value="{{ Context::get('f_keyword') }}" />
+			<input type="hidden" name="f_field" value="{{ Context::get('f_field') }}" />
+			<input type="hidden" name="f_category" value="{{ Context::get('f_category') }}" />
 		</form>
 		@foreach ($stock_options_map[(int)$si->item_srl] ?? [] as $so)
 		<form id="stAdj{{ $si->item_srl }}_{{ $so->option_srl }}" action="./" method="post">
@@ -64,6 +80,8 @@
 			<input type="hidden" name="item_srl" value="{{ $si->item_srl }}" />
 			<input type="hidden" name="option_srl" value="{{ $so->option_srl }}" />
 			<input type="hidden" name="f_keyword" value="{{ Context::get('f_keyword') }}" />
+			<input type="hidden" name="f_field" value="{{ Context::get('f_field') }}" />
+			<input type="hidden" name="f_category" value="{{ Context::get('f_category') }}" />
 		</form>
 		@endforeach
 		@endforeach
@@ -121,7 +139,7 @@
 		<form action="{{ getUrl('') }}" method="post" id="zmiLowForm" style="margin-top:12px">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminSaveLowStock" />
-			<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock', 'f_keyword', Context::get('f_keyword')) }}" />
+			<input type="hidden" name="success_return_url" value="{{ getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock', 'f_keyword', Context::get('f_keyword'), 'f_field', Context::get('f_field'), 'f_category', Context::get('f_category')) }}" />
 			<input type="hidden" name="rows" value="" />
 			<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.adm_low_stock_save') }}</button>
 			<small style="margin-left:8px;color:#8b95a1">{{ sprintf(lang('commerce.adm_low_stock_note'), number_format($stock_low_default)) }}</small>

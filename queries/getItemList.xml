@@ -12,6 +12,9 @@
 		<condition operation="equal" column="seller_srl" var="seller_srl" pipe="and" />
 		<condition operation="equal" column="is_recommend" var="is_recommend" pipe="and" />
 		<condition operation="like" column="item_name" var="search_keyword" pipe="and" />
+		<condition operation="like" column="item_code" var="search_code" pipe="and" />
+		<condition operation="more" column="regdate" var="regdate_from" pipe="and" />
+		<condition operation="less" column="regdate" var="regdate_to" pipe="and" />
 		<condition operation="more" column="sale_price" var="price_min" pipe="and" />
 		<condition operation="less" column="sale_price" var="price_max" pipe="and" />
 	</conditions>

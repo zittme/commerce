@@ -494,6 +494,11 @@ $lang->admin_stock_25 = '손실';
 $lang->admin_stock_26 = '이동 기록이 없습니다.';
 $lang->admin_stock_27 = '상품명';
 $lang->admin_stock_28 = '메모 (선택)';
+$lang->admin_stock_29 = '전체 카테고리';
+$lang->admin_stock_30 = '상품코드';
+$lang->admin_stock_31 = '현재고 이하';
+$lang->admin_stock_32 = '검색어 또는 수량';
+$lang->admin_stock_33 = '등록일';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = '필수 항목(';
@@ -735,6 +740,9 @@ $lang->admin_config_layout_follow_pc = 'PC 설정을 그대로 사용';
 $lang->admin_config_88 = '쇼핑몰 테마는 레이아웃 + 커머스 스킨 + 짓미페이 스킨 + 게시판 스킨 묶음으로 배포됩니다. 스킨은 modules/commerce/skins/ 에 설치하면 여기에 나타납니다.';
 $lang->admin_config_89 = '상점 인스턴스(mid)가 없어 스킨을 설정할 수 없습니다.';
 $lang->admin_config_103 = 'API 키';
+$lang->admin_config_104 = '달러권 통화 코드 표시';
+$lang->admin_config_105 = '기호만 ($)';
+$lang->admin_config_106 = '코드 + 기호 (MXN $)';
 $lang->admin_promotions_1 = '기획전 목록';
 $lang->admin_promotions_2 = '기획전이 없습니다. 아래에서 만들어보세요.';
 $lang->admin_promotions_3 = '이름';

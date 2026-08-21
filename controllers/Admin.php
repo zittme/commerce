@@ -27,7 +27,7 @@ class Admin extends Base
 	 */
 	public const CONFIG_FIELDS = [
 		'enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes',
-		'default_ship_fee', 'free_ship_over', 'claim_days', 'item_sticky', 'sweettracker_api_key',
+		'default_ship_fee', 'free_ship_over', 'claim_days', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key',
 		'shop_main', 'category_layout', 'home_show_recommend', 'home_show_new',
 		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones',
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
@@ -46,7 +46,7 @@ class Admin extends Base
 	// 다국어 버튼으로 문구를 연결할 수 있는 설정 항목
 	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note'];
 
-	protected const BOOLEAN_FIELDS = ['enabled', 'allow_guest', 'notify_admin', 'item_sticky',
+	protected const BOOLEAN_FIELDS = ['enabled', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
 		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale'];
 	// 소수점 2자리 허용 (적립률 0.00~100.00%)
 	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100]];
@@ -204,13 +204,39 @@ class Admin extends Base
 		$args->list_count = 50;
 		$args->sort_index = 'item_srl';
 		$args->order_type = 'desc';
+		// 검색 조건: 카테고리, 검색 대상(상품명/상품코드/현재고 이하), 등록일 범위
 		$keyword = trim((string)\Context::get('f_keyword'));
+		$field = (string)\Context::get('f_field') ?: 'name';
+		$category_srl = (int)\Context::get('f_category');
+		$date_from = preg_replace('/\D/', '', (string)\Context::get('f_from'));
+		$date_to = preg_replace('/\D/', '', (string)\Context::get('f_to'));
+		if ($category_srl > 0)
+		{
+			$args->category_srl = $category_srl;
+		}
 		if ($keyword !== '')
 		{
-			$args->search_keyword = '%' . $keyword . '%';
+			if ($field === 'code')
+			{
+				$args->search_code = '%' . $keyword . '%';
+			}
+			elseif ($field !== 'stock')
+			{
+				$args->search_keyword = '%' . $keyword . '%';
+			}
+		}
+		if (strlen($date_from) === 8)
+		{
+			$args->regdate_from = $date_from . '000000';
+		}
+		if (strlen($date_to) === 8)
+		{
+			$args->regdate_to = $date_to . '235959';
 		}
 		$output = executeQueryArray('commerce.getItemList', $args);
 		$items = LangModel::textAll($output->data ?: [], ['item_name']);
+		// 현재고 이하: 옵션 상품은 옵션 재고 기준이라 쿼리 대신 여기서 거른다
+		$stock_max = ($field === 'stock' && $keyword !== '' && is_numeric($keyword)) ? (int)$keyword : null;
 		$options_map = [];
 		foreach ($items as $stock_item)
 		{
@@ -224,8 +250,28 @@ class Admin extends Base
 			}
 			$options_map[(int)$stock_item->item_srl] = $stock_options;
 		}
+		if ($stock_max !== null)
+		{
+			$items = array_values(array_filter($items, function($stock_item) use ($options_map, $stock_max) {
+				$opts = $options_map[(int)$stock_item->item_srl] ?? [];
+				if (!count($opts))
+				{
+					return (int)$stock_item->stock <= $stock_max;
+				}
+				foreach ($opts as $opt)
+				{
+					if ((int)$opt->stock <= $stock_max)
+					{
+						return true;
+					}
+				}
+				return false;
+			}));
+		}
 		\Context::set('stock_items', $items);
 		\Context::set('stock_options_map', $options_map);
+		\Context::set('stock_categories', self::getCategories());
+		\Context::set('stock_filters', (object)['keyword' => $keyword, 'field' => $field, 'category' => $category_srl, 'from' => $date_from, 'to' => $date_to]);
 		\Context::set('stock_page_navigation', $output->page_navigation);
 		\Context::set('stock_low_only', \Context::get('f_low') === 'Y');
 		\Context::set('stock_low_rows', StockModel::lowStockRows(200));

@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'Списание';
 $lang->admin_stock_26 = 'Движений нет.';
 $lang->admin_stock_27 = 'Название товара';
 $lang->admin_stock_28 = 'Заметка (необязательно)';
+$lang->admin_stock_29 = 'Все категории';
+$lang->admin_stock_30 = 'Код товара';
+$lang->admin_stock_31 = 'Остаток не более';
+$lang->admin_stock_32 = 'Запрос или количество';
+$lang->admin_stock_33 = 'Дата регистрации';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = 'Разместить можно, заполнив только обязательные поля (';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = 'Применить оформление';
 $lang->admin_config_88 = 'Темы магазина поставляются набором: макет + оформление магазина + оформление Zittme Pay + оформление форума. Установите оформление в modules/commerce/skins/, и оно появится здесь.';
 $lang->admin_config_89 = 'Нет экземпляра магазина (mid), поэтому оформление задать нельзя.';
 $lang->admin_config_103 = 'Ключ API';
+$lang->admin_config_104 = 'Код валюты у долларовых символов';
+$lang->admin_config_105 = 'Только символ ($)';
+$lang->admin_config_106 = 'Код + символ (MXN $)';
 $lang->admin_promotions_1 = 'Список акций';
 $lang->admin_promotions_2 = 'Акций нет. Создайте ниже.';
 $lang->admin_promotions_3 = 'Название';

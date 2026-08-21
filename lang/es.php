@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'Pérdida';
 $lang->admin_stock_26 = 'No hay movimientos.';
 $lang->admin_stock_27 = 'Nombre del producto';
 $lang->admin_stock_28 = 'Nota (opcional)';
+$lang->admin_stock_29 = 'Todas las categorías';
+$lang->admin_stock_30 = 'Código de producto';
+$lang->admin_stock_31 = 'Existencias iguales o inferiores a';
+$lang->admin_stock_32 = 'Palabra clave o cantidad';
+$lang->admin_stock_33 = 'Fecha de registro';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = 'Puede publicarlo rellenando solo los campos obligatorios (';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = 'Aplicar aspecto';
 $lang->admin_config_88 = 'Los temas de tienda se distribuyen como un paquete de diseño + aspecto de la tienda + aspecto de Zittme Pay + aspecto del foro. Instale un aspecto en modules/commerce/skins/ y aparecerá aquí.';
 $lang->admin_config_89 = 'No hay instancia de tienda (mid), así que no se puede configurar el aspecto.';
 $lang->admin_config_103 = 'Clave de API';
+$lang->admin_config_104 = 'Código de moneda en símbolos de dólar';
+$lang->admin_config_105 = 'Solo símbolo ($)';
+$lang->admin_config_106 = 'Código + símbolo (MXN $)';
 $lang->admin_promotions_1 = 'Lista de campañas';
 $lang->admin_promotions_2 = 'No hay campañas. Cree una abajo.';
 $lang->admin_promotions_3 = 'Nombre';

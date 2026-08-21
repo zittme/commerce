@@ -202,7 +202,8 @@ class Money
 		{
 			return number_format($minor);
 		}
-		return $class::format($class::fromMinor($minor, $currency), $currency);
+		$decimals = self::isZeroDecimal($currency) ? 0 : 2;
+		return self::symbol($currency) . number_format($class::fromMinor($minor, $currency), $decimals, '.', ',');
 	}
 
 	/**
@@ -378,6 +379,12 @@ class Money
 		}
 		$class = '\\Zittme\\Modules\\Zittme_pay\\Models\\Currency';
 		$map = class_exists($class) ? $class::SYMBOLS : [];
-		return (string)($map[$currency] ?? ($currency . ' '));
+		$symbol = (string)($map[$currency] ?? ($currency . ' '));
+		// 달러권은 기호표에 'MXN $' 처럼 코드가 앞에 붙어 있다. 설정에서 켜지 않으면 기호만 쓴다
+		if ((Config::getConfig()->currency_code_prefix ?? 'N') !== 'Y' && preg_match('/^[A-Z]{3} (\S+)$/', $symbol, $m))
+		{
+			$symbol = $m[1];
+		}
+		return $symbol;
 	}
 }

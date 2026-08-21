@@ -494,6 +494,11 @@ $lang->admin_stock_25 = '損耗';
 $lang->admin_stock_26 = '沒有異動紀錄。';
 $lang->admin_stock_27 = '商品名稱';
 $lang->admin_stock_28 = '備註(選填)';
+$lang->admin_stock_29 = '全部分類';
+$lang->admin_stock_30 = '商品代碼';
+$lang->admin_stock_31 = '庫存不高於';
+$lang->admin_stock_32 = '關鍵字或數量';
+$lang->admin_stock_33 = '登錄日期';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = '只填寫必填項目(';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = '套用外觀';
 $lang->admin_config_88 = '商城主題以版面 + 商城外觀 + Zittme Pay 外觀 + 討論區外觀的組合發布。外觀安裝到 modules/commerce/skins/ 後會顯示在這裡。';
 $lang->admin_config_89 = '沒有商店實例(mid)，無法設定外觀。';
 $lang->admin_config_103 = 'API金鑰';
+$lang->admin_config_104 = '美元類貨幣顯示代碼';
+$lang->admin_config_105 = '僅符號 ($)';
+$lang->admin_config_106 = '代碼 + 符號 (MXN $)';
 $lang->admin_promotions_1 = '企劃展列表';
 $lang->admin_promotions_2 = '沒有企劃展，請在下方建立。';
 $lang->admin_promotions_3 = '名稱';

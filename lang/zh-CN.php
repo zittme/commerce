@@ -494,6 +494,11 @@ $lang->admin_stock_25 = '损耗';
 $lang->admin_stock_26 = '没有变动记录。';
 $lang->admin_stock_27 = '商品名称';
 $lang->admin_stock_28 = '备注(可选)';
+$lang->admin_stock_29 = '全部分类';
+$lang->admin_stock_30 = '商品代码';
+$lang->admin_stock_31 = '库存不高于';
+$lang->admin_stock_32 = '关键词或数量';
+$lang->admin_stock_33 = '登记日期';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = '只填写必填项(';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = '应用皮肤';
 $lang->admin_config_88 = '商城主题以布局 + 商城皮肤 + Zittme Pay 皮肤 + 论坛皮肤的组合发布。皮肤安装到 modules/commerce/skins/ 后会显示在这里。';
 $lang->admin_config_89 = '没有商店实例(mid)，无法设置皮肤。';
 $lang->admin_config_103 = 'API密钥';
+$lang->admin_config_104 = '美元类货币显示代码';
+$lang->admin_config_105 = '仅符号 ($)';
+$lang->admin_config_106 = '代码 + 符号 (MXN $)';
 $lang->admin_promotions_1 = '专题列表';
 $lang->admin_promotions_2 = '没有专题，请在下方创建。';
 $lang->admin_promotions_3 = '名称';

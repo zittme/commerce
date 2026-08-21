@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'Perte';
 $lang->admin_stock_26 = 'Aucun mouvement.';
 $lang->admin_stock_27 = 'Nom du produit';
 $lang->admin_stock_28 = 'Note (facultatif)';
+$lang->admin_stock_29 = 'Toutes les catégories';
+$lang->admin_stock_30 = 'Code article';
+$lang->admin_stock_31 = 'Stock inférieur ou égal à';
+$lang->admin_stock_32 = 'Mot-clé ou quantité';
+$lang->admin_stock_33 = 'Date d\'enregistrement';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = 'Vous pouvez publier en ne remplissant que les champs obligatoires (';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = 'Appliquer l\'habillage';
 $lang->admin_config_88 = 'Les thèmes de boutique sont distribués en lot : mise en page + habillage boutique + habillage Zittme Pay + habillage forum. Installez un habillage dans modules/commerce/skins/ et il apparaîtra ici.';
 $lang->admin_config_89 = 'Aucune instance de boutique (mid) : impossible de régler l\'habillage.';
 $lang->admin_config_103 = 'Clé d\'API';
+$lang->admin_config_104 = 'Code devise sur les symboles dollar';
+$lang->admin_config_105 = 'Symbole seul ($)';
+$lang->admin_config_106 = 'Code + symbole (MXN $)';
 $lang->admin_promotions_1 = 'Liste des opérations';
 $lang->admin_promotions_2 = 'Aucune opération. Créez-en une ci-dessous.';
 $lang->admin_promotions_3 = 'Nom';

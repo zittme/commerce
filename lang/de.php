@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'Schwund';
 $lang->admin_stock_26 = 'Es gibt keine Bewegungen.';
 $lang->admin_stock_27 = 'Produktname';
 $lang->admin_stock_28 = 'Notiz (optional)';
+$lang->admin_stock_29 = 'Alle Kategorien';
+$lang->admin_stock_30 = 'Artikelcode';
+$lang->admin_stock_31 = 'Bestand höchstens';
+$lang->admin_stock_32 = 'Suchbegriff oder Menge';
+$lang->admin_stock_33 = 'Registrierungsdatum';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = 'Sie können schon mit den Pflichtfeldern (';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = 'Skin anwenden';
 $lang->admin_config_88 = 'Shop-Themes werden als Paket aus Layout, Shop-Skin, Zittme-Pay-Skin und Forum-Skin ausgeliefert. Installieren Sie einen Skin in modules/commerce/skins/, erscheint er hier.';
 $lang->admin_config_89 = 'Es gibt keine Shop-Instanz (mid), daher lässt sich kein Skin einstellen.';
 $lang->admin_config_103 = 'API-Schlüssel';
+$lang->admin_config_104 = 'Währungscode bei Dollar-Symbolen';
+$lang->admin_config_105 = 'Nur Symbol ($)';
+$lang->admin_config_106 = 'Code + Symbol (MXN $)';
 $lang->admin_promotions_1 = 'Aktionsliste';
 $lang->admin_promotions_2 = 'Es gibt keine Aktionen. Legen Sie unten eine an.';
 $lang->admin_promotions_3 = 'Name';

@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'Fire';
 $lang->admin_stock_26 = 'Hareket kaydı yok.';
 $lang->admin_stock_27 = 'Ürün adı';
 $lang->admin_stock_28 = 'Not (isteğe bağlı)';
+$lang->admin_stock_29 = 'Tüm kategoriler';
+$lang->admin_stock_30 = 'Ürün kodu';
+$lang->admin_stock_31 = 'Stok en fazla';
+$lang->admin_stock_32 = 'Arama terimi veya miktar';
+$lang->admin_stock_33 = 'Kayıt tarihi';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = 'Yalnızca zorunlu alanları (';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = 'Görünümü uygula';
 $lang->admin_config_88 = 'Mağaza temaları yerleşim + mağaza görünümü + Zittme Pay görünümü + forum görünümü paketi olarak dağıtılır. Bir görünümü modules/commerce/skins/ dizinine kurduğunuzda burada listelenir.';
 $lang->admin_config_89 = 'Mağaza örneği (mid) olmadığından görünüm ayarlanamıyor.';
 $lang->admin_config_103 = 'API anahtarı';
+$lang->admin_config_104 = 'Dolar sembollerinde para birimi kodu';
+$lang->admin_config_105 = 'Yalnızca sembol ($)';
+$lang->admin_config_106 = 'Kod + sembol (MXN $)';
 $lang->admin_promotions_1 = 'Kampanya listesi';
 $lang->admin_promotions_2 = 'Kampanya yok. Aşağıdan oluşturun.';
 $lang->admin_promotions_3 = 'Ad';

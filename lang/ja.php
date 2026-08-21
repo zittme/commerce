@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'ロス';
 $lang->admin_stock_26 = '移動記録がありません。';
 $lang->admin_stock_27 = '商品名';
 $lang->admin_stock_28 = 'メモ (任意)';
+$lang->admin_stock_29 = 'すべてのカテゴリ';
+$lang->admin_stock_30 = '商品コード';
+$lang->admin_stock_31 = '在庫が以下';
+$lang->admin_stock_32 = '検索語または数量';
+$lang->admin_stock_33 = '登録日';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = '必須項目(';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = 'スキンを適用';
 $lang->admin_config_88 = 'ショップのテーマはレイアウト + コマーススキン + ジットミーペイスキン + 掲示板スキンの束で配布されます。スキンは modules/commerce/skins/ にインストールするとここに出ます。';
 $lang->admin_config_89 = 'ショップのインスタンス(mid)がないためスキンを設定できません。';
 $lang->admin_config_103 = 'APIキー';
+$lang->admin_config_104 = 'ドル系通貨のコード表示';
+$lang->admin_config_105 = '記号のみ ($)';
+$lang->admin_config_106 = 'コード + 記号 (MXN $)';
 $lang->admin_promotions_1 = '特集の一覧';
 $lang->admin_promotions_2 = '特集がありません。下から作ってみてください。';
 $lang->admin_promotions_3 = '名前';

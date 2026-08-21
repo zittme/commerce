@@ -96,6 +96,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<div><label>{{ lang('commerce.admin_config_33') }}</label><select name="category_layout"><option value="top" @if(($shop_config->category_layout ?? 'top') !== 'side') selected @endif>{{ lang('commerce.admin_config_34') }}</option><option value="side" @if(($shop_config->category_layout ?? 'top') === 'side') selected @endif>{{ lang('commerce.admin_config_35') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_36') }}</label><input type="number" name="home_count" min="4" max="24" value="{{ $shop_config->home_count ?? 8 }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_16') }}</label><select name="item_sticky"><option value="N" @if(($shop_config->item_sticky ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="Y" @if(($shop_config->item_sticky ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select></div>
+				<div><label>{{ lang('commerce.admin_config_104') }}</label><select name="currency_code_prefix"><option value="N" @if(($shop_config->currency_code_prefix ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_105') }}</option><option value="Y" @if(($shop_config->currency_code_prefix ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_106') }}</option></select></div>
 			</div>
 			<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:13.5px">
 				{{-- 해제 상태도 저장되도록 hidden N 을 먼저 둔다 (뒤의 체크 값이 이긴다) --}}

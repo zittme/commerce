@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'Hao hụt';
 $lang->admin_stock_26 = 'Chưa có biến động nào.';
 $lang->admin_stock_27 = 'Tên sản phẩm';
 $lang->admin_stock_28 = 'Ghi chú (tùy chọn)';
+$lang->admin_stock_29 = 'Tất cả danh mục';
+$lang->admin_stock_30 = 'Mã sản phẩm';
+$lang->admin_stock_31 = 'Tồn kho từ... trở xuống';
+$lang->admin_stock_32 = 'Từ khoá hoặc số lượng';
+$lang->admin_stock_33 = 'Ngày đăng ký';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = 'Chỉ cần điền các mục bắt buộc (';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = 'Áp dụng giao diện';
 $lang->admin_config_88 = 'Chủ đề cửa hàng được phát hành theo gói: bố cục + giao diện cửa hàng + giao diện Zittme Pay + giao diện diễn đàn. Cài giao diện vào modules/commerce/skins/ thì nó sẽ hiện ở đây.';
 $lang->admin_config_89 = 'Không có thực thể cửa hàng (mid) nên không thể thiết lập giao diện.';
 $lang->admin_config_103 = 'Khóa API';
+$lang->admin_config_104 = 'Hiển thị mã tiền tệ với ký hiệu đô la';
+$lang->admin_config_105 = 'Chỉ ký hiệu ($)';
+$lang->admin_config_106 = 'Mã + ký hiệu (MXN $)';
 $lang->admin_promotions_1 = 'Danh sách chương trình';
 $lang->admin_promotions_2 = 'Chưa có chương trình nào. Hãy tạo ở bên dưới.';
 $lang->admin_promotions_3 = 'Tên';

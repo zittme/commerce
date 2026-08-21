@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'Loss';
 $lang->admin_stock_26 = 'There are no movements.';
 $lang->admin_stock_27 = 'Product name';
 $lang->admin_stock_28 = 'Note (optional)';
+$lang->admin_stock_29 = 'All categories';
+$lang->admin_stock_30 = 'Item code';
+$lang->admin_stock_31 = 'Stock at or below';
+$lang->admin_stock_32 = 'Keyword or quantity';
+$lang->admin_stock_33 = 'Registered date';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = 'You can publish with just the required fields (';
@@ -735,6 +740,9 @@ $lang->admin_config_layout_follow_pc = 'Same as PC setting';
 $lang->admin_config_88 = 'Shop themes ship as a bundle of layout, commerce skin, Zittme Pay skin and board skin. Install a skin in modules/commerce/skins/ and it appears here.';
 $lang->admin_config_89 = 'There is no shop instance (mid), so the skin cannot be set.';
 $lang->admin_config_103 = 'API key';
+$lang->admin_config_104 = 'Currency code on dollar symbols';
+$lang->admin_config_105 = 'Symbol only ($)';
+$lang->admin_config_106 = 'Code + symbol (MXN $)';
 $lang->admin_promotions_1 = 'Campaigns';
 $lang->admin_promotions_2 = 'There are no campaigns. Create one below.';
 $lang->admin_promotions_3 = 'Name';

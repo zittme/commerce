@@ -494,6 +494,11 @@ $lang->admin_stock_25 = 'Хорогдол';
 $lang->admin_stock_26 = 'Хөдөлгөөний бичлэг алга.';
 $lang->admin_stock_27 = 'Барааны нэр';
 $lang->admin_stock_28 = 'Тэмдэглэл (сонголтоор)';
+$lang->admin_stock_29 = 'Бүх ангилал';
+$lang->admin_stock_30 = 'Барааны код';
+$lang->admin_stock_31 = 'Үлдэгдэл дээд тал нь';
+$lang->admin_stock_32 = 'Хайлтын үг эсвэл тоо';
+$lang->admin_stock_33 = 'Бүртгэсэн огноо';
 
 // 관리 화면 (3단계: 편집·설정 화면)
 $lang->admin_item_edit_1 = 'Заавал бөглөх талбарыг (';
@@ -731,6 +736,9 @@ $lang->admin_config_87 = 'Загвар хэрэглэх';
 $lang->admin_config_88 = 'Дэлгүүрийн сэдвийг байрлал + дэлгүүрийн загвар + Zittme Pay загвар + форумын загварын багц болгон тараана. Загварыг modules/commerce/skins/ дотор суулгавал энд гарч ирнэ.';
 $lang->admin_config_89 = 'Дэлгүүрийн жишээ (mid) байхгүй тул загвар тохируулах боломжгүй.';
 $lang->admin_config_103 = 'API түлхүүр';
+$lang->admin_config_104 = 'Долларын тэмдэгт дээр валютын код харуулах';
+$lang->admin_config_105 = 'Зөвхөн тэмдэгт ($)';
+$lang->admin_config_106 = 'Код + тэмдэгт (MXN $)';
 $lang->admin_promotions_1 = 'Кампанит ажлын жагсаалт';
 $lang->admin_promotions_2 = 'Кампанит ажил алга. Доороос үүсгэнэ үү.';
 $lang->admin_promotions_3 = 'Нэр';
