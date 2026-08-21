@@ -967,6 +967,7 @@ $lang->admin_item_edit_190 = '例: ギフト包装 / 保冷バッグ';
 $lang->admin_item_edit_191 = '行を削除';
 $lang->admin_item_edit_192 = '在庫';
 $lang->admin_item_edit_193 = 'オプションを扱うには商品を先に保存する必要があります。入力した内容を保存してオプションの位置に戻りますか。';
+$lang->admin_item_edit_194 = '会員等級割引を適用 (オフにすると等級価格なしで販売価格のまま)';
 $lang->st_order_pending = '入金待ち';
 $lang->st_order_paid = '決済完了';
 $lang->st_order_cancelled = 'キャンセル';

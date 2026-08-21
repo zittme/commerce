@@ -967,6 +967,7 @@ $lang->admin_item_edit_190 = 'например, Подарочная упако�
 $lang->admin_item_edit_191 = 'Удалить строку';
 $lang->admin_item_edit_192 = 'Остаток';
 $lang->admin_item_edit_193 = 'Товар нужно сохранить, прежде чем работать с опциями. Сохранить введённое и вернуться к опциям?';
+$lang->admin_item_edit_194 = 'Применять скидку уровня участника (выкл.: продажа по обычной цене)';
 $lang->st_order_pending = 'Ожидает оплаты';
 $lang->st_order_paid = 'Оплачено';
 $lang->st_order_cancelled = 'Отменён';

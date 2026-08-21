@@ -62,7 +62,46 @@ class Grade
 			$row = $stmt->fetchObject() ?: null;
 			$stmt->closeCursor();
 		}
-		return ($row && !empty($row->grade_srl) && !empty($row->title)) ? $row : null;
+		if ($row && !empty($row->grade_srl) && !empty($row->title))
+		{
+			return $row;
+		}
+		// 구매 이력이 없어도 연동 그룹에 넣어 둔 회원은 그 등급으로 본다
+		return self::getByGroups($member_srl);
+	}
+
+	/**
+	 * 회원이 속한 코어 그룹에 연동된 등급. 여러 개면 기준 구매액이 가장 높은 등급.
+	 *
+	 * @param int $member_srl
+	 * @return ?object
+	 */
+	public static function getByGroups(int $member_srl): ?object
+	{
+		$groups = \MemberModel::getMemberGroups($member_srl);
+		if (!is_array($groups) || !count($groups))
+		{
+			return null;
+		}
+		$found = null;
+		foreach (self::getList() as $grade)
+		{
+			$group_srl = (int)($grade->group_srl ?? 0);
+			if ($group_srl > 0 && isset($groups[$group_srl]))
+			{
+				if (!$found || (int)$grade->min_spend >= (int)$found->min_spend)
+				{
+					$found = $grade;
+				}
+			}
+		}
+		if (!$found)
+		{
+			return null;
+		}
+		$row = clone $found;
+		$row->total_spend = 0;
+		return $row;
 	}
 
 	/**
@@ -115,6 +154,13 @@ class Grade
 			{
 				$new_grade = $g;
 			}
+		}
+
+		// 연동 그룹으로 받은 등급보다 낮은 구간으로 내리지 않는다
+		$by_group = self::getByGroups($member_srl);
+		if ($by_group && (!$new_grade || (int)$by_group->min_spend > (int)$new_grade->min_spend))
+		{
+			$new_grade = $by_group;
 		}
 
 		$current = self::getForMember($member_srl);

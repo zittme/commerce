@@ -2237,6 +2237,7 @@ class Admin extends Base
 			'max_qty' => max(0, min(9999, (int)\Context::get('max_qty'))),
 			'tax_type' => \Context::get('tax_type') === 'free' ? 'free' : 'taxable',
 			'is_adult' => \Context::get('is_adult') === 'Y' ? 'Y' : 'N',
+			'grade_discount' => \Context::get('grade_discount') === 'N' ? 'N' : 'Y',
 			// 조합형 옵션 축 정의 (조합 행 자체는 아래 옵션 저장에서 만든다)
 			'option_axes' => ComboModel::encodeAxes(\Context::get('option_axes')),
 			'option_mode' => \Context::get('option_mode') === 'combo' ? 'combo' : 'single',

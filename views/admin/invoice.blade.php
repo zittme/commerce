@@ -83,8 +83,6 @@
 						@endif
 						<tr><th>{{ lang('commerce.admin_invoice_17') }}</th><td>{{ $order_address->receiver_name }}</td></tr>
 						<tr><th>{{ lang('commerce.admin_invoice_13') }}</th><td>{{ $inv->phone_text }}</td></tr>
-						<tr><th>{{ lang('commerce.admin_invoice_8') }}</th><td>{{ $inv->address_text }}</td></tr>
-						<tr><th>{{ lang('commerce.admin_invoice_18') }}</th><td>{{ $order_address->delivery_memo }}</td></tr>
 						@else
 						<tr><td colspan="2">{{ lang('commerce.admin_invoice_19') }}</td></tr>
 						@endif
@@ -95,6 +93,17 @@
 				</table>
 			</div>
 		</div>
+		{{-- 주소는 길어지기 쉬우므로 2단 밖으로 빼서 가로폭 전체를 쓴다 --}}
+		@if ($order_address)
+		<table class="zmi-tbl zmi-addr">
+			<tbody>
+				<tr><th>{{ lang('commerce.admin_invoice_8') }}</th><td>{{ $inv->address_text }}</td></tr>
+				@if ($order_address->delivery_memo)
+				<tr><th>{{ lang('commerce.admin_invoice_18') }}</th><td>{{ $order_address->delivery_memo }}</td></tr>
+				@endif
+			</tbody>
+		</table>
+		@endif
 
 		<h2>{{ lang('commerce.adm_invoice_items') }} @if ($show_tax && $tax->zero_rated)<span class="zmi-tag">{{ lang('commerce.admin_invoice_21') }}</span>@endif</h2>
 		<table class="zmi-tbl zmi-items">
@@ -109,13 +118,14 @@
 			@endphp
 			<thead>
 				<tr>
-					<th class="zmi-c" style="width:34px">No</th>
-					@if ($zmi_has_sku)<th class="zmi-c" style="width:110px">SKU</th>@endif
-					<th class="zmi-c" style="width:52px">{{ lang('commerce.admin_invoice_23') }}</th>
-					<th class="zmi-r" style="width:92px">{{ lang('commerce.admin_invoice_24') }}</th>
+					{{-- 열 폭은 내용에 맞춘다. 통화 표기가 길어져도 칸이 밀리지 않는다 --}}
+					<th class="zmi-c zmi-fit">No</th>
+					@if ($zmi_has_sku)<th class="zmi-c zmi-fit">SKU</th>@endif
+					<th class="zmi-c zmi-fit">{{ lang('commerce.admin_invoice_23') }}</th>
+					<th class="zmi-r zmi-fit">{{ lang('commerce.admin_invoice_24') }}</th>
 					@if ($show_tax)
-					<th class="zmi-r" style="width:100px">{{ lang('commerce.admin_invoice_25') }}</th>
-					<th class="zmi-r" style="width:84px">{{ lang('commerce.admin_invoice_26') }}</th>
+					<th class="zmi-r zmi-fit">{{ lang('commerce.admin_invoice_25') }}</th>
+					<th class="zmi-r zmi-fit">{{ lang('commerce.admin_invoice_26') }}</th>
 					@endif
 					<th class="zmi-r">{{ lang('commerce.admin_invoice_27') }}</th>
 				</tr>
@@ -254,7 +264,10 @@
 
 /* 품목 — 머리줄에 바탕을 깔아 표가 시작되는 지점을 확실히 한다 */
 /* 폭을 정한 대로 쓴다. 남는 폭을 브라우저가 나눠 가지면 머리와 값이 어긋난다 */
-.zmi-items { margin-top: 8px; table-layout: fixed; }
+.zmi-items { margin-top: 8px; table-layout: auto; }
+.zmi-items .zmi-fit { width: 1%; white-space: nowrap; }
+.zmi-items tbody tr.zmi-item-num td.zmi-r, .zmi-items tbody tr.zmi-item-num td.zmi-c { white-space: nowrap; }
+.zmi-addr { margin-top: 8px; }
 .zmi-items thead th { padding: 6px 8px; background: var(--zmi-fill); border-bottom: 1.5px solid var(--zmi-rule); font-size: 11.5px; font-weight: 700; color: var(--zmi-ink); text-align: center; white-space: nowrap; width: auto; }
 .zmi-items thead th:last-child { text-align: right; }
 .zmi-items tbody td { padding: 6px 8px; border-bottom: 1px solid var(--zmi-line); background: none; line-height: 1.45; }
@@ -318,7 +331,8 @@
 }
 
 @media print {
-	@page { size: A4; margin: 12mm 12mm; }
+	/* 용지는 프린터 기본값(A4·Letter)을 따른다 */
+	@page { size: auto; margin: 12mm 12mm; }
 	.zmi-page { background: #fff; padding: 0; }
 	.zmi-toolbar { display: none; }
 	.zmi-sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; transform: none; break-after: page; page-break-after: always; }

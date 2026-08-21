@@ -967,6 +967,7 @@ $lang->admin_item_edit_190 = '例如: 禮品包裝 / 保冷袋';
 $lang->admin_item_edit_191 = '刪除該列';
 $lang->admin_item_edit_192 = '庫存';
 $lang->admin_item_edit_193 = '處理選項前需要先儲存商品。要儲存已輸入的內容並回到選項位置嗎？';
+$lang->admin_item_edit_194 = '套用會員等級折扣 (關閉則依售價販售，不顯示等級價)';
 $lang->st_order_pending = '待支付';
 $lang->st_order_paid = '已支付';
 $lang->st_order_cancelled = '已取消';

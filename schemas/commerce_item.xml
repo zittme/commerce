@@ -34,6 +34,8 @@
 	<column name="tax_type" type="varchar" size="10" notnull="notnull" default="taxable" />
 	<!-- 성인 상품: 구매 시 본인인증 게이트 (member/identity 연동) -->
 	<column name="is_adult" type="char" size="1" notnull="notnull" default="N" />
+	<!-- 회원 등급 할인 적용 여부. N 이면 등급가 없이 판매가 그대로 -->
+	<column name="grade_discount" type="char" size="1" notnull="notnull" default="Y" />
 	<column name="has_options" type="char" size="1" notnull="notnull" default="N" />
 	<!-- 조합형 옵션 축 정의 (JSON: [{name, values[]}]) -->
 	<column name="option_axes" type="text" />

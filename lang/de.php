@@ -967,6 +967,7 @@ $lang->admin_item_edit_190 = 'z. B. Geschenkverpackung / Kühltasche';
 $lang->admin_item_edit_191 = 'Diese Zeile entfernen';
 $lang->admin_item_edit_192 = 'Bestand';
 $lang->admin_item_edit_193 = 'Das Produkt muss gespeichert sein, bevor Sie Optionen bearbeiten. Eingaben speichern und zu den Optionen zurückkehren?';
+$lang->admin_item_edit_194 = 'Mitgliedsstufen-Rabatt anwenden (aus: Verkauf zum Listenpreis)';
 $lang->st_order_pending = 'Zahlung ausstehend';
 $lang->st_order_paid = 'Bezahlt';
 $lang->st_order_cancelled = 'Storniert';

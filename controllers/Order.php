@@ -263,11 +263,13 @@ class Order extends Base
 				// 명세서·환불 계산이 전부 어긋난다.
 				// 등급 할인은 장바구니에서 기준 통화로 매겨 두므로 여기서 다시 매긴다.
 				// 그러지 않으면 외화 주문만 정가로 결제된다
-				$entry->unit_price = \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn(
-					$fx_unit + $fx_add,
-					$member_srl > 0 ? \Zittme\Modules\Commerce\Models\Grade::discountFor($member_srl) : null,
-					$order_currency
-				);
+				$entry->unit_price = ($entry->item->grade_discount ?? 'Y') === 'N'
+					? $fx_unit + $fx_add
+					: \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn(
+						$fx_unit + $fx_add,
+						$member_srl > 0 ? \Zittme\Modules\Commerce\Models\Grade::discountFor($member_srl) : null,
+						$order_currency
+					);
 				$entry->subtotal = $entry->unit_price * $entry->qty;
 				$fx_item_total += $entry->subtotal;
 			}

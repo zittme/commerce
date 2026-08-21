@@ -967,6 +967,7 @@ $lang->admin_item_edit_190 = '例如: 礼品包装 / 保冷袋';
 $lang->admin_item_edit_191 = '删除该行';
 $lang->admin_item_edit_192 = '库存';
 $lang->admin_item_edit_193 = '处理选项前需要先保存商品。要保存已输入的内容并回到选项位置吗？';
+$lang->admin_item_edit_194 = '应用会员等级折扣 (关闭则按售价销售，不显示等级价)';
 $lang->st_order_pending = '待支付';
 $lang->st_order_paid = '已支付';
 $lang->st_order_cancelled = '已取消';

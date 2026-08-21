@@ -260,7 +260,7 @@ class Cart
 				$unit_original = Item::effectivePrice($item) + ($option ? (int)$option->price_add : 0);
 			}
 			// 등급 할인은 서버 재계산 경로(여기) 한 곳에서만 적용된다 — 장바구니·주문 일관
-			$unit = Grade::applyDiscount($unit_original, $grade_discount);
+			$unit = ($item->grade_discount ?? 'Y') === 'N' ? $unit_original : Grade::applyDiscount($unit_original, $grade_discount);
 			$qty = max(1, (int)$row->qty);
 			$subtotal = $unit * $qty;
 			// 본품 행(option 없음)도 허용한다 — '선택 안 함' 선택지가 곧 본품이다

@@ -971,6 +971,7 @@ $lang->admin_item_edit_190 = '예: 선물 포장 / 보냉백';
 $lang->admin_item_edit_191 = '줄 삭제';
 $lang->admin_item_edit_192 = '재고';
 $lang->admin_item_edit_193 = '옵션을 다루려면 상품을 먼저 저장해야 합니다. 지금까지 입력한 내용을 저장하고 옵션 자리로 돌아갈까요?';
+$lang->admin_item_edit_194 = '회원 등급 할인 적용 (끄면 등급가 없이 판매가 그대로)';
 $lang->st_order_pending = '결제대기';
 $lang->st_order_paid = '결제완료';
 $lang->st_order_cancelled = '취소';

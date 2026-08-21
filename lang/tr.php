@@ -967,6 +967,7 @@ $lang->admin_item_edit_190 = 'örn. Hediye paketi / Soğutucu çanta';
 $lang->admin_item_edit_191 = 'Bu satırı sil';
 $lang->admin_item_edit_192 = 'Stok';
 $lang->admin_item_edit_193 = 'Seçenekler üzerinde çalışmadan önce ürünün kaydedilmesi gerekir. Girilenler kaydedilip seçeneklere dönülsün mü?';
+$lang->admin_item_edit_194 = 'Üye seviyesi indirimini uygula (kapalı: liste fiyatından satış)';
 $lang->st_order_pending = 'Ödeme bekliyor';
 $lang->st_order_paid = 'Ödendi';
 $lang->st_order_cancelled = 'İptal';

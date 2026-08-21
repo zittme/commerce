@@ -80,7 +80,9 @@ class Front extends Base
 			$shop_item->disp_effective = $disp['effective'];
 			$shop_item->disp_sellable = $disp['sellable'];
 
-			$graded = \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn($disp['effective'], $grade_discount, $now);
+			$graded = ($shop_item->grade_discount ?? 'Y') === 'N'
+				? $disp['effective']
+				: \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn($disp['effective'], $grade_discount, $now);
 			// 등급 할인이 실제로 값을 낮췄을 때만 표시를 바꾼다
 			$shop_item->grade_price = $graded < $disp['effective'] ? $graded : 0;
 		}
@@ -784,7 +786,9 @@ class Front extends Base
 					break;
 				}
 				// 등급 할인은 기준 통화로 매겨 둔 값이라, 통화를 바꾸면 다시 매겨야 한다
-				$fx_graded = \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn($fx_unit + $fx_add, $fx_discount, $fx_currency);
+				$fx_graded = ($entry->item->grade_discount ?? 'Y') === 'N'
+					? $fx_unit + $fx_add
+					: \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn($fx_unit + $fx_add, $fx_discount, $fx_currency);
 				$entry->unit_price = $fx_graded;
 				$entry->subtotal = $fx_graded * $entry->qty;
 			}

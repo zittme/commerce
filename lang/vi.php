@@ -967,6 +967,7 @@ $lang->admin_item_edit_190 = 'ví dụ: Gói quà / Túi giữ lạnh';
 $lang->admin_item_edit_191 = 'Xoá dòng này';
 $lang->admin_item_edit_192 = 'Tồn kho';
 $lang->admin_item_edit_193 = 'Cần lưu sản phẩm trước khi làm việc với tuỳ chọn. Lưu nội dung đã nhập và quay lại phần tuỳ chọn?';
+$lang->admin_item_edit_194 = 'Áp dụng giảm giá theo hạng thành viên (tắt: bán theo giá niêm yết)';
 $lang->st_order_pending = 'Chờ thanh toán';
 $lang->st_order_paid = 'Đã thanh toán';
 $lang->st_order_cancelled = 'Đã huỷ';

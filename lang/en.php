@@ -971,6 +971,7 @@ $lang->admin_item_edit_190 = 'e.g. Gift wrap / Cooler bag';
 $lang->admin_item_edit_191 = 'Remove this row';
 $lang->admin_item_edit_192 = 'Stock';
 $lang->admin_item_edit_193 = 'The item has to be saved before you can work on options. Save what you entered and come back to the options?';
+$lang->admin_item_edit_194 = 'Apply member grade discount (off: sell at list price regardless of grade)';
 $lang->st_order_pending = 'Awaiting payment';
 $lang->st_order_paid = 'Paid';
 $lang->st_order_cancelled = 'Cancelled';

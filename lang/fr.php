@@ -967,6 +967,7 @@ $lang->admin_item_edit_190 = 'par ex. Emballage cadeau / Sac isotherme';
 $lang->admin_item_edit_191 = 'Supprimer cette ligne';
 $lang->admin_item_edit_192 = 'Stock';
 $lang->admin_item_edit_193 = 'Le produit doit être enregistré avant de travailler sur les options. Enregistrer la saisie et revenir aux options ?';
+$lang->admin_item_edit_194 = 'Appliquer la remise de niveau membre (désactivé : prix catalogue)';
 $lang->st_order_pending = 'En attente de paiement';
 $lang->st_order_paid = 'Payé';
 $lang->st_order_cancelled = 'Annulé';
