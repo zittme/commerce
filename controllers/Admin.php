@@ -2317,12 +2317,6 @@ class Admin extends Base
 			$fields->has_options = count(ItemModel::getOptions($item_srl)) ? 'Y' : 'N';
 			// 신규 상품은 재고 0으로 시작 — 수량은 재고 관리에서 입고로 채운다
 			$fields->stock = 0;
-			// 진열 순서를 정하지 않았으면 번호를 그대로 쓴다. 오름차순으로 정렬하면
-			// 등록한 순서대로 나오고, 나중에 목록에서 끌어 옮기면 이 값이 다시 매겨진다
-			if ((int)$fields->list_order <= 0)
-			{
-				$fields->list_order = $item_srl;
-			}
 			$fields->regdate = self::now();
 			$output = executeQuery('commerce.insertItem', $fields);
 
