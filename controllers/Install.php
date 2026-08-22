@@ -60,6 +60,8 @@ class Install extends Base
 		['commerce_grade', 'discount_value', 'float', null],
 		// 등급에 걸어 두는 코어 회원그룹
 		['commerce_grade', 'group_srl', 'bigint', null],
+		// 상품별 등급 할인 적용 여부
+		['commerce_item', 'grade_discount', 'char', 1],
 		// 다통화 - 주문 통화와 체결 시점 환율
 		['commerce_order', 'currency', 'varchar', 8],
 		['commerce_order', 'exchange_rate', 'varchar', 16],
