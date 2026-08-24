@@ -1200,6 +1200,7 @@ $lang->mail_subject_delivered = '[%s] 상품이 도착했습니다 - %s';
 $lang->mail_subject_claim_done = '[%s] 취소·반품이 처리되었습니다 - %s';
 $lang->mail_order_code = '주문번호';
 $lang->mail_orderer = '주문자';
+$lang->mail_items = '주문 상품';
 $lang->mail_payment = '결제 금액';
 $lang->mail_pending_note = '상태: 결제 대기 (무통장 주문이면 입금 확인이 필요합니다)';
 $lang->shop_notify_email_help = '여러 명이면 쉼표로 나눠 적으세요.';

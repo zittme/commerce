@@ -343,30 +343,59 @@ class Order
 				return;
 			}
 
-			$lines = [];
-			$lines[] = lang('commerce.mail_order_code') . ': ' . $order->order_code;
-			$lines[] = lang('commerce.mail_orderer') . ': ' . $order->orderer_name
-				. ($order->orderer_phone ? ' (' . $order->orderer_phone . ')' : '');
+			$rows = [];
+			$rows[] = [lang('commerce.mail_order_code'), (string)$order->order_code];
+			$rows[] = [lang('commerce.mail_orderer'), $order->orderer_name
+				. ($order->orderer_phone ? ' (' . $order->orderer_phone . ')' : '')];
+
+			$item_lines = [];
 			foreach (self::getItems((int)$order->order_srl) as $item)
 			{
-				$lines[] = '- ' . $item->item_name . ($item->option_name ? ' / ' . $item->option_name : '') . ' x ' . (int)$item->qty;
+				$item_lines[] = $item->item_name . ($item->option_name ? ' / ' . $item->option_name : '') . ' x ' . (int)$item->qty;
 			}
-			$lines[] = lang('commerce.mail_payment') . ': ' . shop_money_in((int)$order->payment_price, $order->currency ?? 'KRW');
+			if (count($item_lines))
+			{
+				$rows[] = [lang('commerce.mail_items'), $item_lines];
+			}
+
+			$rows[] = [lang('commerce.mail_payment'), shop_money_in((int)$order->payment_price, $order->currency ?? 'KRW')];
+
+			$notes = [];
 			if ($kind === 'new_order' && $order->status === Base::ORDER_PENDING)
 			{
-				$lines[] = lang('commerce.mail_pending_note');
+				$notes[] = lang('commerce.mail_pending_note');
 			}
 			if ($memo !== '')
 			{
-				$lines[] = $memo;
+				$notes[] = $memo;
 			}
+
+			$html = '<div style="font-family:sans-serif;font-size:14px;line-height:1.7;color:#333">';
+			$html .= '<p style="margin:0 0 14px;font-size:15px;font-weight:700">' . escape($subject) . '</p>';
+			$html .= '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse">';
+			foreach ($rows as [$label, $value])
+			{
+				$value_html = is_array($value)
+					? implode('<br />', array_map(function($line) { return escape($line); }, $value))
+					: escape((string)$value);
+				$html .= '<tr>'
+					. '<th style="padding:6px 14px 6px 0;text-align:left;vertical-align:top;color:#6b7684;font-weight:600;white-space:nowrap">' . escape($label) . '</th>'
+					. '<td style="padding:6px 0;vertical-align:top">' . $value_html . '</td>'
+					. '</tr>';
+			}
+			$html .= '</table>';
+			foreach ($notes as $note)
+			{
+				$html .= '<p style="margin:14px 0 0;color:#6b7684">' . escape($note) . '</p>';
+			}
+			$html .= '</div>';
 
 			foreach ($recipients as $to)
 			{
 				$mail = new \Zittme\Framework\Mail();
 				$mail->addTo($to);
 				$mail->setSubject($subject);
-				$mail->setBody(implode("\n", $lines), 'text/plain');
+				$mail->setBody($html, 'text/html');
 				$mail->send();
 			}
 		}

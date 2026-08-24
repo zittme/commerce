@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] Ihre Bestellung ist angekommen - %s';
 $lang->mail_subject_claim_done = '[%s] Ihre Stornierung oder Rückgabe ist abgeschlossen - %s';
 $lang->mail_order_code = 'Bestellnummer';
 $lang->mail_orderer = 'Bestellt von';
+$lang->mail_items = 'Artikel';
 $lang->mail_payment = 'Gezahlter Betrag';
 $lang->mail_pending_note = 'Status: Zahlung ausstehend (bei Überweisung muss der Eingang bestätigt werden)';
 $lang->shop_notify_email_help = 'Mehrere Adressen mit Komma trennen.';

@@ -1279,7 +1279,7 @@ class Admin extends Base
 				$address ? (string)$address->delivery_memo : '',
 				implode(' / ', $names),
 				(string)$qty_total,
-				(string)(int)$order->payment_price,
+				MoneyModel::minorToInput((int)$order->payment_price),
 				$order_labels[$order->status] ?? (string)$order->status,
 				$seller ? ($seller_labels[$seller->status] ?? (string)$seller->status) : '',
 				$seller ? (string)($seller->shipping_company ?? '') : '',
@@ -1820,7 +1820,7 @@ class Admin extends Base
 			$rows = [[lang('commerce.csv_item'), lang('commerce.csv_qty_sold'), lang('commerce.csv_order_count'), lang('commerce.csv_revenue')]];
 			foreach (StatsModel::byItem($from, $to, 1000) as $r)
 			{
-				$rows[] = [$r->item_name, (string)$r->qty, (string)$r->orders, (string)$r->sales];
+				$rows[] = [$r->item_name, (string)$r->qty, (string)$r->orders, MoneyModel::minorToInput((int)$r->sales)];
 			}
 		}
 		elseif ($tab === 'region')
@@ -1828,7 +1828,7 @@ class Admin extends Base
 			$rows = [[lang('commerce.csv_region'), lang('commerce.csv_order_count'), lang('commerce.csv_revenue')]];
 			foreach (StatsModel::byRegion($from, $to) as $r)
 			{
-				$rows[] = [$r->region, (string)$r->orders, (string)$r->sales];
+				$rows[] = [$r->region, (string)$r->orders, MoneyModel::minorToInput((int)$r->sales)];
 			}
 		}
 		else
@@ -1836,7 +1836,7 @@ class Admin extends Base
 			$rows = [[lang('commerce.csv_period'), lang('commerce.csv_order_count'), lang('commerce.csv_revenue')]];
 			foreach (StatsModel::series($from, $to, $unit) as $r)
 			{
-				$rows[] = [$r->label, (string)$r->orders, (string)$r->sales];
+				$rows[] = [$r->label, (string)$r->orders, MoneyModel::minorToInput((int)$r->sales)];
 			}
 		}
 

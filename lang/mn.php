@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] Захиалга хүргэгдлээ - %s
 $lang->mail_subject_claim_done = '[%s] Цуцлах буюу буцаах ажиллагаа дууслаа - %s';
 $lang->mail_order_code = 'Захиалгын дугаар';
 $lang->mail_orderer = 'Захиалагч';
+$lang->mail_items = 'Бараа';
 $lang->mail_payment = 'Төлсөн дүн';
 $lang->mail_pending_note = 'Төлөв: төлбөр хүлээгдэж байна (банкны шилжүүлгийн хувьд орлого баталгаажих шаардлагатай)';
 $lang->shop_notify_email_help = 'Хэд хэдэн хаягийг таслалаар тусгаарлана уу.';

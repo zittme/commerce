@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] Siparişiniz teslim edildi - %s';
 $lang->mail_subject_claim_done = '[%s] İptal veya iadeniz tamamlandı - %s';
 $lang->mail_order_code = 'Sipariş numarası';
 $lang->mail_orderer = 'Sipariş veren';
+$lang->mail_items = 'Ürünler';
 $lang->mail_payment = 'Ödenen tutar';
 $lang->mail_pending_note = 'Durum: ödeme bekleniyor (havale siparişlerinde ödemenin onaylanması gerekir)';
 $lang->shop_notify_email_help = 'Birden fazla adresi virgülle ayırın.';

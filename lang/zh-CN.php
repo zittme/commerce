@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] 商品已送达 - %s';
 $lang->mail_subject_claim_done = '[%s] 取消或退货已处理完成 - %s';
 $lang->mail_order_code = '订单编号';
 $lang->mail_orderer = '订购人';
+$lang->mail_items = '订购商品';
 $lang->mail_payment = '支付金额';
 $lang->mail_pending_note = '状态：等待付款（银行转账订单需确认到账）';
 $lang->shop_notify_email_help = '多个地址请用逗号分隔。';

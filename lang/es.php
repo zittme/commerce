@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] Su pedido ha llegado - %s';
 $lang->mail_subject_claim_done = '[%s] Su cancelación o devolución se ha completado - %s';
 $lang->mail_order_code = 'Número de pedido';
 $lang->mail_orderer = 'Pedido por';
+$lang->mail_items = 'Artículos';
 $lang->mail_payment = 'Importe pagado';
 $lang->mail_pending_note = 'Estado: pendiente de pago (los pedidos por transferencia requieren confirmar el ingreso)';
 $lang->shop_notify_email_help = 'Separe varias direcciones con comas.';

@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] Đơn hàng đã đến nơi - %s';
 $lang->mail_subject_claim_done = '[%s] Việc hủy hoặc trả hàng đã hoàn tất - %s';
 $lang->mail_order_code = 'Mã đơn hàng';
 $lang->mail_orderer = 'Người đặt';
+$lang->mail_items = 'Sản phẩm';
 $lang->mail_payment = 'Số tiền thanh toán';
 $lang->mail_pending_note = 'Trạng thái: chờ thanh toán (đơn chuyển khoản cần xác nhận đã nhận tiền)';
 $lang->shop_notify_email_help = 'Nhiều địa chỉ hãy phân tách bằng dấu phẩy.';

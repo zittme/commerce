@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] Votre commande est arrivée - %s';
 $lang->mail_subject_claim_done = '[%s] Votre annulation ou retour est terminé - %s';
 $lang->mail_order_code = 'Numéro de commande';
 $lang->mail_orderer = 'Commandé par';
+$lang->mail_items = 'Articles';
 $lang->mail_payment = 'Montant payé';
 $lang->mail_pending_note = 'Statut : en attente de paiement (les virements nécessitent une confirmation du dépôt)';
 $lang->shop_notify_email_help = 'Séparez plusieurs adresses par des virgules.';

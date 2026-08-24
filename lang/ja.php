@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] 商品が届きました - %s';
 $lang->mail_subject_claim_done = '[%s] キャンセル・返品の処理が完了しました - %s';
 $lang->mail_order_code = '注文番号';
 $lang->mail_orderer = 'ご注文者';
+$lang->mail_items = '注文商品';
 $lang->mail_payment = 'お支払い金額';
 $lang->mail_pending_note = '状態: 入金待ち (銀行振込の場合は入金確認が必要です)';
 $lang->shop_notify_email_help = '複数の場合はカンマで区切って入力してください。';

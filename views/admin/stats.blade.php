@@ -73,7 +73,7 @@
 			<tbody>
 				@foreach ($st_rows as $r)
 				<tr>
-					<td><a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $r->item_srl) }}">{{ $r->item_name }}</a></td>
+					<td><a class="zmc-stats-item" href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $r->item_srl) }}">{{ $r->item_name }}</a></td>
 					<td>{{ number_format($r->qty) }}</td>
 					<td>{{ number_format($r->orders) }}</td>
 					<td>{{ shop_money_base($r->sales) }}</td>
@@ -115,6 +115,8 @@
 .zms-bar-fill { width: 100%; border-radius: 3px 3px 0 0; background: var(--zm-point, #2677e3); opacity: .85; }
 .zms-bar:hover .zms-bar-fill { opacity: 1; }
 .zms-bar-label { position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%) rotate(-45deg); transform-origin: center; font-size: 10px; white-space: nowrap; color: var(--zm-text-sub, #6b7684); }
+.zmc-stats-item { color: inherit; text-decoration: none; }
+.zmc-stats-item:hover, .zmc-stats-item:focus { color: var(--zm-point, #2677e3); text-decoration: underline; }
 @media (max-width: 900px) {
 	.zms-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.zms-bar-label { display: none; }

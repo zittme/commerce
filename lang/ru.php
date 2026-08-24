@@ -1189,6 +1189,7 @@ $lang->mail_subject_delivered = '[%s] Заказ доставлен - %s';
 $lang->mail_subject_claim_done = '[%s] Отмена или возврат завершены - %s';
 $lang->mail_order_code = 'Номер заказа';
 $lang->mail_orderer = 'Заказчик';
+$lang->mail_items = 'Товары';
 $lang->mail_payment = 'Сумма оплаты';
 $lang->mail_pending_note = 'Статус: ожидает оплаты (для банковского перевода нужно подтвердить поступление)';
 $lang->shop_notify_email_help = 'Несколько адресов разделяйте запятыми.';

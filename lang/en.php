@@ -1200,6 +1200,7 @@ $lang->mail_subject_delivered = '[%s] Your order has arrived - %s';
 $lang->mail_subject_claim_done = '[%s] Your cancellation or return is complete - %s';
 $lang->mail_order_code = 'Order number';
 $lang->mail_orderer = 'Ordered by';
+$lang->mail_items = 'Items';
 $lang->mail_payment = 'Amount paid';
 $lang->mail_pending_note = 'Status: awaiting payment (bank transfer orders need the deposit confirmed)';
 $lang->shop_notify_email_help = 'Separate multiple addresses with commas.';
