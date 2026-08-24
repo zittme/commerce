@@ -29,7 +29,7 @@
 						<input type="hidden" name="module" value="admin" form="zmcCatForm{{ $c->category_srl }}" />
 						<input type="hidden" name="act" value="procCommerceAdminInsertCategory" form="zmcCatForm{{ $c->category_srl }}" />
 						{{-- 저장한 뒤 보던 자리로 돌아온다. 없으면 쪽수와 검색 조건이 날아간다 --}}
-						<input type="hidden" name="success_return_url" value="{{ getUrl() }}" form="zmcCatForm{{ $c->category_srl }}" />
+						<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" form="zmcCatForm{{ $c->category_srl }}" />
 						<input type="hidden" name="category_srl" value="{{ $c->category_srl }}" form="zmcCatForm{{ $c->category_srl }}" />
 						<input type="hidden" name="parent_srl" value="{{ (int)$c->parent_srl }}" form="zmcCatForm{{ $c->category_srl }}" class="zmc-parent-field" />
 						<input type="hidden" name="list_order" value="{{ (int)$c->list_order }}" form="zmcCatForm{{ $c->category_srl }}" />
@@ -48,7 +48,7 @@
 						<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_cat_delete_ask') }}')">
 							<input type="hidden" name="module" value="admin" />
 							<input type="hidden" name="act" value="procCommerceAdminDeleteCategory" />
-							<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+							<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 							<input type="hidden" name="category_srl" value="{{ $c->category_srl }}" />
 							<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_categories_11') }}</button>
 						</form>
@@ -62,7 +62,7 @@
 		<form action="{{ getUrl('') }}" method="post">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminInsertCategory" />
-			<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+			<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 			<div class="rsva-inline">
 				<div><label>{{ lang('commerce.admin_categories_12') }}</label><input type="text" name="title" required /></div>
 				<div style="min-width:150px">

@@ -8,7 +8,7 @@
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminInsertCoupon" />
 			{{-- 저장한 뒤 보던 자리로 돌아온다. 없으면 쪽수와 검색 조건이 날아간다 --}}
-			<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+			<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 			<div style="min-width:180px"><label>{{ lang('commerce.admin_coupons_2') }}</label><span class="zlf-row-wrap"><input type="text" name="title" required />@include('_langfield', ['lf_name' => 'title', 'lf_value' => '', 'lf_key' => 'coupon'])</span></div>
 			<div><label>{{ lang('commerce.admin_coupons_3') }}</label><input type="text" name="code" placeholder="WELCOME10" style="width:130px" /></div>
 			<div><label>{{ lang('commerce.admin_coupons_4') }}</label><select name="discount_type" style="width:90px"><option value="fixed">{{ lang('commerce.admin_coupons_5') }}</option><option value="percent">{{ lang('commerce.admin_coupons_6') }}</option></select></div>
@@ -47,7 +47,7 @@
 					<form action="{{ getUrl('') }}" method="post" class="rsva-inline">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminIssueCoupon" />
-						<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+						<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 						<input type="hidden" name="coupon_srl" value="{{ $c->coupon_srl }}" />
 						<div><input type="text" name="target" placeholder="{{ lang('commerce.admin_coupons_26') }}" style="width:140px" /></div>
 						<div><button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_coupons_24') }}</button></div>
@@ -55,7 +55,7 @@
 					<form action="{{ getUrl('') }}" method="post" style="display:inline-block;margin-top:4px" onsubmit="return confirm('{{ lang('commerce.adm_coupon_delete_ask') }}')">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminDeleteCoupon" />
-						<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+						<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 						<input type="hidden" name="coupon_srl" value="{{ $c->coupon_srl }}" />
 						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_coupons_25') }}</button>
 					</form>

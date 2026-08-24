@@ -72,6 +72,7 @@
 			<input type="hidden" name="f_keyword" value="{{ Context::get('f_keyword') }}" />
 			<input type="hidden" name="f_field" value="{{ Context::get('f_field') }}" />
 			<input type="hidden" name="f_category" value="{{ Context::get('f_category') }}" />
+			<input type="hidden" name="memo" value="" />
 		</form>
 		@foreach ($stock_options_map[(int)$si->item_srl] ?? [] as $so)
 		<form id="stAdj{{ $si->item_srl }}_{{ $so->option_srl }}" action="./" method="post">
@@ -82,6 +83,7 @@
 			<input type="hidden" name="f_keyword" value="{{ Context::get('f_keyword') }}" />
 			<input type="hidden" name="f_field" value="{{ Context::get('f_field') }}" />
 			<input type="hidden" name="f_category" value="{{ Context::get('f_category') }}" />
+			<input type="hidden" name="memo" value="" />
 		</form>
 		@endforeach
 		@endforeach
@@ -103,7 +105,7 @@
 						</select>
 						<input type="number" name="qty" form="{{ $st_fid }}" min="1" value="1" style="width:70px" />
 					</td>
-					<td><input type="text" name="memo" form="{{ $st_fid }}" maxlength="250" placeholder="{{ lang('commerce.admin_stock_28') }}" style="width:100%;min-width:120px" /></td>
+					<td><input type="text" class="zmi-memo" data-form="{{ $st_fid }}" maxlength="250" placeholder="{{ lang('commerce.admin_stock_28') }}" style="width:100%;min-width:120px" /></td>
 					<td style="white-space:nowrap">
 						<button type="submit" form="{{ $st_fid }}" class="rsva-btn rsva-btn-sm rsva-btn-primary">{{ lang('commerce.admin_stock_13') }}</button>
 						<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock', 'log_item', $si->item_srl, 'f_keyword', Context::get('f_keyword')) }}">{{ lang('commerce.admin_stock_14') }}</a>
@@ -124,7 +126,7 @@
 						</select>
 						<input type="number" name="qty" form="{{ $st_fid }}" min="1" value="1" style="width:70px" />
 					</td>
-					<td><input type="text" name="memo" form="{{ $st_fid }}" maxlength="250" style="width:100%;min-width:120px" /></td>
+					<td><input type="text" class="zmi-memo" data-form="{{ $st_fid }}" maxlength="250" style="width:100%;min-width:120px" /></td>
 					<td><button type="submit" form="{{ $st_fid }}" class="rsva-btn rsva-btn-sm rsva-btn-primary">{{ lang('commerce.admin_stock_13') }}</button></td>
 				</tr>
 				@endforeach
@@ -187,6 +189,17 @@
 </style>
 
 <script>
+(function () {
+	document.querySelectorAll('.zmi-memo').forEach(function (el) {
+		var sync = function () {
+			var form = document.getElementById(el.getAttribute('data-form'));
+			if (!form || !form.memo) { return; }
+			form.memo.value = el.value;
+		};
+		el.addEventListener('input', sync);
+		el.addEventListener('change', sync);
+	});
+})();
 (function () {
 	// 알림 기준 칸들을 모아 한 번에 보낸다
 	var form = document.getElementById('zmiLowForm');

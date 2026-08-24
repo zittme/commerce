@@ -64,6 +64,8 @@ class Grade
 		}
 		if ($row && !empty($row->grade_srl) && !empty($row->title))
 		{
+			$row->title_raw = (string)$row->title;
+			$row->title = Lang::text((string)$row->title);
 			return $row;
 		}
 		// 구매 이력이 없어도 연동 그룹에 넣어 둔 회원은 그 등급으로 본다

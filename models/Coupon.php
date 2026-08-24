@@ -167,7 +167,13 @@ class Coupon
 			$srl = (int)$issue->coupon_srl;
 			if (!array_key_exists($srl, $coupons))
 			{
-				$coupons[$srl] = self::get($srl);
+				$one = self::get($srl);
+				if ($one)
+				{
+					$one->title_raw = (string)$one->title;
+					$one->title = Lang::text((string)$one->title);
+				}
+				$coupons[$srl] = $one;
 			}
 			$coupon = $coupons[$srl];
 			if (!$coupon || !self::isUsableNow($coupon))

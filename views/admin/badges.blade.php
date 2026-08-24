@@ -26,7 +26,7 @@
 						<input type="hidden" name="module" value="admin" form="zmcBadgeForm{{ $b->badge_srl }}" />
 						<input type="hidden" name="act" value="procCommerceAdminInsertBadge" form="zmcBadgeForm{{ $b->badge_srl }}" />
 						{{-- 저장한 뒤 보던 자리로 돌아온다. 없으면 쪽수와 검색 조건이 날아간다 --}}
-						<input type="hidden" name="success_return_url" value="{{ getUrl() }}" form="zmcBadgeForm{{ $b->badge_srl }}" />
+						<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" form="zmcBadgeForm{{ $b->badge_srl }}" />
 						<input type="hidden" name="badge_srl" value="{{ $b->badge_srl }}" form="zmcBadgeForm{{ $b->badge_srl }}" />
 						<input type="text" name="title" value="{{ $b->title }}" maxlength="30" required form="zmcBadgeForm{{ $b->badge_srl }}" style="min-width:160px" />@include('_langfield', ['lf_name' => 'title', 'lf_value' => $b->title, 'lf_key' => $b->badge_srl, 'lf_form' => 'zmcBadgeForm' . $b->badge_srl])
 					</td>
@@ -45,7 +45,7 @@
 							<input type="hidden" name="module" value="admin" />
 							<input type="hidden" name="act" value="procCommerceAdminDeleteBadge" />
 							<input type="hidden" name="badge_srl" value="{{ $b->badge_srl }}" />
-							<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+							<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 							<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_badges_12') }}</button>
 						</form>
 					</td>
@@ -58,7 +58,7 @@
 		<form action="{{ getUrl('') }}" method="post">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminInsertBadge" />
-			<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+			<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 			<div class="rsva-inline">
 				<div><label>{{ lang('commerce.admin_badges_13') }}</label><input type="text" name="title" maxlength="30" placeholder="{{ lang('commerce.admin_badges_15') }}" required /></div>
 				<div><label>{{ lang('commerce.admin_badges_6') }}</label><input type="color" name="color" value="#ffffff" style="width:56px;height:34px;padding:2px" /></div>

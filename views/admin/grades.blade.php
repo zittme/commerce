@@ -9,7 +9,7 @@
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminInsertGrade" />
 			{{-- 저장한 뒤 보던 자리로 돌아온다. 없으면 쪽수와 검색 조건이 날아간다 --}}
-			<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+			<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 			<div style="min-width:160px"><label>{{ lang('commerce.admin_grades_5') }}</label><span class="zlf-row-wrap"><input type="text" name="title" required placeholder="{{ lang('commerce.admin_grades_26') }}" />@include('_langfield', ['lf_name' => 'title', 'lf_value' => '', 'lf_key' => 'gradenew'])</span></div>
 			<div><label>{{ lang('commerce.admin_grades_6') }}</label><input type="number" name="min_spend" min="0" value="0" style="width:140px" /></div>
 			<div><label>{{ lang('commerce.admin_grades_7') }}</label><input type="number" name="credit_rate" min="0" max="100" step="0.01" value="0" style="width:120px" /></div>
@@ -77,7 +77,7 @@
 					<form action="{{ getUrl('') }}" method="post" class="rsva-inline">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminInsertGrade" />
-						<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+						<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 						<input type="hidden" name="grade_srl" value="{{ $g->grade_srl }}" />
 						<div class="zlf-row-wrap"><input type="text" name="title" value="{{ $g->title }}" style="width:100px" />@include('_langfield', ['lf_name' => 'title', 'lf_value' => $g->title, 'lf_key' => $g->grade_srl])</div>
 						{{-- 저장은 inputToMinor 를 거친다. 화면에도 같은 단위로 되돌려 놓지 않으면 저장할 때마다 100배가 된다 --}}
@@ -114,7 +114,7 @@
 					<form action="{{ getUrl('') }}" method="post" style="display:inline" onsubmit="return confirm('{{ lang('commerce.adm_grade_delete_ask') }}')">
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminDeleteGrade" />
-						<input type="hidden" name="success_return_url" value="{{ getUrl() }}" />
+						<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 						<input type="hidden" name="grade_srl" value="{{ $g->grade_srl }}" />
 						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_grades_25') }}</button>
 					</form>
