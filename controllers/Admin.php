@@ -1239,7 +1239,7 @@ class Admin extends Base
 		]];
 
 		$order_labels = ['pending' => lang('commerce.st_order_pending'), 'paid' => lang('commerce.st_order_paid'), 'cancelled' => lang('commerce.st_order_cancelled'), 'failed' => lang('commerce.st_order_failed'), 'expired' => lang('commerce.st_order_expired')];
-		$seller_labels = ['pending' => lang('commerce.st_order_pending'), 'paid' => lang('commerce.st_sel_paid'), 'preparing' => lang('commerce.st_sel_preparing'), 'shipping' => lang('commerce.st_sel_shipping'), 'delivered' => lang('commerce.st_sel_delivered'), 'cancelled' => lang('commerce.st_order_cancelled'), 'refunded' => lang('commerce.st_sel_refunded')];
+		$seller_labels = ['pending' => lang('commerce.st_order_pending'), 'paid' => lang('commerce.st_sel_paid'), 'preparing' => lang('commerce.st_sel_preparing'), 'shipping' => lang('commerce.st_sel_shipping'), 'delivered' => lang('commerce.st_sel_delivered'), 'confirmed' => lang('commerce.st_log_confirmed'), 'cancelled' => lang('commerce.st_order_cancelled'), 'refunded' => lang('commerce.st_sel_refunded')];
 
 		foreach ($orders as $order)
 		{
