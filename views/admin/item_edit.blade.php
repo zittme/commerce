@@ -393,7 +393,6 @@
 		}
 		$ie_mode = ($item->option_mode ?? 'single') === 'combo' ? 'combo' : 'single';
 		$ie_opt_shown = $ie_opt_basic;
-		// 조합 재생성 확인창에서 빠질 옵션을 미리 보여 주기 위한 현재 목록
 		$ie_opt_keys = [];
 		foreach ($ie_opt_basic as $ie_opt_row)
 		{
@@ -813,7 +812,6 @@
 			if (!axes.length) { alert({!! json_encode(lang('commerce.admin_item_edit_173')) !!}); return; }
 			var total = axes.reduce(function (n, a) { return n * a.values.length; }, 1);
 			if (total > 100) { alert({!! json_encode(lang('commerce.admin_item_edit_174')) !!}.replace('%d', total)); return; }
-			// 새 축에 없는 기존 옵션(직접 입력 포함)은 삭제된다. 이름을 보여 주고 확인을 받는다
 			var keep = {};
 			var walk = function (i, prefix) {
 				if (i >= axes.length) { keep[prefix.join('|')] = true; return; }

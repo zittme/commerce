@@ -231,7 +231,6 @@ class Cart
 			// 다국어 연결 상품명($user_lang->코드)을 실값으로 - 주문서 표기와 주문 스냅샷이 이 값을 쓴다
 			$item->item_name = Lang::text((string)$item->item_name);
 			$option = null;
-			// 담을 때 있던 옵션이 삭제·숨김됐으면 본품으로 취급하지 않고 변경 안내만 한다
 			$changed = false;
 			if ((int)$row->option_srl > 0)
 			{

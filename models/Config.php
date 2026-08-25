@@ -34,7 +34,6 @@ class Config
 		'claim_days' => 7,
 		// 상품 상세: 우측 플로팅(스티키) 구매 박스 사용 여부
 		'item_sticky' => 'N',
-		// 달러권 통화 기호 앞에 코드 표시 (MXN $). 끄면 $ 만
 		'currency_code_prefix' => 'N',
 		// 쇼핑 메인: list(상품 목록) / home(배너·섹션 구성 홈)
 		'shop_main' => 'list',

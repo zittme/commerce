@@ -204,7 +204,6 @@ class Admin extends Base
 		$args->list_count = 50;
 		$args->sort_index = 'item_srl';
 		$args->order_type = 'desc';
-		// 검색 조건: 카테고리, 검색 대상(상품명/상품코드/현재고 이하), 등록일 범위
 		$keyword = trim((string)\Context::get('f_keyword'));
 		$field = (string)\Context::get('f_field') ?: 'name';
 		$category_srl = (int)\Context::get('f_category');
@@ -235,7 +234,6 @@ class Admin extends Base
 		}
 		$output = executeQueryArray('commerce.getItemList', $args);
 		$items = LangModel::textAll($output->data ?: [], ['item_name']);
-		// 현재고 이하: 옵션 상품은 옵션 재고 기준이라 쿼리 대신 여기서 거른다
 		$stock_max = ($field === 'stock' && $keyword !== '' && is_numeric($keyword)) ? (int)$keyword : null;
 		$options_map = [];
 		foreach ($items as $stock_item)
@@ -2613,8 +2611,6 @@ class Admin extends Base
 			$made++;
 		}
 
-		// 축에서 빠진 조합과 직접 입력 옵션은 삭제한다. 주문 항목은 이름·가격을 스냅샷으로 갖고 있다.
-		// 장바구니에 남은 줄은 Cart::resolve() 가 변경 안내로 표시한다
 		$removed = 0;
 		foreach ($existing as $key => $option)
 		{

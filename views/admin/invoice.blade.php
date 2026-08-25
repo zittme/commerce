@@ -93,7 +93,6 @@
 				</table>
 			</div>
 		</div>
-		{{-- 주소는 길어지기 쉬우므로 2단 밖으로 빼서 가로폭 전체를 쓴다 --}}
 		@if ($order_address)
 		<table class="zmi-tbl zmi-addr">
 			<tbody>
@@ -118,7 +117,6 @@
 			@endphp
 			<thead>
 				<tr>
-					{{-- 열 폭은 내용에 맞춘다. 통화 표기가 길어져도 칸이 밀리지 않는다 --}}
 					<th class="zmi-c zmi-fit">No</th>
 					@if ($zmi_has_sku)<th class="zmi-c zmi-fit">SKU</th>@endif
 					<th class="zmi-c zmi-fit">{{ lang('commerce.admin_invoice_23') }}</th>
@@ -331,7 +329,6 @@
 }
 
 @media print {
-	/* 용지는 프린터 기본값(A4·Letter)을 따른다 */
 	@page { size: auto; margin: 12mm 12mm; }
 	.zmi-page { background: #fff; padding: 0; }
 	.zmi-toolbar { display: none; }

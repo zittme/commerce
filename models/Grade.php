@@ -68,7 +68,6 @@ class Grade
 			$row->title = Lang::text((string)$row->title);
 			return $row;
 		}
-		// 구매 이력이 없어도 연동 그룹에 넣어 둔 회원은 그 등급으로 본다
 		return self::getByGroups($member_srl);
 	}
 
@@ -158,7 +157,6 @@ class Grade
 			}
 		}
 
-		// 연동 그룹으로 받은 등급보다 낮은 구간으로 내리지 않는다
 		$by_group = self::getByGroups($member_srl);
 		if ($by_group && (!$new_grade || (int)$by_group->min_spend > (int)$new_grade->min_spend))
 		{
