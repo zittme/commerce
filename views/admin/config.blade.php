@@ -127,7 +127,8 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				.zmc-f input[type="text"], .zmc-f select { width: 100%; box-sizing: border-box; }
 				.zmc-f input[type="color"] { width: 42px; height: 32px; padding: 2px; vertical-align: middle; }
 				.zmc-f .zmc-inline { display: inline-flex; align-items: center; gap: 5px; margin: 0 0 0 8px; font-size: 12.5px; color: #4e5968; }
-				.zmc-banner-del { position: absolute; top: 12px; right: 14px; }
+				.zmc-banner-head { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 2px; }
+				.zmc-banner-no { font-size: 13px; font-weight: 700; color: #4e5968; }
 				@media (max-width: 900px) { .zmc-banner-card { grid-template-columns: minmax(0, 1fr); } }
 				.zmc-pay-link { color: #2677e3; }
 				.zmc-hint { margin: 4px 0 8px; font-size: 12px; color: #8b95a1; line-height: 1.6; }
@@ -187,6 +188,8 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_51') }}</h3>
 			<div class="rsva-form-grid">
+				<div style="grid-column:1/-1"><label>{{ lang('commerce.cfg_ship_guide') }}</label><div class="zlf-row-wrap"><textarea name="ship_guide" rows="3" placeholder="{{ lang('commerce.cfg_ship_guide_ph') }}">{{ $shop_config->ship_guide ?? '' }}</textarea>@include('_langfield', ['lf_name' => 'ship_guide', 'lf_value' => $shop_config->ship_guide_raw ?? ($shop_config->ship_guide ?? ''), 'lf_key' => 'cfgshipguide'])</div></div>
+				<div style="grid-column:1/-1"><label>{{ lang('commerce.cfg_claim_guide') }}</label><div class="zlf-row-wrap"><textarea name="claim_guide" rows="3" placeholder="{{ lang('commerce.cfg_claim_guide_ph') }}">{{ $shop_config->claim_guide ?? '' }}</textarea>@include('_langfield', ['lf_name' => 'claim_guide', 'lf_value' => $shop_config->claim_guide_raw ?? ($shop_config->claim_guide ?? ''), 'lf_key' => 'cfgclaimguide'])</div></div>
 				<div style="grid-column:1/-1"><label>{{ lang('commerce.admin_config_52') }}</label><div class="zlf-row-wrap"><textarea name="privacy_text" rows="3">{{ $shop_config->privacy_text }}</textarea>@include('_langfield', ['lf_name' => 'privacy_text', 'lf_value' => $shop_config->privacy_text_raw ?? $shop_config->privacy_text, 'lf_key' => 'cfgprivacy'])</div></div>
 				<div><label>{{ lang('commerce.admin_config_53') }}</label><input type="text" name="privacy_version" maxlength="20" value="{{ $shop_config->privacy_version }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_54') }}</label><input type="number" name="retention_days" min="0" max="3650" value="{{ $shop_config->retention_days }}" /></div>
@@ -356,7 +359,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					{{-- 통화 선택은 짓미페이 기본 설정 한 곳에서만 한다 --}}
 					@php
 					// 출력식 안에서 HTML 을 조립하면 템플릿이 style 속성을 코드로 읽는다. 여기서 만든다
-					$cfg_pay_link = '<a href="' . escape(getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispZittme_payAdminConfig')) . '" class="zmc-pay-link">' . escape(lang('commerce.cfg_pay_settings')) . '</a>';
+					$cfg_pay_link = '<a href="' . escape(getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispZittme_payAdminConfig')) . '" class="zmc-pay-link">' . escape(lang('commerce.cfg_pay_settings')) . '</a>';
 					$cfg_currency_note = sprintf(escape(lang('commerce.cfg_currency_from')), $cfg_pay_link);
 					@endphp
 					<div style="padding:8px 0;color:#6b7684;font-size:13px">
@@ -438,6 +441,12 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 	(function () {
 		// 홈 배너 편집: 행 단위 입력을 hidden JSON 으로 직렬화해서 저장한다
 		var rowsEl = document.getElementById('zmcBannerRows');
+		function renumberBanners() {
+			var labels = rowsEl.querySelectorAll('.zmc-banner-no');
+			for (var i = 0; i < labels.length; i++) {
+				labels[i].textContent = {!! json_encode(lang('commerce.cfg_banner_no')) !!}.replace('%d', i + 1);
+			}
+		}
 		var jsonEl = document.getElementById('zmcBannersJson');
 		var addBtn = document.getElementById('zmcBannerAdd');
 		if (!rowsEl || !jsonEl) return;
@@ -545,6 +554,8 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					'</span></div>';
 			}
 			row.innerHTML =
+				'<div class="zmc-banner-head"><strong class="zmc-banner-no"></strong>' +
+					'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger" data-del="1">' + {!! json_encode(lang('commerce.admin_item_edit_170')) !!} + '</button></div>' +
 				'<div class="zmc-banner-imgs">' + imgCell('image', {!! json_encode(lang('commerce.cfg_bg_image_label')) !!}) + imgCell('point_image', {!! json_encode(lang('commerce.cfg_point_image_label')) !!}) + '</div>' +
 				'<div class="zmc-banner-fields">' +
 					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_bg')) !!} + '</label><select data-k="bg_type">' +
@@ -554,12 +565,22 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_text_color')) !!} + '</label><span><input type="color" data-k="text_color" /> <label class="zmc-inline"><input type="checkbox" data-k="shadow" /> ' + {!! json_encode(lang('commerce.cfg_shadow')) !!} + '</label></span></div>' +
 					langCell('title', {!! json_encode(lang('commerce.cfg_banner_title')) !!}) +
 					langCell('text', {!! json_encode(lang('commerce.cfg_banner_text')) !!}) +
+					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_align')) !!} + '</label><select data-k="align">' +
+						'<option value="left">' + {!! json_encode(lang('commerce.cfg_align_left')) !!} + '</option>' +
+						'<option value="center">' + {!! json_encode(lang('commerce.cfg_align_center')) !!} + '</option>' +
+						'<option value="right">' + {!! json_encode(lang('commerce.cfg_align_right')) !!} + '</option>' +
+					'</select></div>' +
 					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_link_url')) !!} + '</label><input type="text" data-k="url" placeholder="' + {!! json_encode(lang('commerce.cfg_link_ph')) !!} + '" /></div>' +
-				'</div>' +
-				'<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger zmc-banner-del" data-del="1">' + {!! json_encode(lang('commerce.admin_item_edit_170')) !!} + '</button>';
+					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_link_target')) !!} + '</label><select data-k="target">' +
+						'<option value="self">' + {!! json_encode(lang('commerce.cfg_link_self')) !!} + '</option>' +
+						'<option value="blank">' + {!! json_encode(lang('commerce.cfg_link_blank')) !!} + '</option>' +
+					'</select></div>' +
+				'</div>';
 
 			row.zmcExtra = data;
 			row.querySelector('[data-k=url]').value = data.url || '';
+			row.querySelector('[data-k=align]').value = data.align || 'left';
+			row.querySelector('[data-k=target]').value = data.target === 'blank' ? 'blank' : 'self';
 			row.querySelector('[data-k=bg_type]').value = data.bg_type || (data.image ? 'image' : 'gradient');
 			row.querySelector('[data-k=bg_color]').value = data.bg_color || '#1a1f2e';
 			row.querySelector('[data-k=bg_color2]').value = data.bg_color2 || '#0d1019';
@@ -578,8 +599,9 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 			row.querySelector('[data-k=bg_type]').addEventListener('change', refreshBg);
 			refreshBg();
 
-			row.querySelector('[data-del]').addEventListener('click', function () { row.remove(); });
+			row.querySelector('[data-del]').addEventListener('click', function () { row.remove(); renumberBanners(); });
 			rowsEl.appendChild(row);
+			renumberBanners();
 			bindBannerImage(row, refreshBg);
 			// 버튼을 공용 다국어 패널에 잇는다 (실패해도 나머지 행은 그려져야 한다)
 			try {
@@ -604,6 +626,8 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					item.image = row.querySelector('[data-k=image]').value.trim();
 					item.point_image = row.querySelector('[data-k=point_image]').value.trim();
 					item.url = row.querySelector('[data-k=url]').value.trim();
+					item.align = row.querySelector('[data-k=align]').value;
+					item.target = row.querySelector('[data-k=target]').value;
 					item.bg_type = row.querySelector('[data-k=bg_type]').value;
 					item.bg_color = row.querySelector('[data-k=bg_color]').value;
 					item.bg_color2 = row.querySelector('[data-k=bg_color2]').value;

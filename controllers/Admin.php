@@ -27,7 +27,7 @@ class Admin extends Base
 	 */
 	public const CONFIG_FIELDS = [
 		'enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes',
-		'default_ship_fee', 'free_ship_over', 'claim_days', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key',
+		'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key',
 		'shop_main', 'category_layout', 'home_show_recommend', 'home_show_new',
 		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones',
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
@@ -44,7 +44,7 @@ class Admin extends Base
 	];
 
 	// 다국어 버튼으로 문구를 연결할 수 있는 설정 항목
-	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note'];
+	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note', 'ship_guide', 'claim_guide'];
 
 	protected const BOOLEAN_FIELDS = ['enabled', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
 		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale'];
@@ -81,6 +81,28 @@ class Admin extends Base
 	 *
 	 * @return array<int, object>
 	 */
+	protected static function collectItemAttrs(): string
+	{
+		$names = (array)\Context::get('attr_name');
+		$values = (array)\Context::get('attr_value');
+		$rows = [];
+		foreach ($names as $i => $name)
+		{
+			$name = trim((string)$name);
+			$value = trim((string)($values[$i] ?? ''));
+			if ($name === '' || $value === '')
+			{
+				continue;
+			}
+			$rows[] = ['name' => mb_substr($name, 0, 40), 'value' => mb_substr($value, 0, 200)];
+			if (count($rows) >= 20)
+			{
+				break;
+			}
+		}
+		return count($rows) ? json_encode($rows, \JSON_UNESCAPED_UNICODE) : '';
+	}
+
 	protected static function getCategories(): array
 	{
 		$output = executeQuery('commerce.getCategoryList', new \stdClass);
@@ -709,8 +731,25 @@ class Admin extends Base
 	public function dispCommerceAdminItemEdit()
 	{
 		$item_srl = (int)\Context::get('item_srl');
+		$clone_from = (int)\Context::get('clone_from');
 		$item = null;
 		$options = [];
+		if ($item_srl <= 0 && $clone_from > 0)
+		{
+			$source = ItemModel::get($clone_from);
+			if ($source)
+			{
+				$clone = clone $source;
+				$clone->item_srl = 0;
+				$clone->item_name = trim((string)$source->item_name) . ' ' . lang('commerce.adm_item_copy_suffix');
+				$clone->item_code = '';
+				$clone->stock = 0;
+				$clone->regdate = '';
+				$clone->last_update = '';
+				\Context::set('clone_item', $clone);
+				$options = ItemModel::getOptions($clone_from);
+			}
+		}
 		if ($item_srl > 0)
 		{
 			$item = ItemModel::get($item_srl);
@@ -2236,6 +2275,7 @@ class Admin extends Base
 			'tax_type' => \Context::get('tax_type') === 'free' ? 'free' : 'taxable',
 			'is_adult' => \Context::get('is_adult') === 'Y' ? 'Y' : 'N',
 			'grade_discount' => \Context::get('grade_discount') === 'N' ? 'N' : 'Y',
+			'attrs' => self::collectItemAttrs(),
 			// 조합형 옵션 축 정의 (조합 행 자체는 아래 옵션 저장에서 만든다)
 			'option_axes' => ComboModel::encodeAxes(\Context::get('option_axes')),
 			'option_mode' => \Context::get('option_mode') === 'combo' ? 'combo' : 'single',
@@ -2313,10 +2353,15 @@ class Admin extends Base
 			$fields->thumb = $fields->thumb ?? '';
 			// 등록 화면에서 옵션을 먼저 담아 두면 이 srl 로 이미 행이 들어와 있다
 			$fields->has_options = count(ItemModel::getOptions($item_srl)) ? 'Y' : 'N';
-			// 신규 상품은 재고 0으로 시작 — 수량은 재고 관리에서 입고로 채운다
 			$fields->stock = 0;
 			$fields->regdate = self::now();
 			$output = executeQuery('commerce.insertItem', $fields);
+
+			$init_stock = max(0, (int)\Context::get('init_stock'));
+			if ($output->toBool() && $init_stock > 0 && $fields->use_stock !== 'N')
+			{
+				StockModel::adjust($item_srl, 0, 'in', $init_stock, lang('commerce.adm_init_stock_memo'), (int)(\Context::get('logged_info')->member_srl ?? 0));
+			}
 
 			// 복제: 옵션도 복사
 			if ($output->toBool() && $clone_from > 0)
@@ -2772,6 +2817,15 @@ class Admin extends Base
 		}
 		else
 		{
+			if ((int)\Context::get('list_order') <= 0)
+			{
+				$max_order = 0;
+				foreach (self::getCategories() as $exist)
+				{
+					$max_order = max($max_order, (int)$exist->list_order);
+				}
+				$fields->list_order = $max_order + 1;
+			}
 			$fields->category_srl = getNextSequence();
 			$fields->regdate = self::now();
 			executeQuery('commerce.insertCategory', $fields);

@@ -23,6 +23,7 @@
 		<column name="tax_type" var="tax_type" />
 		<column name="is_adult" var="is_adult" />
 		<column name="grade_discount" var="grade_discount" />
+		<column name="attrs" var="attrs" />
 		<column name="has_options" var="has_options" />
 		<column name="option_axes" var="option_axes" />
 		<column name="option_mode" var="option_mode" />

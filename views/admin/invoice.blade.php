@@ -263,9 +263,9 @@
 /* 품목 — 머리줄에 바탕을 깔아 표가 시작되는 지점을 확실히 한다 */
 /* 폭을 정한 대로 쓴다. 남는 폭을 브라우저가 나눠 가지면 머리와 값이 어긋난다 */
 .zmi-items { margin-top: 8px; table-layout: auto; }
-.zmi-items .zmi-fit { width: 1%; white-space: nowrap; }
+.zmi-items .zmi-fit { width: 1%; min-width: 64px; white-space: nowrap; }
 .zmi-items tbody tr.zmi-item-num td.zmi-r, .zmi-items tbody tr.zmi-item-num td.zmi-c { white-space: nowrap; }
-.zmi-addr { margin-top: 8px; }
+.zmi-addr { margin-top: 0; border-top: 1px solid var(--zmi-line); }
 .zmi-items thead th { padding: 6px 8px; background: var(--zmi-fill); border-bottom: 1.5px solid var(--zmi-rule); font-size: 11.5px; font-weight: 700; color: var(--zmi-ink); text-align: center; white-space: nowrap; width: auto; }
 .zmi-items thead th:last-child { text-align: right; }
 .zmi-items tbody td { padding: 6px 8px; border-bottom: 1px solid var(--zmi-line); background: none; line-height: 1.45; }

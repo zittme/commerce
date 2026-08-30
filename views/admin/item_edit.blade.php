@@ -75,6 +75,7 @@
 	@php $ie_console = \Context::get('act') === 'dispCommerceConsole'; @endphp
 	{{-- 저장 전 상품은 옵션 조작이 화면을 떠나므로 입력값을 먼저 저장하고 옵션 자리로 돌아온다 --}}
 	@php $ie_is_new = !$item; @endphp
+	@php $ie_form = $item ?: (Context::get('clone_item') ?: null); @endphp
 	{{-- 저장 전 상품도 미리 발급한 srl 로 옵션을 담는다. 옵션 판은 등록·수정이 같은 srl 을 쓴다 --}}
 	@php $ie_item_srl = $item ? (int)$item->item_srl : (int)$editor_target_srl; @endphp
 	@php $ie_return = $ie_console ? getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'item_edit', 'item_srl', $ie_item_srl) : getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $ie_item_srl); @endphp
@@ -98,12 +99,12 @@
 
 			@php
 			$ie_images = [];
-			if (!empty($item->images))
+			if (!empty($ie_form->images))
 			{
-				$decoded = json_decode($item->images, true);
+				$decoded = json_decode($ie_form->images, true);
 				if (is_array($decoded)) { $ie_images = array_values(array_filter($decoded, 'is_string')); }
 			}
-			if (!count($ie_images) && !empty($item->thumb)) { $ie_images = [$item->thumb]; }
+			if (!count($ie_images) && !empty($ie_form->thumb)) { $ie_images = [$ie_form->thumb]; }
 			@endphp
 			<div style="margin-bottom:18px">
 				<label>{{ lang('commerce.admin_item_edit_6') }} <span style="font-weight:500;color:#8b95a1">{{ lang('commerce.admin_item_edit_7') }}</span></label>
@@ -117,15 +118,15 @@
 				<div style="grid-column:1/-1">
 					<label>{{ lang('commerce.admin_item_edit_9') }} <span class="ie-req">*</span></label>
 					<div class="ie-langrow">
-						<input type="text" name="item_name" required maxlength="250" placeholder="{{ lang('commerce.admin_item_edit_142') }}" value="{{ $item->item_name ?? '' }}" />
-						@include('_langfield', ['lf_name' => 'item_name', 'lf_value' => $item->item_name ?? '', 'lf_key' => 'name'])
+						<input type="text" name="item_name" required maxlength="250" placeholder="{{ lang('commerce.admin_item_edit_142') }}" value="{{ $ie_form->item_name ?? '' }}" />
+						@include('_langfield', ['lf_name' => 'item_name', 'lf_value' => $ie_form->item_name ?? '', 'lf_key' => 'name'])
 					</div>
 				</div>
 				<div style="grid-column:1/-1">
 					<label>{{ lang('commerce.admin_item_edit_10') }}</label>
 					<div class="ie-langrow">
-						<input type="text" name="summary" maxlength="250" placeholder="{{ lang('commerce.admin_item_edit_143') }}" value="{{ $item->summary ?? '' }}" />
-						@include('_langfield', ['lf_name' => 'summary', 'lf_value' => $item->summary ?? '', 'lf_key' => 'summary'])
+						<input type="text" name="summary" maxlength="250" placeholder="{{ lang('commerce.admin_item_edit_143') }}" value="{{ $ie_form->summary ?? '' }}" />
+						@include('_langfield', ['lf_name' => 'summary', 'lf_value' => $ie_form->summary ?? '', 'lf_key' => 'summary'])
 					</div>
 				</div>
 				<div>
@@ -133,15 +134,33 @@
 					<select name="category_srl" style="width:100%">
 						<option value="0">{{ lang('commerce.admin_item_edit_12') }}</option>
 						@foreach ($categories as $srl => $c)
-						<option value="{{ $srl }}" @if((int)($item->category_srl ?? 0) === $srl) selected @endif>{{ ($c->depth ?? 0) > 0 ? str_repeat('&nbsp;&nbsp;', $c->depth) . '└ ' : '' }}{{ $c->title }}</option>
+						<option value="{{ $srl }}" @if((int)($ie_form->category_srl ?? 0) === $srl) selected @endif>{{ ($c->depth ?? 0) > 0 ? str_repeat('&nbsp;&nbsp;', $c->depth) . '└ ' : '' }}{{ $c->title }}</option>
 						@endforeach
 					</select>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_13') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminCategories') }}" style="color:#2677e3">{{ lang('commerce.admin_item_edit_14') }}</a>{{ lang('commerce.admin_item_edit_15') }}</span>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_16') }}</label>
-					<input type="text" name="item_code" placeholder="{{ lang('commerce.admin_item_edit_144') }}" value="{{ $item->item_code ?? '' }}" style="width:100%" />
+					<input type="text" name="item_code" placeholder="{{ lang('commerce.admin_item_edit_144') }}" value="{{ $ie_form->item_code ?? '' }}" style="width:100%" />
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_17') }}</span>
+				</div>
+				<div style="grid-column:1/-1">
+					<label>{{ lang('commerce.adm_attrs') }}</label>
+					@php
+					$ie_attrs = json_decode((string)($ie_form->attrs ?? ''), true);
+					$ie_attrs = is_array($ie_attrs) ? $ie_attrs : [];
+					@endphp
+					<div id="ieAttrRows">
+						@foreach ($ie_attrs as $ie_at)
+						<div class="ie-attr-row">
+							<input type="text" name="attr_name[]" maxlength="40" value="{{ $ie_at['name'] ?? '' }}" placeholder="{{ lang('commerce.adm_attr_name_ph') }}" />
+							<input type="text" name="attr_value[]" maxlength="200" value="{{ $ie_at['value'] ?? '' }}" placeholder="{{ lang('commerce.adm_attr_value_ph') }}" />
+							<button type="button" class="rsva-btn rsva-btn-sm" data-attr-del>{{ lang('commerce.admin_delete') }}</button>
+						</div>
+						@endforeach
+					</div>
+					<button type="button" class="rsva-btn rsva-btn-sm" id="ieAttrAdd">{{ lang('commerce.adm_attr_add') }}</button>
+					<span class="ie-help">{{ lang('commerce.adm_attrs_help') }}</span>
 				</div>
 			</div>
 		</div>
@@ -152,11 +171,11 @@
 			<div class="rsva-form-grid">
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_19') }} <span class="ie-req">*</span></label>
-					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="price" min="0" step="any" required id="iePrice" value="{{ isset($item->price) ? \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$item->price) : '' }}" placeholder="0" /></div>
+					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="price" min="0" step="any" required id="iePrice" value="{{ isset($ie_form->price) ? \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$ie_form->price) : '' }}" placeholder="0" /></div>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_20') }}</label>
-					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="sale_price" min="0" step="any" id="ieSalePrice" value="{{ ($item->sale_price ?? 0) > 0 ? \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$item->sale_price) : '' }}" placeholder="{{ lang('commerce.admin_item_edit_145') }}" /></div>
+					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="sale_price" min="0" step="any" id="ieSalePrice" value="{{ ($ie_form->sale_price ?? 0) > 0 ? \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$ie_form->sale_price) : '' }}" placeholder="{{ lang('commerce.admin_item_edit_145') }}" /></div>
 					<span class="ie-discount" id="ieDiscountBadge"></span>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_21') }}</span>
 				</div>
@@ -171,8 +190,8 @@
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_22') }}</label>
 					<div class="ie-pills">
-						<label><input type="radio" name="tax_type" value="taxable" @if(($item->tax_type ?? 'taxable') === 'taxable') checked @endif /> {{ lang('commerce.admin_item_edit_23') }}</label>
-						<label><input type="radio" name="tax_type" value="free" @if(($item->tax_type ?? '') === 'free') checked @endif /> {{ lang('commerce.admin_item_edit_24') }}</label>
+						<label><input type="radio" name="tax_type" value="taxable" @if(($ie_form->tax_type ?? 'taxable') === 'taxable') checked @endif /> {{ lang('commerce.admin_item_edit_23') }}</label>
+						<label><input type="radio" name="tax_type" value="free" @if(($ie_form->tax_type ?? '') === 'free') checked @endif /> {{ lang('commerce.admin_item_edit_24') }}</label>
 					</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_25') }}</span>
 				</div>
@@ -186,21 +205,26 @@
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_27') }}</label>
 					<div class="ie-pills">
-						<label><input type="radio" name="use_stock" value="Y" @if(($item->use_stock ?? 'Y') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_28') }}</label>
-						<label><input type="radio" name="use_stock" value="N" @if(($item->use_stock ?? '') === 'N') checked @endif /> {{ lang('commerce.admin_item_edit_29') }}</label>
+						<label><input type="radio" name="use_stock" value="Y" @if(($ie_form->use_stock ?? 'Y') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_28') }}</label>
+						<label><input type="radio" name="use_stock" value="N" @if(($ie_form->use_stock ?? '') === 'N') checked @endif /> {{ lang('commerce.admin_item_edit_29') }}</label>
 					</div>
 				</div>
 				<div id="ieStockField">
 					<label>{{ lang('commerce.admin_item_edit_30') }}</label>
-					<div style="padding:10px 0;font-size:15px;font-weight:700">{{ number_format((int)($item->stock ?? 0)) }}{{ lang('commerce.admin_item_edit_154') }}</div>
+					@if ($ie_is_new)
+					<div class="ie-suffix" data-suffix="{{ lang('commerce.admin_item_edit_154') }}"><input type="number" name="init_stock" min="0" value="0" /></div>
+					<span class="ie-help">{{ lang('commerce.adm_init_stock_help') }}</span>
+					@else
+					<div style="padding:10px 0;font-size:15px;font-weight:700">{{ number_format((int)($ie_form->stock ?? 0)) }}{{ lang('commerce.admin_item_edit_154') }}</div>
+					@endif
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_31') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock') }}">{{ lang('commerce.admin_item_edit_27') }}</a> {{ lang('commerce.admin_item_edit_32') }}</span>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_33') }}</label>
 					<div style="display:flex;gap:8px;align-items:center">
-						<div class="ie-suffix" data-suffix="{{ lang('commerce.admin_item_edit_154') }}" style="flex:1"><input type="number" name="min_qty" min="0" value="{{ $item->min_qty ?? 0 }}" placeholder="{{ lang('commerce.admin_item_edit_146') }}" /></div>
+						<div class="ie-suffix" data-suffix="{{ lang('commerce.admin_item_edit_154') }}" style="flex:1"><input type="number" name="min_qty" min="0" value="{{ $ie_form->min_qty ?? 0 }}" placeholder="{{ lang('commerce.admin_item_edit_146') }}" /></div>
 						<span style="color:#8b95a1">~</span>
-						<div class="ie-suffix" data-suffix="{{ lang('commerce.admin_item_edit_154') }}" style="flex:1"><input type="number" name="max_qty" min="0" value="{{ $item->max_qty ?? 0 }}" placeholder="{{ lang('commerce.admin_item_edit_147') }}" /></div>
+						<div class="ie-suffix" data-suffix="{{ lang('commerce.admin_item_edit_154') }}" style="flex:1"><input type="number" name="max_qty" min="0" value="{{ $ie_form->max_qty ?? 0 }}" placeholder="{{ lang('commerce.admin_item_edit_147') }}" /></div>
 					</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_34') }}</span>
 				</div>
@@ -214,15 +238,15 @@
 				<div style="grid-column:1/-1">
 					<label>{{ lang('commerce.admin_item_edit_36') }}</label>
 					<div class="ie-pills">
-						<label><input type="radio" name="ship_fee_type" value="default" @if(($item->ship_fee_type ?? 'default') === 'default') checked @endif /> {{ sprintf(lang('commerce.admin_item_edit_155'), shop_money_base((int)($shop_config->default_ship_fee ?? 0)) . ((int)($shop_config->free_ship_over ?? 0) > 0 ? sprintf(lang('commerce.admin_item_edit_156'), shop_money_base((int)$shop_config->free_ship_over)) : '')) }}</label>
-						<label><input type="radio" name="ship_fee_type" value="free" @if(($item->ship_fee_type ?? '') === 'free') checked @endif /> {{ lang('commerce.admin_item_edit_37') }}</label>
-						<label><input type="radio" name="ship_fee_type" value="fixed" @if(($item->ship_fee_type ?? '') === 'fixed') checked @endif /> {{ lang('commerce.admin_item_edit_38') }}</label>
+						<label><input type="radio" name="ship_fee_type" value="default" @if(($ie_form->ship_fee_type ?? 'default') === 'default') checked @endif /> {{ sprintf(lang('commerce.admin_item_edit_155'), shop_money_base((int)($shop_config->default_ship_fee ?? 0)) . ((int)($shop_config->free_ship_over ?? 0) > 0 ? sprintf(lang('commerce.admin_item_edit_156'), shop_money_base((int)$shop_config->free_ship_over)) : '')) }}</label>
+						<label><input type="radio" name="ship_fee_type" value="free" @if(($ie_form->ship_fee_type ?? '') === 'free') checked @endif /> {{ lang('commerce.admin_item_edit_37') }}</label>
+						<label><input type="radio" name="ship_fee_type" value="fixed" @if(($ie_form->ship_fee_type ?? '') === 'fixed') checked @endif /> {{ lang('commerce.admin_item_edit_38') }}</label>
 					</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_39') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminConfig') }}" style="color:#2677e3">{{ lang('commerce.admin_item_edit_40') }}</a>{{ lang('commerce.admin_item_edit_41') }}</span>
 				</div>
 				<div id="ieShipFeeField">
 					<label>{{ lang('commerce.admin_item_edit_42') }}</label>
-					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="ship_fee" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($item->ship_fee ?? 0)) }}" /></div>
+					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="ship_fee" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($ie_form->ship_fee ?? 0)) }}" /></div>
 				</div>
 			</div>
 		</div>
@@ -232,7 +256,7 @@
 			<h3>{{ lang('commerce.admin_item_edit_43') }}</h3>
 			<p class="ie-sec-desc">{{ lang('commerce.admin_item_edit_44') }}</p>
 			{{-- 에디터는 폼 안의 content 필드에서 초기 내용을 읽는다 (CKEDITOR.appendTo 규약) --}}
-			<textarea name="content" style="display:none">{{ $item->content ?? '' }}</textarea>
+			<textarea name="content" style="display:none">{{ $ie_form->content ?? '' }}</textarea>
 			{!! $editor !!}
 		</div>
 
@@ -243,29 +267,29 @@
 				<div style="grid-column:1/-1">
 					<label>{{ lang('commerce.admin_item_edit_46') }}</label>
 					<div class="ie-pills">
-						<label><input type="radio" name="status" value="sale" @if(($item->status ?? 'sale') === 'sale') checked @endif /> {{ lang('commerce.admin_item_edit_47') }}</label>
-						<label><input type="radio" name="status" value="soldout" @if(($item->status ?? '') === 'soldout') checked @endif /> {{ lang('commerce.admin_item_edit_48') }}</label>
-						<label><input type="radio" name="status" value="hidden" @if(($item->status ?? '') === 'hidden') checked @endif /> {{ lang('commerce.admin_item_edit_49') }}</label>
-						<label><input type="radio" name="status" value="stop" @if(($item->status ?? '') === 'stop') checked @endif /> {{ lang('commerce.admin_item_edit_50') }}</label>
+						<label><input type="radio" name="status" value="sale" @if(($ie_form->status ?? 'sale') === 'sale') checked @endif /> {{ lang('commerce.admin_item_edit_47') }}</label>
+						<label><input type="radio" name="status" value="soldout" @if(($ie_form->status ?? '') === 'soldout') checked @endif /> {{ lang('commerce.admin_item_edit_48') }}</label>
+						<label><input type="radio" name="status" value="hidden" @if(($ie_form->status ?? '') === 'hidden') checked @endif /> {{ lang('commerce.admin_item_edit_49') }}</label>
+						<label><input type="radio" name="status" value="stop" @if(($ie_form->status ?? '') === 'stop') checked @endif /> {{ lang('commerce.admin_item_edit_50') }}</label>
 					</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_51') }}</span>
 				</div>
 				<div style="grid-column:1/-1">
 					<label>{{ lang('commerce.admin_item_edit_52') }}</label>
-					@php $ie_has_period = !empty($item->sale_start) || !empty($item->sale_end); @endphp
+					@php $ie_has_period = !empty($ie_form->sale_start) || !empty($ie_form->sale_end); @endphp
 					<label style="display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:13.5px;cursor:pointer"><input type="checkbox" id="iePeriodToggle" @if($ie_has_period) checked @endif style="accent-color:#2677e3;width:16px;height:16px" /> {{ lang('commerce.admin_item_edit_53') }}</label>
 					<div id="iePeriodFields" class="{{ $ie_has_period ? '' : 'ie-hidden' }}" style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
-						<input type="datetime-local" name="sale_start" value="{{ !empty($item->sale_start) ? substr($item->sale_start,0,4).'-'.substr($item->sale_start,4,2).'-'.substr($item->sale_start,6,2).'T'.substr($item->sale_start,8,2).':'.substr($item->sale_start,10,2) : '' }}" />
+						<input type="datetime-local" name="sale_start" value="{{ !empty($ie_form->sale_start) ? substr($ie_form->sale_start,0,4).'-'.substr($ie_form->sale_start,4,2).'-'.substr($ie_form->sale_start,6,2).'T'.substr($ie_form->sale_start,8,2).':'.substr($ie_form->sale_start,10,2) : '' }}" />
 						<span style="color:#8b95a1">~</span>
-						<input type="datetime-local" name="sale_end" value="{{ !empty($item->sale_end) ? substr($item->sale_end,0,4).'-'.substr($item->sale_end,4,2).'-'.substr($item->sale_end,6,2).'T'.substr($item->sale_end,8,2).':'.substr($item->sale_end,10,2) : '' }}" />
+						<input type="datetime-local" name="sale_end" value="{{ !empty($ie_form->sale_end) ? substr($ie_form->sale_end,0,4).'-'.substr($ie_form->sale_end,4,2).'-'.substr($ie_form->sale_end,6,2).'T'.substr($ie_form->sale_end,8,2).':'.substr($ie_form->sale_end,10,2) : '' }}" />
 					</div>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_54') }}</label>
 					<div class="ie-checks" style="padding-top:8px">
-						<label><input type="checkbox" name="is_recommend" value="Y" @if(($item->is_recommend ?? '') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_55') }}</label>
-						<label><input type="checkbox" name="is_new" value="Y" @if(($item->is_new ?? '') === 'Y') checked @endif /> NEW</label>
-						@php $ie_badge_srls = \Zittme\Modules\Commerce\Models\Badge::parseSrls($item->badges ?? ''); @endphp
+						<label><input type="checkbox" name="is_recommend" value="Y" @if(($ie_form->is_recommend ?? '') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_55') }}</label>
+						<label><input type="checkbox" name="is_new" value="Y" @if(($ie_form->is_new ?? '') === 'Y') checked @endif /> NEW</label>
+						@php $ie_badge_srls = \Zittme\Modules\Commerce\Models\Badge::parseSrls($ie_form->badges ?? ''); @endphp
 						@foreach ($badges ?? [] as $ie_badge)
 						@php
 							$ie_b_style = '';
@@ -283,14 +307,14 @@
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_59') }}</label>
 					<div class="ie-checks" style="padding-top:8px">
-						<label><input type="checkbox" name="is_adult" value="Y" @if(($item->is_adult ?? '') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_60') }}</label>
-						<label><input type="hidden" name="grade_discount" value="N" /><input type="checkbox" name="grade_discount" value="Y" @if(($item->grade_discount ?? 'Y') !== 'N') checked @endif /> {{ lang('commerce.admin_item_edit_194') }}</label>
+						<label><input type="checkbox" name="is_adult" value="Y" @if(($ie_form->is_adult ?? '') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_60') }}</label>
+						<label><input type="hidden" name="grade_discount" value="N" /><input type="checkbox" name="grade_discount" value="Y" @if(($ie_form->grade_discount ?? 'Y') !== 'N') checked @endif /> {{ lang('commerce.admin_item_edit_194') }}</label>
 					</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_61') }} <a href="{{ getUrl('', 'p', '', 'module', 'admin', 'act', 'dispMemberAdminIdentityConfig') }}" target="_blank" style="color:#2677e3">{{ lang('commerce.admin_item_edit_62') }}</a>{{ lang('commerce.admin_item_edit_63') }}</span>
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_64') }}</label>
-					<input type="number" name="list_order" value="{{ $item->list_order ?? 0 }}" style="width:120px" />
+					<input type="number" name="list_order" value="{{ $ie_form->list_order ?? 0 }}" style="width:120px" />
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_65') }}</span>
 				</div>
 			</div>
@@ -391,7 +415,7 @@
 				$ie_opt_basic[] = $ie_opt_row;
 			}
 		}
-		$ie_mode = ($item->option_mode ?? 'single') === 'combo' ? 'combo' : 'single';
+		$ie_mode = ($ie_form->option_mode ?? 'single') === 'combo' ? 'combo' : 'single';
 		$ie_opt_shown = $ie_opt_basic;
 		$ie_opt_keys = [];
 		foreach ($ie_opt_basic as $ie_opt_row)
@@ -423,7 +447,7 @@
 
 		{{-- ── 조합형 옵션 축 (색상 × 사이즈) ── --}}
 		@php
-		$ie_axes = Zittme\Modules\Commerce\Models\Combo::axes($item->option_axes ?? '');
+		$ie_axes = Zittme\Modules\Commerce\Models\Combo::axes($ie_form->option_axes ?? '');
 		// 축 이름·값에 연결한 다국어 코드를 편집 화면용으로 풀어 둔다 (칸에는 현재 언어 문구를 보여준다)
 		$ie_axes_init = [];
 		foreach ($ie_axes as $ie_ax)
@@ -466,7 +490,7 @@
 				<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-primary" id="ieComboBuild" data-item="{{ $ie_item_srl }}">{{ lang('commerce.admin_item_edit_116') }}</button>
 				<small style="color:#8b95a1">{{ lang('commerce.admin_item_edit_123') }}</small>
 			</div>
-			<input type="hidden" name="option_axes" id="ieAxesJson" value="{{ $item->option_axes ?? '' }}" form="ieForm" />
+			<input type="hidden" name="option_axes" id="ieAxesJson" value="{{ $ie_form->option_axes ?? '' }}" form="ieForm" />
 			<script type="application/json" id="ieAxesInit">{!! $ie_axes_json !!}</script>
 		</div>
 
@@ -1103,3 +1127,28 @@
 })();
 </script>
 @endif
+
+<style>
+.ie-attr-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.ie-attr-row input[type="text"]:first-child { flex: 0 0 160px; }
+.ie-attr-row input[type="text"] { flex: 1; min-width: 0; }
+</style>
+<script>
+(function () {
+	var wrap = document.getElementById('ieAttrRows');
+	var add = document.getElementById('ieAttrAdd');
+	if (!wrap || !add) return;
+	add.addEventListener('click', function () {
+		var row = document.createElement('div');
+		row.className = 'ie-attr-row';
+		row.innerHTML = '<input type="text" name="attr_name[]" maxlength="40" placeholder="{{ lang('commerce.adm_attr_name_ph') }}" />'
+			+ '<input type="text" name="attr_value[]" maxlength="200" placeholder="{{ lang('commerce.adm_attr_value_ph') }}" />'
+			+ '<button type="button" class="rsva-btn rsva-btn-sm" data-attr-del>{{ lang('commerce.admin_delete') }}</button>';
+		wrap.appendChild(row);
+	});
+	wrap.addEventListener('click', function (e) {
+		var btn = e.target.closest('[data-attr-del]');
+		if (btn) { btn.parentNode.remove(); }
+	});
+})();
+</script>

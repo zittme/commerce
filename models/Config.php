@@ -32,6 +32,8 @@ class Config
 		'review_credit_photo' => 0,
 		// 취소·반품 신청 가능 기간(배송완료 후 일수)
 		'claim_days' => 7,
+		'ship_guide' => '',
+		'claim_guide' => '',
 		// 상품 상세: 우측 플로팅(스티키) 구매 박스 사용 여부
 		'item_sticky' => 'N',
 		'currency_code_prefix' => 'N',

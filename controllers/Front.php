@@ -1043,6 +1043,7 @@ class Front extends Base
 		\Context::set('credit_balance', \Zittme\Modules\Commerce\Models\Credit::balanceOf($member_srl));
 		\Context::set('credit_logs', $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Credit::getLogs($member_srl, 30) : []);
 		\Context::set('my_grade', $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Grade::getForMember($member_srl) : null);
+		\Context::set('my_coupons', $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Coupon::listUsableForMember($member_srl, 0) : []);
 		\Context::set('shop_config', self::config());
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('my');

@@ -30,7 +30,7 @@
 							<input type="hidden" name="module" value="commerce" />
 							<input type="hidden" name="act" value="procCommerceReviewDelete" />
 							<input type="hidden" name="review_srl" value="{{ $rv->review_srl }}" />
-							<button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_qna_8') }}</button>
+							<button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_delete') }}</button>
 						</form>
 					</td>
 				</tr>
@@ -79,7 +79,7 @@
 							<input type="hidden" name="module" value="commerce" />
 							<input type="hidden" name="act" value="procCommerceInquiryDelete" />
 							<input type="hidden" name="inquiry_srl" value="{{ $iq->inquiry_srl }}" />
-							<button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_qna_8') }}</button>
+							<button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.admin_delete') }}</button>
 						</form>
 					</td>
 				</tr>
