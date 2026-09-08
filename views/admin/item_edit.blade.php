@@ -415,7 +415,8 @@
 				$ie_opt_basic[] = $ie_opt_row;
 			}
 		}
-		$ie_mode = ($ie_form->option_mode ?? 'single') === 'combo' ? 'combo' : 'single';
+		// 저장 전에 조합을 만들어 둔 경우에도 조합형으로 열어야 한다
+		$ie_mode = (($ie_form->option_mode ?? 'single') === 'combo' || (!$ie_form && trim((string)$pending_axes) !== '')) ? 'combo' : 'single';
 		$ie_opt_shown = $ie_opt_basic;
 		$ie_opt_keys = [];
 		foreach ($ie_opt_basic as $ie_opt_row)
@@ -447,7 +448,9 @@
 
 		{{-- ── 조합형 옵션 축 (색상 × 사이즈) ── --}}
 		@php
-		$ie_axes = Zittme\Modules\Commerce\Models\Combo::axes($ie_form->option_axes ?? '');
+		// 저장 전 상품은 상품 행이 없어 축 정의가 비어 있다. 그때는 만들어 둔 조합에서 되짚은 값을 쓴다
+		$ie_axes_raw = trim((string)($ie_form->option_axes ?? '')) !== '' ? (string)$ie_form->option_axes : (string)$pending_axes;
+		$ie_axes = Zittme\Modules\Commerce\Models\Combo::axes($ie_axes_raw);
 		// 축 이름·값에 연결한 다국어 코드를 편집 화면용으로 풀어 둔다 (칸에는 현재 언어 문구를 보여준다)
 		$ie_axes_init = [];
 		foreach ($ie_axes as $ie_ax)
@@ -490,7 +493,7 @@
 				<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-primary" id="ieComboBuild" data-item="{{ $ie_item_srl }}">{{ lang('commerce.admin_item_edit_116') }}</button>
 				<small style="color:#8b95a1">{{ lang('commerce.admin_item_edit_123') }}</small>
 			</div>
-			<input type="hidden" name="option_axes" id="ieAxesJson" value="{{ $ie_form->option_axes ?? '' }}" form="ieForm" />
+			<input type="hidden" name="option_axes" id="ieAxesJson" value="{{ $ie_axes_raw }}" form="ieForm" />
 			<script type="application/json" id="ieAxesInit">{!! $ie_axes_json !!}</script>
 		</div>
 
@@ -854,7 +857,9 @@
 			buildBtn.disabled = true;
 			exec_json('commerce.procCommerceAdminBuildCombos', { item_srl: itemSrl, option_axes: axesJson.value }, function (ret) {
 				alert((ret && ret.message) || {!! json_encode(lang('commerce.admin_item_edit_176')) !!});
-				location.reload();
+				// 등록 화면 주소에는 item_srl 이 없다. 그대로 새로고침하면 새 번호가 발급되어
+				// 방금 만든 조합이 옛 번호에 남고 화면은 빈 채로 돌아온다. 번호를 들고 이동한다.
+				location.href = {!! json_encode($ie_return) !!} + '#ieOptions';
 			}, function (ret) {
 				buildBtn.disabled = false;
 				alert((ret && ret.message) || {!! json_encode(lang('commerce.admin_item_edit_177')) !!});
@@ -1023,7 +1028,9 @@
 		var target = document.getElementById(targetId);
 		function apply() {
 			var checked = document.querySelector('input[name="' + name + '"]:checked');
-			target.classList.toggle('ie-hidden', !checked || checked.value !== showValue);
+			var off = !checked || checked.value !== showValue;
+			target.classList.toggle('ie-hidden', off);
+			target.querySelectorAll('input, select, textarea').forEach(function (el) { el.disabled = off; });
 		}
 		document.querySelectorAll('input[name="' + name + '"]').forEach(function (r) { r.addEventListener('change', apply); });
 		apply();

@@ -53,6 +53,7 @@
 			</nav>
 		</div>
 		@include('_currency')
+		@if (($shop_config->show_shop_nav ?? 'Y') !== 'N')
 		<a class="shp-cart-link" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceMyOrders') }}">
 			<svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="3.5" cy="6" r="1.4" fill="currentColor"/><circle cx="3.5" cy="12" r="1.4" fill="currentColor"/><circle cx="3.5" cy="18" r="1.4" fill="currentColor"/></svg>
 			{{ $lang->shop_my_orders }}
@@ -62,6 +63,7 @@
 			{{ $lang->shop_cart }}
 			@if ($cart_count > 0)<span class="shp-cart-count">{{ $cart_count }}</span>@endif
 		</a>
+		@endif
 	</div>
 
 	@php $shp_side_cats = ($shop_config->category_layout ?? 'top') === 'side' && count($shop_categories ?? []); @endphp
@@ -103,12 +105,14 @@
 		<input type="hidden" name="v" value="list" />
 		@if ($shp_filter !== '')<input type="hidden" name="f" value="{{ $shp_filter }}" />@endif
 		<input type="hidden" name="category" value="{{ $current_category ?: '' }}" />
+@if (($shop_config->show_search ?? 'Y') !== 'N')
 		<span class="shp-search">
 			<input type="text" name="q" placeholder="{{ $lang->shop_search }}" value="{{ $current_q }}" />
 			<button type="submit" aria-label="{{ $lang->cmd_search ?? '검색' }}">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
 			</button>
 		</span>
+@endif
 		<span class="shp-sort">
 			@foreach (['display' => $lang->shop_sort_display, 'new' => $lang->shop_sort_new, 'popular' => $lang->shop_sort_popular, 'price_low' => $lang->shop_sort_price_low, 'price_high' => $lang->shop_sort_price_high] as $key => $label)
 			<a class="{{ $current_sort === $key ? 'is-on' : '' }}" href="{{ getUrl('', 'mid', $mid, 'v', 'list', 'category', $current_category ?: '', 'q', $current_q, 'sort', $key, 'f', $shp_filter) }}">{{ $label }}</a>
@@ -161,6 +165,12 @@
 					<s>{{ shop_item_price($it, 'effective') }}</s>{{ shop_item_price($it, 'grade') }}
 					<em class="shp-grade-tag">{{ $lang->shop_grade ?? '회원 등급' }}</em>
 					@elseif (shop_item_on_sale($it))
+					@php
+					$ss_base = isset($it->disp_price) ? (int)$it->disp_price : (int)($it->price ?? 0);
+					$ss_now = isset($it->disp_sale_price) ? (int)$it->disp_sale_price : (int)($it->sale_price ?? 0);
+					$ss_off = $ss_base > 0 ? (int)round(($ss_base - $ss_now) / $ss_base * 100) : 0;
+					@endphp
+					@if ($ss_off > 0)<em class="shp-off">{{ $ss_off }}%</em>@endif
 					<s>{{ shop_item_price($it, 'price') }}</s>{{ shop_item_price($it, 'sale') }}
 					@else
 					{{ shop_item_price($it, 'price') }}

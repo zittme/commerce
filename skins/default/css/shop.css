@@ -32,6 +32,7 @@
 .shp-card-name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .shp-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; font-size: 16px; font-weight: 800; white-space: nowrap; }
 .shp-price s { font-size: 13px; font-weight: 500; color: #9aa1ab; }
+.shp-price .shp-off { order: -1; color: var(--shp-brand); font-weight: 800; font-style: normal; }
 .shp-badges { display: flex; gap: 4px; flex-wrap: wrap; }
 .shp-badge { padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--shp-brand-soft); color: var(--shp-brand); }
 .shp-badge.is-soldout { background: #f2f3f5; color: var(--shp-sub); }
@@ -727,3 +728,28 @@ html { scroll-behavior: smooth; }
 .shp-attrs { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0 0 16px; font-size: 13.5px; }
 .shp-attrs dt { color: var(--shp-sub); white-space: nowrap; }
 .shp-attrs dd { margin: 0; color: var(--shp-text); }
+
+/* 회원 등급 안내 */
+.shp-accent { color: var(--shp-brand); }
+.shp-table-wrap { overflow-x: auto; }
+.shp-grade-mine { margin-bottom: 20px; }
+.shp-grade-bar { position: relative; height: 8px; margin: 6px 0 0; border-radius: 999px; background: var(--shp-bg); overflow: hidden; }
+.shp-grade-bar i { display: block; height: 100%; background: var(--shp-brand); border-radius: 999px; transition: width .4s ease; }
+.shp-grade-next { margin: 8px 0 0; font-size: 13.5px; color: var(--shp-sub); }
+.shp-grade-login { margin: 0 0 20px; }
+.shp-grade-table tr.is-mine td { background: var(--shp-brand-soft); }
+.shp-grade-table td strong { margin-right: 6px; }
+.shp-grade-rules { margin: 8px 0 0; padding: 0 0 0 18px; font-size: 13px; line-height: 1.8; color: var(--shp-sub); }
+
+/* 배너 포인트 이미지를 왼쪽에 둘 때 */
+.shp-home-banner-point.is-left { right: auto; left: 5%; }
+.shp-promo-card-point.is-left { right: auto; left: 4%; }
+
+/* 주문 내역: 탭과 상태 필터 */
+.shp-my-tabs { display: flex; gap: 6px; margin: 6px 0 14px; border-bottom: 1px solid var(--shp-border); }
+.shp-my-tab { padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; font-size: 14px; font-weight: 600; color: var(--shp-sub); cursor: pointer; }
+.shp-my-tab.is-on { color: var(--shp-brand); border-bottom-color: var(--shp-brand); }
+.shp-my-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.shp-my-filter button { padding: 6px 12px; border: 1px solid var(--shp-border); border-radius: 999px; background: var(--shp-card); font-size: 13px; color: var(--shp-text); cursor: pointer; }
+.shp-my-filter button.is-on { border-color: var(--shp-brand); background: var(--shp-brand); color: #fff; }
+.shp-my-filter button small { margin-left: 4px; opacity: .75; }

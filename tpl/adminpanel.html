@@ -29,6 +29,13 @@
 			<label><input type="radio" name="category_layout" value="side" @if (($shop_config->category_layout ?? 'top') === 'side') checked @endif /> 좌측 사이드바</label>
 		</div>
 
+		<div class="shp-admin-sec">
+			<label class="shp-admin-label">{{ $lang->adm_display_sec }}</label>
+			<label><input type="hidden" name="show_shop_nav" value="N" /><input type="checkbox" name="show_shop_nav" value="Y" @if (($shop_config->show_shop_nav ?? 'Y') !== 'N') checked @endif /> {{ $lang->cfg_show_shop_nav }}</label>
+			<label><input type="hidden" name="show_search" value="N" /><input type="checkbox" name="show_search" value="Y" @if (($shop_config->show_search ?? 'Y') !== 'N') checked @endif /> {{ $lang->cfg_show_search }}</label>
+			<label><input type="hidden" name="show_admin_fab" value="Y" /><input type="checkbox" name="show_admin_fab" value="N" /> {{ $lang->adm_hide_fab }}</label>
+		</div>
+
 		<div class="shp-admin-sec" id="shpAdmBannerSec">
 			<label class="shp-admin-label">배너</label>
 			<div id="shpAdmBannerRows"></div>
@@ -203,8 +210,10 @@
 			'</select>' +
 			'<div class="shp-adm-bg-color" hidden><input type="color" data-k="bg_color" value="#1a1f2e" /> <input type="color" data-k="bg_color2" value="#0d1019" /></div>' +
 			'<div class="shp-adm-bg-image" hidden><input type="file" accept="image/*" data-up="image" /><input type="hidden" data-k="image" /><span class="shp-adm-file" data-name="image"></span></div>' +
-			'<label>포인트 이미지 (우측, 선택)</label>' +
+			'<label>포인트 이미지 (선택)</label>' +
 			'<div><input type="file" accept="image/*" data-up="point_image" /><input type="hidden" data-k="point_image" /><span class="shp-adm-file" data-name="point_image"></span></div>' +
+			'<label>포인트 이미지 위치</label>' +
+			'<select data-k="point_align"><option value="right">오른쪽</option><option value="left">왼쪽</option></select>' +
 			'<label>글자 색 / 그림자</label>' +
 			'<div><input type="color" data-k="text_color" value="#ffffff" /> <label style="display:inline;font-size:12.5px"><input type="checkbox" data-k="shadow" checked /> 글자 그림자</label></div>' +
 			'<label>제목</label><span class="shp-adm-lang"><input type="text" data-k="title" /><input type="hidden" data-k="title_code" /><button type="button" class="shp-adm-globe" data-lang="title" title="다국어 문구 연결">' + GLOBE + '</button></span>' +
@@ -218,6 +227,7 @@
 		el('[data-k=shadow]').checked = (data.shadow || 'Y') !== 'N';
 		el('[data-k=image]').value = data.image || '';
 		el('[data-k=point_image]').value = data.point_image || '';
+		el('[data-k=point_align]').value = data.point_align === 'left' ? 'left' : 'right';
 		setLangField(row, 'title', data.title || '');
 		setLangField(row, 'text', data.text || '');
 		el('[data-k=url]').value = data.url || '';
@@ -273,7 +283,7 @@
 			function v(k) { return row.querySelector('[data-k=' + k + ']').value; }
 			var item = {
 				bg_type: v('bg_type'), bg_color: v('bg_color'), bg_color2: v('bg_color2'),
-				image: v('image'), point_image: v('point_image'),
+				image: v('image'), point_image: v('point_image'), point_align: v('point_align'),
 				text_color: v('text_color'),
 				shadow: row.querySelector('[data-k=shadow]').checked ? 'Y' : 'N',
 				title: v('title_code').trim() ? (LANG_PREFIX + v('title_code').trim()) : v('title').trim(),

@@ -7,44 +7,51 @@
 	@if ($is_member)
 		<div class="shp-summary" style="margin-bottom:16px">
 			@if (!empty($my_grade))
-			<div class="shp-summary-row"><span>{{ $lang->shop_grade }}</span><span><strong style="color:#2677e3">{{ $my_grade->title }}</strong> <small style="color:#6b7684">(누적 {{ shop_money_base($my_grade->total_spend) }})</small></span></div>
+			<div class="shp-summary-row"><span>{{ $lang->shop_grade }}</span><span><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceGrades') }}"><strong class="shp-accent">{{ $my_grade->title }}</strong></a> <small style="color:#6b7684">{{ sprintf($lang->shop_grade_total, shop_money_base($my_grade->total_spend)) }}</small></span></div>
 			@endif
 			<div class="shp-summary-row is-total"><span>{{ $lang->shop_credit_balance }}</span><span>{{ shop_money_base($credit_balance) }}</span></div>
 		</div>
 
-		<div class="shp-mycoupons">
-			<h3>{{ $lang->shop_my_coupons }} <small>{{ count($my_coupons ?? []) }}</small></h3>
-			@if (!count($my_coupons ?? []))
-			<p class="shp-empty">{{ $lang->shop_no_coupons }}</p>
-			@else
-			<ul class="shp-coupon-list">
-				@foreach ($my_coupons as $shp_cp)
-				<li>
-					<strong>{{ $shp_cp->coupon->title }}</strong>
-					<span class="shp-coupon-off">{{ shop_money_base((int)$shp_cp->discount) }}</span>
-					@if (!empty($shp_cp->coupon->min_order))<small>{{ sprintf($lang->shop_coupon_min, shop_money_base((int)$shp_cp->coupon->min_order)) }}</small>@endif
-					@if (!empty($shp_cp->coupon->use_end))<small>{{ zdate($shp_cp->coupon->use_end, 'Y.m.d') }} {{ $lang->shop_coupon_until }}</small>@endif
-				</li>
-				@endforeach
-			</ul>
-			@endif
+		@php
+		$shp_status_counts = [];
+		foreach ($orders ?? [] as $shp_o)
+		{
+			$shp_k = $shp_o->display_status ?? $shp_o->status;
+			$shp_status_counts[$shp_k] = ($shp_status_counts[$shp_k] ?? 0) + 1;
+		}
+		@endphp
+
+		<div class="shp-my-tabs" role="tablist">
+			<button type="button" class="shp-my-tab is-on" role="tab" data-shp-tab="orders" aria-selected="true">{{ $lang->shop_tab_orders }} <small>{{ count($orders ?? []) }}</small></button>
+			<button type="button" class="shp-my-tab" role="tab" data-shp-tab="credit" aria-selected="false">{{ $lang->shop_credit_history }}</button>
+			<button type="button" class="shp-my-tab" role="tab" data-shp-tab="coupons" aria-selected="false">{{ $lang->shop_my_coupons }} <small>{{ count($my_coupons ?? []) }}</small></button>
 		</div>
 
+		<div class="shp-my-panel" id="shpMyPanel-orders" role="tabpanel">
 		@if (empty($orders))
 		<p class="shp-empty">{{ $lang->shop_no_orders }}</p>
 		@else
-		<table class="shp-table">
-			<thead><tr><th>{{ $lang->shop_order_code }}</th><th>{{ $lang->shop_total }}</th><th>상태</th><th></th></tr></thead>
+		@if (count($shp_status_counts) > 1)
+		<div class="shp-my-filter" role="group">
+			<button type="button" class="is-on" data-shp-status="">{{ $lang->shop_filter_all }}<small>{{ count($orders) }}</small></button>
+			@foreach ($shp_status_counts as $shp_sk => $shp_sn)
+			<button type="button" data-shp-status="{{ $shp_sk }}">{{ $lang->{'shop_status_' . $shp_sk} ?? $shp_sk }}<small>{{ $shp_sn }}</small></button>
+			@endforeach
+		</div>
+		@endif
+		<table class="shp-table" id="shpMyOrders">
+			<thead><tr><th>{{ $lang->shop_order_code }}</th><th>{{ $lang->shop_total }}</th><th>{{ $lang->shop_status }}</th><th></th></tr></thead>
 			<tbody>
 				@foreach ($orders as $o)
-				<tr>
+				@php $shp_ds = $o->display_status ?? $o->status; @endphp
+				<tr data-shp-status="{{ $shp_ds }}">
 					<td><strong>{{ $o->order_code }}</strong><br /><small style="color:#6b7684">{{ zdate($o->regdate, 'Y.m.d H:i') }}</small></td>
 					<td>{{ shop_money_in($o->payment_price, $o->currency ?? 'KRW') }}</td>
-					<td>@php $shp_ds = $o->display_status ?? $o->status; @endphp<span class="shp-st shp-st-{{ $shp_ds }}">{{ $lang->{'shop_status_' . $shp_ds} ?? $shp_ds }}</span></td>
-					<td style="white-space:nowrap"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code) }}" style="color:#2677e3;font-weight:600">{{ $lang->shop_view }}</a>@if ($shp_ds === 'confirmed' && !empty($o->needs_review)) <a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code, 'review', '1') }}" style="color:#1d7a3d;font-weight:600;margin-left:8px">{{ $lang->shop_write_review }}</a>@endif</td>
+					<td><span class="shp-st shp-st-{{ $shp_ds }}">{{ $lang->{'shop_status_' . $shp_ds} ?? $shp_ds }}</span></td>
+					<td style="white-space:nowrap"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $o->order_code) }}" style="color:#2677e3;font-weight:600">{{ $lang->shop_view }}</a></td>
 				</tr>
 				@if ($shp_ds === 'pending')
-				<tr class="shp-pending-row">
+				<tr class="shp-pending-row" data-shp-status="{{ $shp_ds }}">
 					<td colspan="4">
 						<p class="shp-pending-msg">{{ !empty($o->pending_deadline) ? sprintf($lang->shop_pending_notice, zdate($o->pending_deadline, 'Y.m.d A g:i')) : $lang->shop_pending_notice_nodate }}</p>
 						@if (!empty($o->resume_pay_url))
@@ -65,10 +72,14 @@
 				@endforeach
 			</tbody>
 		</table>
+		<p class="shp-empty" id="shpMyOrdersNone" hidden>{{ $lang->shop_no_orders }}</p>
 		@endif
+		</div>
 
-		@if (!empty($credit_logs))
-		<h3 style="margin:24px 0 8px;font-size:15px">{{ $lang->shop_credit_history }}</h3>
+		<div class="shp-my-panel" id="shpMyPanel-credit" role="tabpanel" hidden>
+		@if (empty($credit_logs))
+		<p class="shp-empty">{{ $lang->shop_no_credit_logs }}</p>
+		@else
 		<table class="shp-table">
 			<thead><tr><th>{{ $lang->shop_credit_date }}</th><th>{{ $lang->shop_credit_change }}</th><th>{{ $lang->shop_credit_balance }}</th><th>{{ $lang->shop_credit_type }}</th></tr></thead>
 			<tbody>
@@ -83,6 +94,57 @@
 			</tbody>
 		</table>
 		@endif
+		</div>
+
+		<div class="shp-my-panel" id="shpMyPanel-coupons" role="tabpanel" hidden>
+		@if (!count($my_coupons ?? []))
+		<p class="shp-empty">{{ $lang->shop_no_coupons }}</p>
+		@else
+		<ul class="shp-coupon-list">
+			@foreach ($my_coupons as $shp_cp)
+			<li>
+				<strong>{{ $shp_cp->coupon->title }}</strong>
+				<span class="shp-coupon-off">{{ shop_money_base((int)$shp_cp->discount) }}</span>
+				@if (!empty($shp_cp->coupon->min_order))<small>{{ sprintf($lang->shop_coupon_min, shop_money_base((int)$shp_cp->coupon->min_order)) }}</small>@endif
+				@if (!empty($shp_cp->coupon->use_end))<small>{{ zdate($shp_cp->coupon->use_end, 'Y.m.d') }} {{ $lang->shop_coupon_until }}</small>@endif
+			</li>
+			@endforeach
+		</ul>
+		@endif
+		</div>
+
+		<script>
+		(function () {
+			var tabs = document.querySelectorAll('.shp-my-tab');
+			tabs.forEach(function (t) {
+				t.addEventListener('click', function () {
+					var name = t.getAttribute('data-shp-tab');
+					tabs.forEach(function (x) { var on = x === t; x.classList.toggle('is-on', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
+					document.querySelectorAll('.shp-my-panel').forEach(function (p) { p.hidden = (p.id !== 'shpMyPanel-' + name); });
+				});
+			});
+			var chips = document.querySelectorAll('.shp-my-filter [data-shp-status]');
+			chips.forEach(function (c) {
+				c.addEventListener('click', function () {
+					var want = c.getAttribute('data-shp-status');
+					chips.forEach(function (x) { x.classList.toggle('is-on', x === c); });
+					var shown = 0;
+					document.querySelectorAll('#shpMyOrders tbody tr').forEach(function (tr) {
+						var on = !want || tr.getAttribute('data-shp-status') === want;
+						tr.hidden = !on;
+						if (on && !tr.classList.contains('shp-pending-row')) shown++;
+					});
+					var none = document.getElementById('shpMyOrdersNone');
+					if (none) none.hidden = shown > 0;
+				});
+			});
+		})();
+		</script>
+
+		<p class="shp-foot-links">
+			<a href="{{ getUrl('', 'act', 'dispMemberModifyInfo') }}">{{ $lang->shop_edit_profile }}</a>
+			<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a>
+		</p>
 	@else
 	<p class="shp-detail-summary">{{ $lang->shop_guest_lookup_help }}</p>
 	<form action="{{ getUrl('') }}" method="post" class="shp-form">
@@ -94,9 +156,9 @@
 			<button type="submit" class="shp-btn shp-btn-primary" style="width:100%">{{ $lang->shop_lookup }}</button>
 		</fieldset>
 	</form>
-	@endif
 
 	<p class="shp-foot-links">
 		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a>
 	</p>
+	@endif
 </div>

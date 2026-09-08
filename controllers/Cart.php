@@ -84,6 +84,20 @@ class Cart extends Base
 
 		$this->setMessage('msg_shop_cart_added');
 		$mid = (string)\Context::get('mid') ?: (self::getDefaultInstance()->mid ?? self::DEFAULT_MID);
+
+		$resolved = CartModel::resolve();
+		$ship_fee = CartModel::calcShipFee($resolved);
+		$qty_total = 0;
+		foreach ($resolved->items ?? [] as $entry)
+		{
+			$qty_total += (int)($entry->qty ?? 0);
+		}
+		$this->add('qty_total', $qty_total);
+		$this->add('item_total', (int)($resolved->item_total ?? 0));
+		$this->add('item_total_text', shop_money((int)($resolved->item_total ?? 0)));
+		$this->add('ship_fee', (int)$ship_fee);
+		$this->add('ship_fee_text', $ship_fee > 0 ? shop_money((int)$ship_fee) : '');
+
 		// 바로 구매: 담은 뒤 곧장 주문서로
 		if (\Context::get('direct') === 'Y')
 		{

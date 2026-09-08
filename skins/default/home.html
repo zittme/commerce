@@ -21,6 +21,7 @@
 			@endif
 		</nav>
 		@include('_currency')
+		@if (($shop_config->show_shop_nav ?? 'Y') !== 'N')
 		<a class="shp-cart-link" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceMyOrders') }}">
 			<svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="3.5" cy="6" r="1.4" fill="currentColor"/><circle cx="3.5" cy="12" r="1.4" fill="currentColor"/><circle cx="3.5" cy="18" r="1.4" fill="currentColor"/></svg>
 			{{ $lang->shop_my_orders }}
@@ -30,6 +31,7 @@
 			{{ $lang->shop_cart }}
 			@if ($cart_count > 0)<span class="shp-cart-count">{{ $cart_count }}</span>@endif
 		</a>
+		@endif
 	</div>
 
 	@if (($shop_config->category_layout ?? 'top') !== 'side' && count($shop_categories ?? []))
@@ -85,7 +87,7 @@
 					</span>
 				</span>
 				@if (!empty($shp_bn['point_image']))
-				<span class="shp-home-banner-point" style="background-image:url('{{ escape($shp_bn['point_image']) }}')"></span>
+				<span class="shp-home-banner-point {{ ($shp_bn['point_align'] ?? 'right') === 'left' ? 'is-left' : '' }}" style="background-image:url('{{ escape($shp_bn['point_image']) }}')"></span>
 				@endif
 			</a>
 			@endforeach
@@ -138,7 +140,7 @@
 							<small>{{ $shp_pm->start_date ? zdate($shp_pm->start_date, 'm.d') : '' }} ~ {{ $shp_pm->end_date ? zdate($shp_pm->end_date, 'm.d') : '' }} · {{ sprintf($lang->shop_item_count, $shp_pm->item_count) }}</small>
 						</span>
 						@if (!empty($shp_pm->banner_data['point_image']))
-						<span class="shp-promo-card-point" style="background-image:url('{{ escape($shp_pm->banner_data['point_image']) }}')"></span>
+						<span class="shp-promo-card-point {{ ($shp_pm->banner_data['point_align'] ?? 'right') === 'left' ? 'is-left' : '' }}" style="background-image:url('{{ escape($shp_pm->banner_data['point_image']) }}')"></span>
 						@endif
 					</a>
 					@endforeach
@@ -184,6 +186,12 @@
 								<s>{{ shop_item_price($it, 'effective') }}</s> <strong>{{ shop_item_price($it, 'grade') }}</strong>
 								<em class="shp-grade-tag">{{ $lang->shop_grade ?? '회원 등급' }}</em>
 								@elseif (shop_item_on_sale($it))
+								@php
+								$ss_base = isset($it->disp_price) ? (int)$it->disp_price : (int)($it->price ?? 0);
+								$ss_now = isset($it->disp_sale_price) ? (int)$it->disp_sale_price : (int)($it->sale_price ?? 0);
+								$ss_off = $ss_base > 0 ? (int)round(($ss_base - $ss_now) / $ss_base * 100) : 0;
+								@endphp
+								@if ($ss_off > 0)<em class="shp-off">{{ $ss_off }}%</em>@endif
 								<s>{{ shop_item_price($it, 'price') }}</s> <strong>{{ shop_item_price($it, 'sale') }}</strong>
 								@else
 								<strong>{{ shop_item_price($it, 'price') }}</strong>

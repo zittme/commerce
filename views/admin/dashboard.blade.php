@@ -192,6 +192,14 @@
 		</div>
 		<p style="margin:12px 0 0;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_dashboard_18') }} <strong>/{{ $shop_mid }}</strong> {{ lang('commerce.admin_dashboard_19') }}</p>
 	</div>
+
+	<div class="rsva-panel" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+		<p style="margin:0;font-size:13.5px;color:#6b7684">{{ lang('commerce.adm_support_text') }}</p>
+		<div style="display:flex;gap:8px;flex-wrap:wrap">
+			<a href="https://zitt.me/issue" target="_blank" rel="noopener" style="display:inline-block;padding:9px 16px;border-radius:999px;background:#2677e3;color:#fff;font-size:13px;font-weight:700;text-decoration:none">{{ lang('commerce.adm_support_issue') }}</a>
+			<a href="https://open.kakao.com/o/gpRz8Vyi" target="_blank" rel="noopener" style="display:inline-block;padding:9px 16px;border-radius:999px;border:1px solid #d5dbe3;background:#fff;color:#333d4b;font-size:13px;font-weight:700;text-decoration:none">{{ lang('commerce.adm_support_kakao') }}</a>
+		</div>
+	</div>
 </div>
 @else
 {{-- 코어 관리자에서는 콘솔 안내만 보여준다. 운영은 전용 콘솔로 일원화 --}}

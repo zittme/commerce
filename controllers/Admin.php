@@ -28,7 +28,7 @@ class Admin extends Base
 	public const CONFIG_FIELDS = [
 		'enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes',
 		'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key',
-		'shop_main', 'category_layout', 'home_show_recommend', 'home_show_new',
+		'shop_main', 'category_layout', 'show_shop_nav', 'show_search', 'show_admin_fab', 'home_show_recommend', 'home_show_new',
 		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones',
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
 		'privacy_text', 'privacy_version', 'retention_days',
@@ -542,6 +542,14 @@ class Admin extends Base
 
 		$config->shop_main = \Context::get('shop_main') === 'home' ? 'home' : 'list';
 		$config->category_layout = \Context::get('category_layout') === 'side' ? 'side' : 'top';
+		foreach (['show_shop_nav', 'show_search', 'show_admin_fab'] as $toggle)
+		{
+			$value = \Context::get($toggle);
+			if ($value !== null && $value !== '')
+			{
+				$config->$toggle = $value === 'N' ? 'N' : 'Y';
+			}
+		}
 
 		$decoded = json_decode((string)\Context::get('home_banners'), true);
 		$config->home_banners = is_array($decoded)
@@ -829,6 +837,15 @@ class Admin extends Base
 				}
 			}
 		}
+		// 저장 전 상품은 행이 없어 축 정의를 적어 둘 자리가 없다.
+		// 이미 만들어 둔 조합에서 축을 되짚어 화면이 빈 채로 열리지 않게 한다.
+		$pending_axes = '';
+		if (!$item && count($options))
+		{
+			$pending_axes = ComboModel::axesFromOptions($options);
+		}
+		\Context::set('pending_axes', $pending_axes);
+
 		\Context::set('options', $options);
 		\Context::set('categories', self::getCategories());
 		\Context::set('badges', BadgeModel::getList(true));
@@ -2373,6 +2390,8 @@ class Admin extends Base
 						'item_srl' => $item_srl,
 						'option_label' => $opt->option_label,
 						'option_type' => $opt->option_type ?? 'basic',
+						// 조합 정보를 빼면 복제본의 조합 옵션이 어느 축과도 맞지 않는 껍데기가 된다
+						'combo' => (string)($opt->combo ?? ''),
 						'price_add' => (int)$opt->price_add,
 						'stock' => (int)$opt->stock,
 						'sku' => (string)$opt->sku,

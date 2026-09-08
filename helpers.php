@@ -6,6 +6,8 @@
 
 use Zittme\Modules\Commerce\Models\Money as CommerceMoney;
 
+require_once __DIR__ . '/compat.php';
+
 if (!function_exists('shop_money_in'))
 {
 	/**

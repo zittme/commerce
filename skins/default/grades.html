@@ -1,0 +1,68 @@
+@version(2)
+@load('css/shop.css')
+{{-- 회원 등급 안내: 등급 표와 내 등급·다음 등급까지 남은 금액 --}}
+<div class="shp shp-narrow shp-grades">
+	<div class="shp-top"><h2 class="shp-title">{{ $lang->shop_grades_title }}</h2></div>
+	<p class="shp-detail-summary">{{ $lang->shop_grades_desc }}</p>
+
+	@if ($is_member)
+	<div class="shp-summary shp-grade-mine">
+		<div class="shp-summary-row">
+			<span>{{ $lang->shop_grades_my }}</span>
+			<span><strong class="shp-accent">{{ $my_grade ? $my_grade->title : $lang->shop_grades_none }}</strong></span>
+		</div>
+		<div class="shp-summary-row">
+			<span>{{ $lang->shop_grades_spend }}</span>
+			<span>{{ shop_money_base($my_total_spend) }}</span>
+		</div>
+		<div class="shp-grade-bar" role="progressbar" aria-valuenow="{{ $grade_progress }}" aria-valuemin="0" aria-valuemax="100"><i style="width:{{ $grade_progress }}%"></i></div>
+		@if ($next_grade)
+		<p class="shp-grade-next">{{ sprintf($lang->shop_grades_next, shop_money_base($next_remaining), $next_grade->title) }}</p>
+		@else
+		<p class="shp-grade-next">{{ $lang->shop_grades_top }}</p>
+		@endif
+	</div>
+	@else
+	<p class="shp-grade-login"><a class="shp-btn" href="{{ getUrl('', 'act', 'dispMemberLoginForm') }}">{{ $lang->shop_grades_login }}</a></p>
+	@endif
+
+	@if (!count($grades))
+	<p class="shp-empty">{{ $lang->shop_grades_empty }}</p>
+	@else
+	<div class="shp-table-wrap">
+	<table class="shp-table shp-grade-table">
+		<thead>
+			<tr>
+				<th>{{ $lang->shop_grade }}</th>
+				<th>{{ $lang->shop_grades_min_spend }}</th>
+				<th>{{ $lang->shop_grades_discount }}</th>
+				<th>{{ $lang->shop_grades_credit }}</th>
+				<th>{{ $lang->shop_grades_coupon }}</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach ($grades as $g)
+			<tr class="@if ($my_grade && (int)$my_grade->grade_srl === (int)$g->grade_srl) is-mine @endif">
+				<td><strong>{{ $g->title }}</strong>@if ($my_grade && (int)$my_grade->grade_srl === (int)$g->grade_srl) <em class="shp-badge">{{ $lang->shop_grades_current }}</em>@endif</td>
+				<td>{{ $g->min_spend > 0 ? sprintf($lang->shop_grades_min_fmt, shop_money_base($g->min_spend)) : $lang->shop_grades_min_none }}</td>
+				<td>
+					@if ($g->discount_type === 'percent'){{ sprintf($lang->shop_grades_discount_pct, rtrim(rtrim(number_format($g->discount_value, 2), '0'), '.')) }}
+					@elseif ($g->discount_type === 'amount'){{ sprintf($lang->shop_grades_discount_amt, shop_money_base((int)$g->discount_value)) }}
+					@else -
+					@endif
+				</td>
+				<td>{{ rtrim(rtrim(number_format($g->credit_rate_effective, 2), '0'), '.') }}%</td>
+				<td>{{ $g->coupon ? $g->coupon->title : '-' }}</td>
+			</tr>
+			@endforeach
+		</tbody>
+	</table>
+	</div>
+	@endif
+
+	<ul class="shp-grade-rules">
+		<li>{{ $lang->shop_grades_rule1 }}</li>
+		<li>{{ $lang->shop_grades_rule2 }}</li>
+		<li>{{ $lang->shop_grades_rule3 }}</li>
+	</ul>
+</div>

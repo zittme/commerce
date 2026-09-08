@@ -67,19 +67,26 @@
 	@php
 	$shp_ship_guide = trim((string)($shop_config->ship_guide ?? ''));
 	$shp_claim_guide = trim((string)($shop_config->claim_guide ?? ''));
+	$shp_guide_html = function (string $text): string {
+		if (strpos($text, '<') !== false && class_exists('\\Zittme\\Framework\\Filters\\HTMLFilter'))
+		{
+			return \Zittme\Framework\Filters\HTMLFilter::clean($text);
+		}
+		return nl2br(escape($text));
+	};
 	@endphp
 	@if ($shp_ship_guide !== '' || $shp_claim_guide !== '')
 	<div class="shp-guides">
 		@if ($shp_ship_guide !== '')
 		<details class="shp-guide" open>
 			<summary>{{ $lang->cfg_ship_guide }}</summary>
-			<div class="shp-guide-body">{!! nl2br(escape($shp_ship_guide)) !!}</div>
+			<div class="shp-guide-body">{!! $shp_guide_html($shp_ship_guide) !!}</div>
 		</details>
 		@endif
 		@if ($shp_claim_guide !== '')
 		<details class="shp-guide">
 			<summary>{{ $lang->cfg_claim_guide }}</summary>
-			<div class="shp-guide-body">{!! nl2br(escape($shp_claim_guide)) !!}</div>
+			<div class="shp-guide-body">{!! $shp_guide_html($shp_claim_guide) !!}</div>
 		</details>
 		@endif
 	</div>

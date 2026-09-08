@@ -95,6 +95,9 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<div><label>{{ lang('commerce.admin_config_30') }}</label><select name="shop_main"><option value="list" @if(($shop_config->shop_main ?? 'list') !== 'home') selected @endif>{{ lang('commerce.admin_config_31') }}</option><option value="home" @if(($shop_config->shop_main ?? 'list') === 'home') selected @endif>{{ lang('commerce.admin_config_32') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_33') }}</label><select name="category_layout"><option value="top" @if(($shop_config->category_layout ?? 'top') !== 'side') selected @endif>{{ lang('commerce.admin_config_34') }}</option><option value="side" @if(($shop_config->category_layout ?? 'top') === 'side') selected @endif>{{ lang('commerce.admin_config_35') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_36') }}</label><input type="number" name="home_count" min="4" max="24" value="{{ $shop_config->home_count ?? 8 }}" /></div>
+				<div><label>{{ lang('commerce.cfg_show_shop_nav') }}</label><select name="show_shop_nav"><option value="Y" @if(($shop_config->show_shop_nav ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="N" @if(($shop_config->show_shop_nav ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select><small class="rsva-help">{{ lang('commerce.cfg_show_hint') }}</small></div>
+				<div><label>{{ lang('commerce.cfg_show_search') }}</label><select name="show_search"><option value="Y" @if(($shop_config->show_search ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="N" @if(($shop_config->show_search ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select></div>
+				<div><label>{{ lang('commerce.cfg_show_admin_fab') }}</label><select name="show_admin_fab"><option value="Y" @if(($shop_config->show_admin_fab ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="N" @if(($shop_config->show_admin_fab ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_16') }}</label><select name="item_sticky"><option value="N" @if(($shop_config->item_sticky ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="Y" @if(($shop_config->item_sticky ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_104') }}</label><select name="currency_code_prefix"><option value="N" @if(($shop_config->currency_code_prefix ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_105') }}</option><option value="Y" @if(($shop_config->currency_code_prefix ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_106') }}</option></select></div>
 			</div>
@@ -570,6 +573,10 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 						'<option value="center">' + {!! json_encode(lang('commerce.cfg_align_center')) !!} + '</option>' +
 						'<option value="right">' + {!! json_encode(lang('commerce.cfg_align_right')) !!} + '</option>' +
 					'</select></div>' +
+					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_point_align')) !!} + '</label><select data-k="point_align">' +
+						'<option value="right">' + {!! json_encode(lang('commerce.cfg_align_right')) !!} + '</option>' +
+						'<option value="left">' + {!! json_encode(lang('commerce.cfg_align_left')) !!} + '</option>' +
+					'</select></div>' +
 					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_link_url')) !!} + '</label><input type="text" data-k="url" placeholder="' + {!! json_encode(lang('commerce.cfg_link_ph')) !!} + '" /></div>' +
 					'<div class="zmc-f"><label>' + {!! json_encode(lang('commerce.cfg_link_target')) !!} + '</label><select data-k="target">' +
 						'<option value="self">' + {!! json_encode(lang('commerce.cfg_link_self')) !!} + '</option>' +
@@ -580,6 +587,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 			row.zmcExtra = data;
 			row.querySelector('[data-k=url]').value = data.url || '';
 			row.querySelector('[data-k=align]').value = data.align || 'left';
+			row.querySelector('[data-k=point_align]').value = data.point_align === 'left' ? 'left' : 'right';
 			row.querySelector('[data-k=target]').value = data.target === 'blank' ? 'blank' : 'self';
 			row.querySelector('[data-k=bg_type]').value = data.bg_type || (data.image ? 'image' : 'gradient');
 			row.querySelector('[data-k=bg_color]').value = data.bg_color || '#1a1f2e';
@@ -627,6 +635,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					item.point_image = row.querySelector('[data-k=point_image]').value.trim();
 					item.url = row.querySelector('[data-k=url]').value.trim();
 					item.align = row.querySelector('[data-k=align]').value;
+					item.point_align = row.querySelector('[data-k=point_align]').value;
 					item.target = row.querySelector('[data-k=target]').value;
 					item.bg_type = row.querySelector('[data-k=bg_type]').value;
 					item.bg_color = row.querySelector('[data-k=bg_color]').value;

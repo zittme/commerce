@@ -36,6 +36,12 @@
 				<s>{{ shop_item_price($item, 'effective') }}</s>{{ shop_item_price($item, 'grade') }}
 				<em class="shp-grade-tag">{{ $lang->shop_grade ?? '회원 등급' }}</em>
 				@elseif (shop_item_on_sale($item))
+				@php
+				$ss_base = isset($item->disp_price) ? (int)$item->disp_price : (int)($item->price ?? 0);
+				$ss_now = isset($item->disp_sale_price) ? (int)$item->disp_sale_price : (int)($item->sale_price ?? 0);
+				$ss_off = $ss_base > 0 ? (int)round(($ss_base - $ss_now) / $ss_base * 100) : 0;
+				@endphp
+				@if ($ss_off > 0)<em class="shp-off">{{ $ss_off }}%</em>@endif
 				<s>{{ shop_item_price($item, 'price') }}</s>{{ shop_item_price($item, 'sale') }}
 				@else
 				{{ shop_item_price($item, 'price') }}

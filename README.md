@@ -4,8 +4,10 @@
 
 ## 요구 사항
 
-- Zittme 0.0.01 이상
-- [zittme_pay](https://github.com/zittme/zittme_pay) 0.2.0 이상 (결제 계층)
+- Zittme 1.0.0 이상, 또는 라이믹스(Rhymix) 2.1 이상
+- [zittme_pay](https://github.com/zittme/zittme_pay) 0.2.8 이상 (결제 계층)
+
+라이믹스에서는 호환층(compat.php)이 Zittme 프레임워크 클래스를 Rhymix 클래스로 연결합니다. 사이트맵 상품 포함, 상품 구조화 데이터처럼 Zittme 코어 1.1 이 필요한 기능은 다른 코어에서 자동으로 건너뜁니다.
 
 ## 설치
 

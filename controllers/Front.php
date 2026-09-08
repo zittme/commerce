@@ -106,18 +106,7 @@ class Front extends Base
 		{
 			$skin = 'default';
 		}
-		$path = \Zittme\Framework\Theme::resolveSkinPath($this->module_path, $skin, 'skins');
-		if (!is_dir($path) && strpos($skin, \Zittme\Framework\Theme::SEPARATOR) === false)
-		{
-			foreach (array_keys(\Zittme\Framework\Theme::getModuleSkins('commerce', 'skins')) as $combined)
-			{
-				if (substr($combined, -strlen(\Zittme\Framework\Theme::SEPARATOR . $skin)) === \Zittme\Framework\Theme::SEPARATOR . $skin)
-				{
-					$path = \Zittme\Framework\Theme::resolveSkinPath($this->module_path, $combined, 'skins');
-					break;
-				}
-			}
-		}
+		$path = zittme_compat_skin_path($this->module_path, $skin, 'commerce');
 		if (!is_dir($path))
 		{
 			$path = $this->module_path . 'skins/default/';
@@ -206,6 +195,10 @@ class Front extends Base
 	{
 		$logged_info = \Context::get('logged_info');
 		if (!$logged_info || $logged_info->is_admin !== 'Y')
+		{
+			return;
+		}
+		if ((self::config()->show_admin_fab ?? 'Y') === 'N')
 		{
 			return;
 		}
@@ -617,6 +610,7 @@ class Front extends Base
 
 		LangModel::textAll([$item], ['item_name', 'summary']);
 		\Context::set('item', $item);
+		$this->setItemSeo($item);
 		$shop_options = ItemModel::getOptions($item_srl, true);
 		// 조합형 옵션 축 — 스킨이 모델을 직접 부르지 않도록 여기서 풀어 넘긴다.
 		// 방식을 직접 입력으로 되돌린 상품은 축 정의가 남아 있어도 쓰지 않는다.
@@ -677,8 +671,104 @@ class Front extends Base
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', self::config());
 		$this->setShopContext([$item]);
+		$this->addItemStructuredData($item, $item_disp['effective'], $item_disp_currency, $reviews);
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('item');
+	}
+
+	protected function setItemSeo(object $item): void
+	{
+		$name = trim(strip_tags((string)($item->item_name ?? '')));
+		if ($name !== '')
+		{
+			$site_title = trim((string)\Context::getSiteTitle());
+			\Context::setBrowserTitle($site_title !== '' && $site_title !== $name ? ($name . ' - ' . $site_title) : $name);
+		}
+
+		$summary = trim(utf8_normalize_spaces(strip_tags((string)($item->summary ?? ''))));
+		if ($summary === '' && !empty($item->content))
+		{
+			$summary = trim(utf8_normalize_spaces(strip_tags((string)$item->content)));
+		}
+		if ($summary !== '')
+		{
+			if (mb_strlen($summary) > 160)
+			{
+				$summary = mb_substr($summary, 0, 157) . '...';
+			}
+			\Context::addMetaTag('description', $summary);
+			\Context::addOpenGraphData('og:description', $summary);
+		}
+
+		$thumb = trim((string)($item->thumb ?? ''));
+		if ($thumb !== '')
+		{
+			if (preg_match('#^https?://#', $thumb))
+			{
+				\Context::addOpenGraphData('og:image', $thumb);
+			}
+			else
+			{
+				\Context::addMetaImage($thumb);
+			}
+		}
+
+		\Context::addOpenGraphData('og:type', 'product');
+		\Context::setCanonicalURL(getNotEncodedFullUrl('', 'mid', $this->mid, 'act', 'dispCommerceItem', 'item_srl', (int)$item->item_srl));
+	}
+
+	/**
+	 * 상품 상세의 구조화 데이터. 코어가 head 에 한 번에 출력한다.
+	 */
+	protected function addItemStructuredData(object $item, int $price_minor, string $currency, array $reviews = []): void
+	{
+		if (!method_exists('\Context', 'addStructuredData'))
+		{
+			return;
+		}
+
+		$image = trim((string)($item->thumb ?? ''));
+		if ($image !== '' && !preg_match('#^https?://#', $image))
+		{
+			$image = \Zittme\Framework\URL::getCurrentDomainURL('/') . ltrim(preg_replace('#^\./#', '', $image), '/');
+		}
+
+		$rating = [];
+		$scores = [];
+		foreach ($reviews as $review)
+		{
+			if (!empty($review->review_srl) && (int)($review->rating ?? 0) > 0)
+			{
+				$scores[] = (int)$review->rating;
+			}
+		}
+		if (count($scores))
+		{
+			$rating = [
+				'@type' => 'AggregateRating',
+				'ratingValue' => round(array_sum($scores) / count($scores), 1),
+				'reviewCount' => count($scores),
+				'bestRating' => 5,
+			];
+		}
+
+		$price = MoneyModel::isZeroDecimal($currency) ? (string)$price_minor : number_format($price_minor / 100, 2, '.', '');
+
+		\Context::addStructuredData('Product', [
+			'name' => trim((string)($item->item_name ?? '')),
+			'description' => trim(utf8_normalize_spaces(strip_tags((string)($item->summary ?? '')))),
+			'sku' => trim((string)($item->item_code ?? '')),
+			'image' => $image,
+			'aggregateRating' => $rating,
+			'offers' => [
+				'@type' => 'Offer',
+				'price' => $price,
+				'priceCurrency' => $currency,
+				'availability' => ItemModel::isPurchasable($item) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+				'itemCondition' => 'https://schema.org/NewCondition',
+				'url' => \Context::getCanonicalURL() ?: \Zittme\Framework\URL::getCurrentURL(),
+			],
+		]);
 	}
 
 	/**
@@ -1047,5 +1137,72 @@ class Front extends Base
 		\Context::set('shop_config', self::config());
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('my');
+	}
+
+	/**
+	 * 회원 등급 안내. 관리자가 등록한 등급 표(기준 누적 금액, 할인, 적립률, 승급 쿠폰)와
+	 * 로그인한 회원의 현재 등급, 다음 등급까지 남은 금액을 보여준다.
+	 */
+	public function dispCommerceGrades()
+	{
+		self::assertShopEnabled();
+		$logged_info = \Context::get('logged_info');
+		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
+		$config = self::config();
+		$default_rate = (float)($config->credit_rate ?? 0);
+
+		$grades = [];
+		foreach (\Zittme\Modules\Commerce\Models\Grade::getList() as $row)
+		{
+			$row->min_spend = (int)($row->min_spend ?? 0);
+			$row->credit_rate = (float)($row->credit_rate ?? 0);
+			$row->credit_rate_effective = $row->credit_rate > 0 ? $row->credit_rate : $default_rate;
+			$row->discount_type = (string)($row->discount_type ?? '');
+			$row->discount_value = (float)($row->discount_value ?? 0);
+			$row->coupon = !empty($row->coupon_srl) ? \Zittme\Modules\Commerce\Models\Coupon::get((int)$row->coupon_srl) : null;
+			if ($row->coupon)
+			{
+				$row->coupon->title = LangModel::text((string)$row->coupon->title);
+			}
+			$grades[] = $row;
+		}
+
+		$my_grade = $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Grade::getForMember($member_srl) : null;
+		$total_spend = $my_grade ? (int)($my_grade->total_spend ?? 0) : 0;
+		$next_grade = null;
+		$progress = 0;
+		if ($member_srl > 0)
+		{
+			foreach ($grades as $g)
+			{
+				if ($g->min_spend > $total_spend)
+				{
+					$next_grade = $g;
+					break;
+				}
+			}
+			if ($next_grade)
+			{
+				$floor = $my_grade ? (int)($my_grade->min_spend ?? 0) : 0;
+				$span = max(1, $next_grade->min_spend - $floor);
+				$progress = (int)min(100, max(0, round(($total_spend - $floor) / $span * 100)));
+			}
+			else
+			{
+				$progress = 100;
+			}
+		}
+
+		\Context::set('is_member', $member_srl > 0);
+		\Context::set('grades', $grades);
+		\Context::set('my_grade', $my_grade);
+		\Context::set('my_total_spend', $total_spend);
+		\Context::set('next_grade', $next_grade);
+		\Context::set('next_remaining', $next_grade ? max(0, $next_grade->min_spend - $total_spend) : 0);
+		\Context::set('grade_progress', $progress);
+		\Context::set('default_credit_rate', $default_rate);
+		\Context::set('shop_config', $config);
+		$this->setTemplatePath($this->getSkinPath());
+		$this->setTemplateFile('grades');
 	}
 }

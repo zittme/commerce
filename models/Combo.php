@@ -117,6 +117,58 @@ class Combo
 	}
 
 	/**
+	 * 조합 옵션 행들에서 축 정의를 되짚는다.
+	 *
+	 * 저장 전 상품은 행이 없어 option_axes 를 적어 둘 자리가 없다. 그때는
+	 * 이미 만들어 둔 조합 옵션이 유일한 근거이므로 거기서 축을 다시 세운다.
+	 *
+	 * @param array $options
+	 * @return string 축 정의 JSON. 조합 옵션이 없으면 빈 문자열
+	 */
+	public static function axesFromOptions(array $options): string
+	{
+		$axes = [];
+		foreach ($options as $option)
+		{
+			$combo = $option->combo ?? '';
+			$combo = is_string($combo) ? json_decode($combo, true) : $combo;
+			if (!is_array($combo))
+			{
+				continue;
+			}
+			foreach ($combo as $name => $value)
+			{
+				$name = trim((string)$name);
+				$value = trim((string)$value);
+				if ($name === '' || $value === '')
+				{
+					continue;
+				}
+				if (!isset($axes[$name]))
+				{
+					$axes[$name] = [];
+				}
+				if (!in_array($value, $axes[$name], true))
+				{
+					$axes[$name][] = $value;
+				}
+			}
+		}
+
+		if (!count($axes))
+		{
+			return '';
+		}
+
+		$out = [];
+		foreach ($axes as $name => $values)
+		{
+			$out[] = ['name' => $name, 'values' => $values, 'style' => 'select'];
+		}
+		return self::encodeAxes($out);
+	}
+
+	/**
 	 * 축 정의 저장용 JSON.
 	 *
 	 * @param mixed $input [{name, values[]}] 또는 그 JSON
