@@ -120,14 +120,6 @@ class Install extends Base
 		}
 	}
 
-	/**
-	 * module.xml 에 선언한 네임스페이스를 코어 설정에 등록한다.
-	 *
-	 * 라이믹스는 설치 · 업데이트 때 코어가 직접 등록하지만, Zittme 코어는
-	 * Zittme\ 로 시작하는 이름을 예약된 것으로 보고 등록을 건너뛴다. 그런데
-	 * 관리자 홈의 업데이트 필요 판정은 등록 여부를 그대로 보기 때문에
-	 * "설정 완료하기"를 눌러도 안내가 남는다. 여기서 직접 등록해 둔다.
-	 */
 	protected static function registerNamespace(): void
 	{
 		$name = 'Zittme\\Modules\\Commerce';
