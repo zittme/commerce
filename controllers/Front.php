@@ -1202,7 +1202,12 @@ class Front extends Base
 		\Context::set('grade_progress', $progress);
 		\Context::set('default_credit_rate', $default_rate);
 		\Context::set('shop_config', $config);
-		$this->setTemplatePath($this->getSkinPath());
+		$skin_path = $this->getSkinPath();
+		if (!is_file($skin_path . 'grades.html'))
+		{
+			$skin_path = $this->module_path . 'skins/default/';
+		}
+		$this->setTemplatePath($skin_path);
 		$this->setTemplateFile('grades');
 	}
 }
