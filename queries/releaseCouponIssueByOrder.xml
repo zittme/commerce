@@ -1,5 +1,4 @@
 <query id="releaseCouponIssueByOrder" action="update">
-	<!-- 주문 취소 시 쿠폰 반환 -->
 	<tables>
 		<table name="commerce_coupon_issue" />
 	</tables>

@@ -1,0 +1,15 @@
+<table name="commerce_pin">
+	<column name="pin_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="item_srl" type="bigint" notnull="notnull" index="idx_item_srl" />
+	<column name="pin_enc" type="text" notnull="notnull" />
+	<column name="pin_hash" type="varchar" size="64" notnull="notnull" unique="unique_pin_hash" />
+	<column name="pin_tail" type="varchar" size="8" />
+	<column name="expire_date" type="char" size="8" />
+	<column name="status" type="varchar" size="10" notnull="notnull" default="stock" index="idx_status" />
+	<column name="order_srl" type="bigint" notnull="notnull" default="0" index="idx_order_srl" />
+	<column name="order_item_srl" type="bigint" notnull="notnull" default="0" index="idx_order_item_srl" />
+	<column name="assigned_date" type="char" size="14" />
+	<column name="revealed_date" type="char" size="14" />
+	<column name="memo" type="varchar" size="120" />
+	<column name="regdate" type="char" size="14" />
+</table>

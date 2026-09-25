@@ -1,0 +1,14 @@
+@version(2)
+	@if ($store_info)
+	<section class="st-section st-biz">
+		<div class="st-section-head"><h2>{{ $lang->mk_seller_info }}</h2></div>
+		<dl>
+			<div><dt>{{ $lang->mk_f_biz_name }}</dt><dd>{{ $store_info->biz_name ?: $store_info->shop_name }}</dd></div>
+			<div><dt>{{ $lang->mk_f_ceo_name }}</dt><dd>{{ $store_info->ceo_name }}</dd></div>
+			<div><dt>{{ $lang->mk_f_biz_no }}</dt><dd>{{ $store_info->biz_no }}</dd></div>
+			<div><dt>{{ $lang->mk_f_mailorder_no }}</dt><dd>{{ $store_info->mailorder_no }}</dd></div>
+			<div><dt>{{ $lang->mk_f_tel }}</dt><dd>{{ $store_info->tel }}</dd></div>
+			@if ($store_info->biz_address !== '')<div><dt>{{ $lang->mk_f_biz_address }}</dt><dd>{{ $store_info->biz_address }}</dd></div>@endif
+		</dl>
+	</section>
+	@endif

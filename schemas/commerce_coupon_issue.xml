@@ -1,5 +1,4 @@
 <table name="commerce_coupon_issue">
-	<!-- 회원별 발급·사용 이력. order_srl = 0 이면 미사용 — 사용은 조건부 UPDATE 로 원자 점유한다 -->
 	<column name="issue_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="coupon_srl" type="bigint" notnull="notnull" index="idx_coupon_srl" />
 	<column name="member_srl" type="bigint" notnull="notnull" index="idx_member_srl" />

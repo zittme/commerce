@@ -1,5 +1,4 @@
 <query id="getMyCouponIssues" action="select">
-	<!-- 회원의 미사용 발급 쿠폰 -->
 	<tables>
 		<table name="commerce_coupon_issue" />
 	</tables>

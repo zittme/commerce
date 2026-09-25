@@ -1,7 +1,6 @@
 @version(2)
 @load('css/shop.css')
 
-{{-- 기획전 전용 페이지 — 배너 + 소개문 + 상품 그리드 --}}
 <div class="shp">
 	@include('_currency')
 	<div class="shp-top">
@@ -23,7 +22,7 @@
 
 	<div class="shp-home-banner">
 		<div class="shp-home-banner-track">
-			<span class="shp-home-banner-item is-on" style="{{ $promo_banner['bg_style'] ?? '' }}">
+			<span class="shp-home-banner-item align-{{ in_array($promo_banner['align'] ?? 'left', ['center', 'right'], true) ? $promo_banner['align'] : 'left' }} is-on" style="{{ $promo_banner['bg_style'] ?? '' }}">
 				<span class="shp-home-banner-copy {{ ($promo_banner['shadow'] ?? 'Y') === 'N' ? 'no-shadow' : '' }}" style="color:{{ $promo_banner['text_color'] ?? '#ffffff' }}">
 					<strong>{!! $promo_banner['title_html'] ?? escape($promo->title) !!}</strong>
 					@if (!empty($promo_banner['text']))<span>{!! $promo_banner['text_html'] ?? escape($promo_banner['text']) !!}</span>@endif
@@ -54,12 +53,14 @@
 	@else
 	<div class="shp-grid">
 		@foreach ($items as $it)
-		<a class="shp-card" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $it->item_srl) }}">
+		<a class="shp-card" href="{{ !empty($it->item_url) ? $it->item_url : getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $it->item_srl) }}">
 			<span class="shp-card-thumb" @if (!empty($it->thumb)) style="background-image:url('{{ escape($it->thumb) }}')" @endif>
 				@if (empty($it->thumb))<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 11l2.5 3 3.5-4.5L19 16H5z"/></svg>@endif
 			</span>
 			@if ($it->status === 'soldout')<span class="shp-soldout-cover">{{ $lang->shop_soldout }}</span>@endif
 			<span class="shp-card-body">
+				@if (!empty($it->brand_name))<span class="shp-card-brand">{{ $it->brand_name }}</span>@endif
+				@if (!empty($it->seller_name) && ($shop_config->show_seller_on_card ?? 'Y') !== 'N')<span class="shp-card-seller">{{ $it->seller_name }}</span>@endif
 				<span class="shp-card-name">{{ $it->item_name }}</span>
 				@if (!empty($it->review_count))
 				<span class="shp-card-rating">
@@ -83,6 +84,7 @@
 					<strong>{{ shop_item_price($it, 'price') }}</strong>
 					@endif
 				</span>
+				{!! shop_timesale_badge($it) !!}
 			</span>
 		</a>
 		@endforeach

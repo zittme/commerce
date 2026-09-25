@@ -1,0 +1,71 @@
+@version(2)
+@load('css/shop.css')
+@php
+$shp_mk_status = $my_seller ? (string)$my_seller->status : '';
+$shp_mk_form = $apply_open && $is_member && ($shp_mk_status === '' || $shp_mk_status === 'rejected');
+$shp_mk_rate = rtrim(rtrim(number_format((float)$apply_rate, 2, '.', ''), '0'), '.');
+$shp_mk_status_label = $shp_mk_status !== '' ? lang('commerce.mk_st_' . $shp_mk_status) : '';
+@endphp
+<div class="shp shp-narrow shp-seller-apply">
+	<div class="shp-top"><h2 class="shp-title">{{ $lang->mk_apply_title }}</h2></div>
+	<p class="shp-detail-summary">{{ sprintf($lang->mk_apply_desc, $shp_mk_rate) }}</p>
+
+	@if ($my_seller)
+	<div class="shp-summary">
+		<div class="shp-summary-row"><span>{{ $lang->mk_f_shop_name }}</span><span><strong>{{ $my_seller->shop_name }}</strong></span></div>
+		<div class="shp-summary-row"><span>{{ $lang->mk_apply_status }}</span><span><strong class="shp-accent">{{ $shp_mk_status_label }}</strong></span></div>
+		<div class="shp-summary-row"><span>{{ $lang->mk_applied_at }}</span><span>{{ $my_seller->regdate_text }}</span></div>
+		@if ($shp_mk_status === 'rejected' && trim((string)$my_seller->reject_reason) !== '')
+		<div class="shp-summary-row"><span>{{ $lang->mk_reject_reason }}</span><span>{{ $my_seller->reject_reason }}</span></div>
+		@endif
+	</div>
+	@if ($shp_mk_status === 'pending')<p class="shp-detail-summary">{{ $lang->mk_apply_pending }}</p>@endif
+	@if ($shp_mk_status === 'suspended')<p class="shp-detail-summary">{{ $lang->mk_apply_suspended }}</p>@endif
+	@if ($shp_mk_status === 'approved')
+	<p class="shp-detail-summary">{{ $lang->mk_apply_approved }}</p>
+	<p><a class="shp-btn shp-btn-primary" href="{{ $console_url }}" target="_blank">{{ $lang->mk_go_console }}</a></p>
+	@endif
+	@if ($shp_mk_status === 'rejected')<p class="shp-detail-summary">{{ $lang->mk_apply_again }}</p>@endif
+	@endif
+
+	@if (!$is_member)
+	<p class="shp-empty">{{ $lang->mk_apply_login }}</p>
+	@elseif (!$apply_open && !$my_seller)
+	<p class="shp-empty">{{ $lang->mk_apply_closed }}</p>
+	@endif
+
+	@if ($shp_mk_form)
+	<form action="{{ getUrl('') }}" method="post" class="shp-form">
+		<input type="hidden" name="act" value="procCommerceSellerApply" />
+		<input type="hidden" name="mid" value="{{ $mid }}" />
+		<fieldset>
+			<legend>{{ $lang->mk_profile_biz }}</legend>
+			<div class="shp-form-grid">
+				<div class="shp-row"><label>{{ $lang->mk_f_shop_name }} *</label><input type="text" name="shop_name" maxlength="120" required value="{{ $my_seller->shop_name ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->sc_shop_id }} *</label><input type="text" name="shop_id" minlength="3" maxlength="30" required autocapitalize="off" value="{{ $my_seller->shop_id ?? '' }}" /><small>{{ $lang->sc_shop_id_desc }}</small></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_biz_name }} *</label><input type="text" name="biz_name" maxlength="120" required value="{{ $my_seller->biz_name ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_ceo_name }} *</label><input type="text" name="ceo_name" maxlength="80" required value="{{ $my_seller->ceo_name ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_biz_no }} *</label><input type="text" name="biz_no" maxlength="20" inputmode="numeric" required placeholder="000-00-00000" value="{{ $my_seller->biz_no ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_mailorder_no }} *</label><input type="text" name="mailorder_no" maxlength="40" required value="{{ $my_seller->mailorder_no ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_biz_address }}</label><input type="text" name="biz_address" maxlength="250" value="{{ $my_seller->biz_address ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_tel }} *</label><input type="tel" name="tel" maxlength="30" required value="{{ $my_seller->tel ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_email }}</label><input type="email" name="email" maxlength="120" value="{{ $my_seller->email ?? '' }}" /></div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>{{ $lang->mk_f_bank }}</legend>
+			<div class="shp-form-grid">
+				<div class="shp-row"><label>{{ $lang->mk_f_bank_name }} *</label><input type="text" name="bank_name" maxlength="40" required value="{{ $my_seller->bank_name ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_bank_account }} *</label><input type="text" name="bank_account" maxlength="60" inputmode="numeric" required value="{{ $my_seller->bank_account ?? '' }}" /></div>
+				<div class="shp-row"><label>{{ $lang->mk_f_bank_holder }} *</label><input type="text" name="bank_holder" maxlength="60" required value="{{ $my_seller->bank_holder ?? '' }}" /></div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>{{ $lang->mk_f_intro }}</legend>
+			<textarea name="intro" rows="4" maxlength="2000" style="width:100%;box-sizing:border-box">{{ $my_seller->intro ?? '' }}</textarea>
+		</fieldset>
+		<label style="display:flex;gap:8px;align-items:flex-start;margin:0 0 16px;font-size:14px"><input type="checkbox" name="agree" value="Y" required /> <span>{{ sprintf($lang->mk_apply_agree, $shp_mk_rate) }}</span></label>
+		<button type="submit" class="shp-btn shp-btn-primary">{{ $lang->mk_do_apply }}</button>
+	</form>
+	@endif
+</div>

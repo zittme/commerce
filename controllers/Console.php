@@ -2,27 +2,18 @@
 
 namespace Zittme\Modules\Commerce\Controllers;
 
-/**
- * 쇼핑 전용 콘솔 — zittme 관리자에 귀속되지 않는 별도 풀스크린 운영 패널.
- *
- * standalone act + layout 'none' 으로 띄운다.
- * 화면 데이터 로직은 Admin 을 그대로 상속해 재사용하고,
- * 콘솔 셸(사이드바·링크 재작성)은 views/admin/_tabs 의 콘솔 분기가 담당한다.
- * 관리자 화면에서는 새탭으로 이 콘솔에 입장한다.
- */
 class Console extends Admin
 {
-	/**
-	 * 콘솔 페이지 → Admin disp 메서드 매핑.
-	 */
 	public const PAGES = [
 		'dashboard' => 'dispCommerceAdminDashboard',
 		'orders' => 'dispCommerceAdminOrders',
+		'shipping' => 'dispCommerceAdminShipping',
 		'order_view' => 'dispCommerceAdminOrderView',
 		'items' => 'dispCommerceAdminItems',
 		'item_edit' => 'dispCommerceAdminItemEdit',
 		'stock' => 'dispCommerceAdminStock',
 		'categories' => 'dispCommerceAdminCategories',
+		'brands' => 'dispCommerceAdminBrands',
 		'badges' => 'dispCommerceAdminBadges',
 		'promotions' => 'dispCommerceAdminPromotions',
 		'qna' => 'dispCommerceAdminQna',
@@ -37,30 +28,61 @@ class Console extends Admin
 		'config_rewards' => 'dispCommerceAdminConfig',
 		'config_notify' => 'dispCommerceAdminConfig',
 		'config_policy' => 'dispCommerceAdminConfig',
+		'timesale' => 'dispCommerceAdminTimesale',
+		'pins' => 'dispCommerceAdminPins',
+		'staff' => 'dispCommerceAdminStaff',
+		'audit' => 'dispCommerceAdminAudit',
+		'sellers' => 'dispCommerceAdminSellers',
+		'settlements' => 'dispCommerceAdminSettlements',
+		'seller_profile' => 'dispCommerceAdminSellerProfile',
 	];
 
-	/**
-	 * 콘솔 진입점. ?act=dispCommerceConsole&p=<page>
-	 */
 	public function dispCommerceConsole()
 	{
-		$logged_info = \Context::get('logged_info');
-		if (!$logged_info || $logged_info->is_admin !== 'Y')
+		if (!\Zittme\Modules\Commerce\Models\Staff::isStaff())
 		{
 			throw new \Zittme\Framework\Exceptions\NotPermitted;
 		}
 
 		$p = (string)\Context::get('p');
+		if (\Zittme\Modules\Commerce\Models\Staff::seller())
+		{
+			$to = in_array($p, \Zittme\Modules\Commerce\Models\Seller::PAGES, true) ? $p : 'dashboard';
+			$params = ['', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', $to];
+			foreach (['item_srl', 'clone_from', 'tab', 'settlement_srl', 'page'] as $keep)
+			{
+				if (\Context::get($keep) !== null && \Context::get($keep) !== '')
+				{
+					$params[] = $keep;
+					$params[] = (string)(int)\Context::get($keep) === (string)\Context::get($keep) ? (int)\Context::get($keep) : preg_replace('/[^a-z0-9_]/', '', (string)\Context::get($keep));
+				}
+			}
+			\Context::redirect((string)call_user_func_array('getNotEncodedUrl', $params));
+			return;
+		}
 		if (!isset(self::PAGES[$p]))
 		{
 			$p = 'dashboard';
 		}
+		if (!\Zittme\Modules\Commerce\Models\Staff::canPage($p))
+		{
+			\Zittme\Modules\Commerce\Models\Audit::denied(self::PAGES[$p]);
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
 
 		\Context::set('zmc_console', true);
+		\Context::set('zmc_entry', 'dispCommerceConsole');
 		\Context::set('zmc_page', $p);
-		\Context::setBrowserTitle(lang('commerce.commerce') . ' 콘솔');
+		\Context::setBrowserTitle(lang('commerce.admin_console_title'));
 
-		// 콘솔은 사이트 레이아웃 안에 갇히면 화면을 다 쓰지 못한다 ('none' = 코어 규약)
+		$db = \Zittme\Framework\DB::getInstance();
+		\Context::set('zmc_counts', [
+			'sellers' => \Zittme\Modules\Commerce\Models\Seller::isOpen() ? \Zittme\Modules\Commerce\Models\Seller::pendingCount() : 0,
+			'to_ship' => (int)$db->query('SELECT COUNT(*) FROM commerce_order_seller WHERE status IN (?, ?)', 'paid', 'preparing')->fetchColumn(),
+			'claims' => (int)$db->query('SELECT COUNT(*) FROM commerce_claim WHERE status = ?', 'requested')->fetchColumn(),
+			'unanswered' => (int)$db->query("SELECT COUNT(*) FROM commerce_inquiry WHERE answer IS NULL OR answer = ''")->fetchColumn(),
+		]);
+
 		\Context::set('layout', 'none');
 
 		return $this->{self::PAGES[$p]}();

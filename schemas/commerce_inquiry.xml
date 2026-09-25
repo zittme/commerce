@@ -1,5 +1,4 @@
 <table name="commerce_inquiry">
-	<!-- 상품 문의 — 비밀글 지원, 판매자 답변 1개 -->
 	<column name="inquiry_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="item_srl" type="bigint" notnull="notnull" index="idx_item_srl" />
 	<column name="member_srl" type="bigint" notnull="notnull" default="0" index="idx_member_srl" />

@@ -1,5 +1,4 @@
 <style>
-/* 운영 화면 공통 스타일 */
 .rsva { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; word-break: keep-all; color: #1c2330; }
 .rsva-table td { color: #1c2330; }
 .rsva-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
@@ -45,134 +44,188 @@
 @if (!empty($zmc_console))
 <style>
 @font-face { font-family: 'Pretendard'; src: url('{{ \RX_BASEURL }}common/fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; font-display: swap; }
-:root { --zmc-brand: #2677e3; --zmc-brand-soft: #eef4fd; --zmc-ink: #191f28; --zmc-sub: #6b7684; --zmc-line: #e5e8eb; --zmc-bg: #f5f7fa; --zmc-font: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; }
+:root {
+	--zmc-bg: #f7f6f3; --zmc-side: #efede8; --zmc-surface: #ffffff; --zmc-field: #ffffff; --zmc-hover: #e9e6df;
+	--zmc-ink: #232a3b; --zmc-ink-2: #3c4458; --zmc-sub: #7a7f8c; --zmc-line: #e6e3dc; --zmc-line-strong: #d6d2c8;
+	--zmc-brand: #26345c; --zmc-brand-ink: #26345c; --zmc-on-brand: #fff8e6; --zmc-brand-soft: #fbf1d6; --zmc-mark: #e3a92f;
+	--zmc-ok: #3f8a54; --zmc-ok-soft: #e7f2e8; --zmc-warn: #a3690c; --zmc-warn-soft: #fbefd6; --zmc-bad: #b33a2e; --zmc-bad-soft: #fbe6e2;
+	--zmc-r: 6px; --zmc-r-sm: 5px;
+	--zmc-font: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
 html, body { margin: 0; padding: 0; background: var(--zmc-bg); }
 body, body * { font-family: var(--zmc-font); font-style: normal; }
 body { -webkit-font-smoothing: antialiased; color: var(--zmc-ink); }
-/* ── 사이드바 ── */
-.zmc-side { position: fixed; top: 0; left: 0; bottom: 0; width: 232px; box-sizing: border-box; padding: 24px 16px 16px; background: #fff; border-right: 1px solid var(--zmc-line); z-index: 100; overflow-y: auto; display: flex; flex-direction: column; }
-.zmc-logo { display: flex; align-items: baseline; gap: 7px; padding: 0 10px 22px; font-size: 18px; font-weight: 800; color: var(--zmc-ink); letter-spacing: -0.02em; }
-.zmc-logo b { color: var(--zmc-brand); font-weight: 800; }
-.zmc-logo span { font-size: 14px; font-weight: 700; color: var(--zmc-sub); }
-.zmc-nav { flex: 1; }
-.zmc-nav a { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 3px; border-radius: 10px; font-size: 14.5px; font-weight: 600; font-style: normal; color: #4e5968 !important; text-decoration: none !important; transition: background .12s, color .12s; }
-.zmc-nav a span { font-style: normal; }
-.zmc-nav a:hover { background: #f4f6f9; color: var(--zmc-ink) !important; }
-.zmc-nav a.is-active { background: var(--zmc-brand-soft); color: var(--zmc-brand) !important; font-weight: 700; }
-.zmc-nav a.is-active::before { content: ''; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 3px; background: var(--zmc-brand); }
-/* ── 그룹 메뉴 ── */
-.zmc-group { margin-bottom: 3px; }
-.zmc-group-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 14px; border: 0; border-radius: 10px; background: none; font-size: 14.5px; font-weight: 600; font-family: inherit; color: #4e5968; cursor: pointer; transition: background .12s, color .12s; }
-.zmc-group-btn:hover { background: #f4f6f9; color: var(--zmc-ink); }
-.zmc-group-btn.is-current { color: var(--zmc-ink); font-weight: 700; }
-.zmc-group-arrow { flex-shrink: 0; transition: transform .15s; }
-.zmc-group.is-open .zmc-group-arrow { transform: rotate(180deg); }
-.zmc-sub { display: none; padding: 2px 0 4px; }
-.zmc-group.is-open .zmc-sub { display: block; }
-.zmc-nav .zmc-sub a { padding: 8px 14px 8px 26px; font-size: 13.5px; font-weight: 500; }
-.zmc-nav .zmc-sub a.is-active { font-weight: 700; }
-.zmc-side-foot { padding-top: 14px; border-top: 1px solid var(--zmc-line); }
-.zmc-side-foot a { display: block; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 500; color: #8b95a1 !important; text-decoration: none !important; }
-.zmc-side-foot a:hover { color: var(--zmc-brand) !important; background: #f4f6f9; }
-/* ── 상단 바 + 콘텐츠 ── */
-.zmc-top { position: sticky; top: 0; z-index: 90; margin-left: 232px; padding: 16px 36px; background: rgba(255,255,255,.92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--zmc-line); display: flex; align-items: center; justify-content: space-between; }
-.zmc-top h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
-.rsva { margin-left: 232px; padding: 28px 36px 100px; box-sizing: border-box; min-height: calc(100vh - 60px); }
-/* ── 콘솔 전용 컴포넌트 재정의 (스마트스토어풍: 카드 섹션 + 넉넉한 입력) ── */
+.zmc-side { position: fixed; top: 0; left: 0; bottom: 0; width: 220px; box-sizing: border-box; padding: 20px 12px 14px; background: var(--zmc-side); border-right: 1px solid var(--zmc-line); z-index: 100; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+.zmc-shop { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+.zmc-shop i { flex: none; width: 34px; height: 34px; border-radius: var(--zmc-r-sm); background: var(--zmc-brand); color: var(--zmc-on-brand); display: grid; place-items: center; font-size: 15px; font-weight: 800; font-style: normal; }
+.zmc-shop div { min-width: 0; }
+.zmc-shop b { display: block; font-size: 15px; font-weight: 800; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zmc-shop small { display: block; font-size: 12px; color: var(--zmc-sub); }
+.zmc-nav { flex: 1; display: flex; flex-direction: column; gap: 18px; }
+.zmc-nav > div { border-top: 1px solid var(--zmc-line-strong); background: var(--zmc-surface); }
+.zmc-nav > div:has(> p) { border-top: 0; background: transparent; }
+.zmc-nav > div:has(> p) > a:first-of-type { border-top: 1px solid var(--zmc-line-strong); }
+.zmc-nav p { margin: 0 0 6px; padding: 0 10px; font-size: 11.5px; font-weight: 700; color: var(--zmc-sub); letter-spacing: .06em; }
+.zmc-nav a { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 0; border-bottom: 1px solid var(--zmc-line-strong); background: var(--zmc-surface); font-size: 14px; font-weight: 500; color: var(--zmc-ink) !important; text-decoration: none !important; }
+.zmc-nav a:hover { background: var(--zmc-hover); }
+.zmc-nav a.is-active { background: var(--zmc-brand-soft); font-weight: 700; box-shadow: inset 3px 0 0 var(--zmc-mark); }
+.zmc-nav a em { font-style: normal; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--zmc-brand); color: var(--zmc-on-brand); font-size: 11.5px; font-weight: 700; line-height: 19px; text-align: center; }
+.zmc-side-foot { display: flex; flex-direction: column; padding-top: 12px; border-top: 1px solid var(--zmc-line); }
+.zmc-side-foot a { padding: 6px 10px; border-radius: var(--zmc-r-sm); font-size: 12.5px; color: var(--zmc-sub) !important; text-decoration: none !important; }
+.zmc-side-foot a:hover { color: var(--zmc-ink) !important; background: var(--zmc-hover); }
+.zmc-top { position: sticky; top: 0; z-index: 90; margin-left: 220px; padding: 14px 32px; background: var(--zmc-bg); border-bottom: 1px solid var(--zmc-line); display: flex; align-items: center; gap: 12px; }
+.zmc-top-title { flex: 1; min-width: 0; }
+.zmc-top-title small { display: block; font-size: 12.5px; color: var(--zmc-sub); }
+.zmc-top h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
+.zmc-tabs { margin-left: 220px; padding: 0 32px; display: flex; gap: 22px; border-bottom: 1px solid var(--zmc-line); background: var(--zmc-bg); overflow-x: auto; }
+.zmc-tabs a { flex: none; padding: 11px 0 10px; border-bottom: 2px solid transparent; font-size: 14px; font-weight: 600; color: var(--zmc-sub) !important; text-decoration: none !important; }
+.zmc-tabs a:hover { color: var(--zmc-ink) !important; }
+.zmc-tabs a.is-active { color: var(--zmc-ink) !important; border-color: var(--zmc-brand); }
+.rsva { margin-left: 220px; padding: 24px 32px 100px; box-sizing: border-box; min-height: calc(100vh - 60px); }
 .rsva { font-size: 14px; color: var(--zmc-ink); }
-.rsva .rsva-panel { padding: 26px 28px; border: 1px solid var(--zmc-line); border-radius: 16px; background: #fff; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(25,31,40,.03); }
-.rsva .rsva-panel > h3 { margin: 0 0 18px; padding-bottom: 14px; border-bottom: 1px solid #f0f2f5; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
-.rsva .rsva-form-grid { gap: 16px 18px; }
-.rsva label { display: block; font-size: 13px; font-weight: 700; color: #333d4b; margin-bottom: 7px; }
-.rsva .rsva-inline { gap: 14px 18px; }
-.rsva input[type="text"], .rsva input[type="number"], .rsva input[type="date"], .rsva input[type="datetime-local"], .rsva input[type="time"], .rsva input[type="email"], .rsva input[type="tel"], .rsva input[type="password"], .rsva select, .rsva textarea { box-sizing: border-box; padding: 10px 12px; border: 1px solid #dde3ec; border-radius: 10px; font-size: 14px; background: #fff; color: var(--zmc-ink); transition: border-color .12s, box-shadow .12s; }
-.rsva input:focus, .rsva select:focus, .rsva textarea:focus { outline: none; border-color: var(--zmc-brand); box-shadow: 0 0 0 3px rgba(38,119,227,.12); }
-.rsva .rsva-btn { padding: 9px 16px; border-radius: 10px; font-size: 14px; border-color: #dde3ec; }
-.rsva .rsva-btn:hover { border-color: var(--zmc-brand); }
-.rsva .rsva-btn-primary { box-shadow: 0 1px 3px rgba(38,119,227,.3); }
-.rsva .rsva-btn-sm { padding: 6px 11px; font-size: 12.5px; border-radius: 8px; }
-.rsva .rsva-table { border-radius: 14px; border-color: var(--zmc-line); }
-.rsva .rsva-table th { padding: 12px 14px; font-size: 12.5px; letter-spacing: .01em; }
-.rsva .rsva-table td { padding: 13px 14px; font-size: 13.5px; }
-.rsva .rsva-table tbody tr:hover td { background: #fafbfc; }
-.rsva .rsva-filter { padding: 14px 16px; background: #fff; border: 1px solid var(--zmc-line); border-radius: 14px; margin-bottom: 16px; }
-.rsva .rsva-card { border-radius: 16px; box-shadow: 0 1px 2px rgba(25,31,40,.03); }
+.rsva .rsva-panel { padding: 22px 24px; border: 1px solid var(--zmc-line); border-radius: var(--zmc-r); background: var(--zmc-surface); margin-bottom: 16px; box-shadow: none; }
+.rsva .rsva-panel > h3 { margin: 0 0 16px; padding: 0; border: 0; font-size: 16px; font-weight: 800; }
+.rsva .rsva-form-grid { gap: 14px 16px; }
+.rsva label { display: block; font-size: 13px; font-weight: 600; color: var(--zmc-ink-2); margin-bottom: 6px; }
+.rsva .rsva-inline { gap: 12px 16px; }
+.rsva input[type="text"], .rsva input[type="number"], .rsva input[type="date"], .rsva input[type="datetime-local"], .rsva input[type="time"], .rsva input[type="email"], .rsva input[type="tel"], .rsva input[type="password"], .rsva input[type="url"], .rsva input[type="search"], .rsva select, .rsva textarea { box-sizing: border-box; padding: 9px 11px; border: 1px solid var(--zmc-line-strong); border-radius: var(--zmc-r-sm); font-size: 14px; background: var(--zmc-field); color: var(--zmc-ink); transition: border-color .12s, box-shadow .12s; }
+.rsva input:focus, .rsva select:focus, .rsva textarea:focus { outline: none; border-color: var(--zmc-brand); box-shadow: 0 0 0 3px rgba(38,52,92,.12); }
+.rsva input[type="checkbox"], .rsva input[type="radio"] { accent-color: var(--zmc-brand); }
+.rsva .rsva-btn { padding: 8px 15px; border-radius: var(--zmc-r-sm); font-size: 14px; border: 1px solid var(--zmc-line-strong); background: var(--zmc-surface) !important; color: var(--zmc-ink) !important; box-shadow: none; }
+.rsva .rsva-btn:hover { border-color: var(--zmc-brand); color: var(--zmc-brand-ink) !important; }
+.rsva .rsva-btn-primary { background: var(--zmc-brand) !important; border-color: var(--zmc-brand); color: var(--zmc-on-brand) !important; box-shadow: none; }
+.rsva .rsva-btn-primary:hover { filter: brightness(1.12); color: var(--zmc-on-brand) !important; }
+.rsva .rsva-btn-danger:hover { border-color: var(--zmc-bad); color: var(--zmc-bad) !important; }
+.rsva .rsva-btn-sm { padding: 5px 10px; font-size: 12.5px; border-radius: var(--zmc-r-sm); }
+.rsva .rsva-table { border: 1px solid var(--zmc-line); border-radius: var(--zmc-r); background: var(--zmc-surface); }
+.rsva .rsva-table th { padding: 10px 14px; background: transparent; border-bottom: 1px solid var(--zmc-line); font-size: 12.5px; font-weight: 700; color: var(--zmc-sub); }
+.rsva .rsva-table td { padding: 11px 14px; font-size: 13.5px; border-bottom: 1px solid var(--zmc-line); color: var(--zmc-ink); }
+.rsva .rsva-table tbody tr:hover td { background: #fbfaf7; }
+.rsva .rsva-filter { padding: 0; background: transparent; border: 0; border-radius: 0; margin-bottom: 14px; }
+.rsva .rsva-card { border: 1px solid var(--zmc-line); border-radius: var(--zmc-r); box-shadow: none; background: var(--zmc-surface); }
+.rsva .rsva-card b { color: var(--zmc-ink); }
+.rsva .rsva-st { border-radius: 4px; background: #efede8; color: var(--zmc-ink-2); }
+.rsva .rsva-st-confirmed, .rsva .rsva-st-paid, .rsva .rsva-st-on { background: var(--zmc-ok-soft); color: var(--zmc-ok); }
+.rsva .rsva-st-hold, .rsva .rsva-st-pending { background: var(--zmc-warn-soft); color: var(--zmc-warn); }
+.rsva .rsva-st-cancelled, .rsva .rsva-st-expired { background: var(--zmc-bad-soft); color: var(--zmc-bad); }
+.rsva .rsva-pagenav a.is-active { background: var(--zmc-brand); color: var(--zmc-on-brand) !important; }
+.rsva .rsva-pagenav a:hover { background: var(--zmc-hover); color: var(--zmc-ink) !important; }
+.rsva a { color: var(--zmc-brand-ink); }
 .rsva small { color: var(--zmc-sub); }
-/* ── 좁은 화면: 메뉴 버튼으로 여는 서랍 ── */
-.zmc-menu-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--zmc-line); border-radius: 10px; background: #fff; color: var(--zmc-ink); cursor: pointer; }
+.zmc-menu-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--zmc-line-strong); border-radius: var(--zmc-r-sm); background: var(--zmc-surface); color: var(--zmc-ink); cursor: pointer; }
 .zmc-menu-btn svg { display: block; }
-.zmc-side-dim { display: none; position: fixed; inset: 0; z-index: 99; background: rgba(16,20,28,.45); }
+.zmc-side-dim { display: none; position: fixed; inset: 0; z-index: 99; background: rgba(28,24,18,.4); }
 .zmc-side-dim.is-open { display: block; }
 .zmc-side-close { display: none; margin-left: auto; padding: 4px; border: 0; background: none; color: var(--zmc-sub); cursor: pointer; }
-
 @media (max-width: 900px) {
-	/* 아이콘이 없어 글자만 숨기면 빈 막대가 된다. 아예 밀어 두고 버튼으로 연다 */
 	.zmc-side { width: 264px; transform: translateX(-100%); transition: transform .18s ease; }
-	.zmc-side.is-open { transform: translateX(0); box-shadow: 0 0 40px rgba(16,20,28,.25); }
+	.zmc-side.is-open { transform: translateX(0); box-shadow: 0 0 40px rgba(28,24,18,.25); }
 	.zmc-side-close { display: block; }
-	.zmc-top { margin-left: 0; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+	.zmc-top { margin-left: 0; padding: 12px 14px; }
+	.zmc-tabs { margin-left: 0; padding: 0 14px; }
 	.zmc-menu-btn { display: inline-flex; }
 	.rsva { margin-left: 0; padding: 16px 14px 70px; }
 }
+@media (prefers-reduced-motion: reduce) { .zmc-side { transition: none; } }
 </style>
 @php
 $zmc_menu = [];
-foreach (['dashboard', 'orders', 'items', 'stock', 'categories', 'badges', 'promotions', 'qna', 'claims', 'coupons', 'credits', 'grades', 'stats', 'config'] as $zmc_key)
+foreach (['pins', 'timesale', 'staff', 'audit', 'dashboard', 'orders', 'shipping', 'items', 'brands', 'stock', 'categories', 'badges', 'promotions', 'qna', 'claims', 'coupons', 'credits', 'grades', 'stats', 'config', 'sellers', 'settlements', 'seller_profile'] as $zmc_key)
 {
 	$zmc_menu[$zmc_key] = lang('commerce.admin_menu_' . $zmc_key);
 }
-$zmc_menu['config'] = lang('commerce.cfg_tab_general');
+$zmc_cfg_tabs = ['config' => lang('commerce.cfg_tab_general')];
 foreach (['shipping', 'display', 'rewards', 'notify', 'policy'] as $zmc_key)
 {
-	$zmc_menu['config_' . $zmc_key] = lang('commerce.cfg_tab_' . $zmc_key);
+	$zmc_cfg_tabs['config_' . $zmc_key] = lang('commerce.cfg_tab_' . $zmc_key);
 }
 $zmc_tree = [
-	['key' => 'dashboard'],
-	['group' => 'orders', 'items' => ['orders', 'claims']],
-	['group' => 'items', 'items' => ['items', 'stock', 'categories', 'badges']],
-	['group' => 'benefits', 'items' => ['coupons', 'promotions', 'credits', 'grades']],
-	['key' => 'qna'],
-	['key' => 'stats'],
-	['group' => 'config', 'items' => ['config', 'config_shipping', 'config_display', 'config_rewards', 'config_notify', 'config_policy']],
+	['label' => '', 'items' => ['dashboard']],
+	['label' => lang('commerce.admin_menu_group_orders'), 'items' => ['orders', 'shipping', 'claims', 'qna']],
+	['label' => lang('commerce.admin_menu_group_items'), 'items' => ['items', 'brands', 'categories', 'badges', 'stock', 'pins']],
+	['label' => lang('commerce.admin_menu_group_benefits'), 'items' => ['promotions', 'timesale', 'coupons', 'credits', 'grades']],
+	['label' => lang('commerce.admin_menu_group_shop'), 'items' => ['stats', 'config_display', 'config']],
+	['label' => lang('commerce.admin_menu_group_market'), 'items' => ['sellers', 'settlements']],
+	['label' => lang('commerce.admin_menu_group_team'), 'items' => ['staff', 'audit']],
 ];
+$zmc_entry = $zmc_entry ?? 'dispCommerceConsole';
+$zmc_is_seller = !empty($zmc_seller_center);
+if ($zmc_is_seller)
+{
+	$zmc_menu['dashboard'] = lang('commerce.sc_menu_dashboard');
+	$zmc_menu['shipping'] = lang('commerce.sc_menu_shipping');
+	$zmc_menu['shop_cats'] = lang('commerce.sc_menu_shop_cats');
+	$zmc_menu['shop_design'] = lang('commerce.sc_menu_shop_design');
+	$zmc_menu['seller_profile'] = lang('commerce.sc_menu_shop_info');
+	$zmc_tree = [
+		['label' => '', 'items' => ['dashboard']],
+		['label' => lang('commerce.sc_group_items'), 'items' => ['items', 'shop_cats']],
+		['label' => lang('commerce.sc_group_orders'), 'items' => ['shipping', 'settlements']],
+		['label' => lang('commerce.sc_group_shop'), 'items' => ['shop_design', 'seller_profile']],
+	];
+	$zmc_cfg_tabs = [];
+}
+foreach ($zmc_tree as $zmc_gi => $zmc_g)
+{
+	$zmc_keep = [];
+	foreach ($zmc_g['items'] as $zmc_key)
+	{
+		if (Zittme\Modules\Commerce\Models\Staff::canPage($zmc_key)) { $zmc_keep[] = $zmc_key; }
+	}
+	if (count($zmc_keep)) { $zmc_tree[$zmc_gi]['items'] = $zmc_keep; } else { unset($zmc_tree[$zmc_gi]); }
+}
+foreach (array_keys($zmc_cfg_tabs) as $zmc_key)
+{
+	if (!Zittme\Modules\Commerce\Models\Staff::canPage($zmc_key)) { unset($zmc_cfg_tabs[$zmc_key]); }
+}
+$zmc_role = Zittme\Modules\Commerce\Models\Staff::role();
 $zmc_active_alias = ['order_view' => 'orders', 'item_edit' => 'items'];
 $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
+$zmc_is_cfg = isset($zmc_cfg_tabs[$zmc_current]);
+$zmc_nav_current = $zmc_is_cfg ? ($zmc_current === 'config_display' ? 'config_display' : 'config') : $zmc_current;
+$zmc_menu['config_display'] = lang('commerce.cfg_menu_home');
+$zmc_counts = $zmc_counts ?? [];
+$zmc_badge = ['sellers' => $zmc_counts['sellers'] ?? 0, 'shipping' => $zmc_counts['to_ship'] ?? 0, 'claims' => $zmc_counts['claims'] ?? 0, 'qna' => $zmc_counts['unanswered'] ?? 0];
+$zmc_shop_name = $zmc_is_seller ? (string)($zmc_seller->shop_name ?? '') : (trim((string)Context::getSiteTitle()) ?: lang('commerce.admin_console_title'));
+$zmc_shell_title = $zmc_is_seller ? lang('commerce.sc_title') : lang('commerce.admin_console_title');
+$zmc_title = $zmc_is_cfg ? ($zmc_current === 'config_display' ? lang('commerce.cfg_menu_home') : $zmc_menu['config']) : ($zmc_menu[$zmc_current] ?? '');
+$zmc_group_of = '';
+foreach ($zmc_tree as $zmc_g) { if (in_array($zmc_nav_current, $zmc_g['items'], true)) { $zmc_group_of = $zmc_g['label']; } }
 @endphp
 <aside class="zmc-side">
-	<div class="zmc-logo">
-		<b>zittme</b> <span>{{ lang('commerce.admin_console_title') }}</span>
+	<div class="zmc-shop">
+		<i aria-hidden="true">{{ mb_substr($zmc_shop_name, 0, 1) }}</i>
+		<div><b>{{ $zmc_shop_name }}</b>@if ($zmc_shop_name !== $zmc_shell_title)<small>{{ $zmc_shell_title }}</small>@endif @if ($zmc_role !== 'owner' && !$zmc_is_seller)<small class="zmc-role">{{ lang('commerce.au_role_' . $zmc_role) }}</small>@endif</div>
 		<button type="button" class="zmc-side-close" id="zmcSideClose" aria-label="{{ lang('commerce.admin_menu_close') }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
 	</div>
 	<nav class="zmc-nav">
-		@foreach ($zmc_tree as $node)
-		@if (isset($node['key']))
-		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole', 'p', $node['key']) }}" class="{{ $zmc_current === $node['key'] ? 'is-active' : '' }}"><span>{{ $zmc_menu[$node['key']] }}</span></a>
-		@else
-		@php $zmc_group_open = in_array($zmc_current, $node['items'], true); @endphp
-		<div class="zmc-group {{ $zmc_group_open ? 'is-open' : '' }}">
-			<button type="button" class="zmc-group-btn {{ $zmc_group_open ? 'is-current' : '' }}">
-				<span>{{ lang('commerce.admin_menu_group_' . $node['group']) }}</span>
-				<svg class="zmc-group-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg>
-			</button>
-			<div class="zmc-sub">
-				@foreach ($node['items'] as $key)
-				<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole', 'p', $key) }}" class="{{ $zmc_current === $key ? 'is-active' : '' }}"><span>{{ $zmc_menu[$key] }}</span></a>
-				@endforeach
-			</div>
+		@foreach ($zmc_tree as $zmc_g)
+		<div>
+			@if ($zmc_g['label'] !== '')<p>{{ $zmc_g['label'] }}</p>@endif
+			@foreach ($zmc_g['items'] as $zmc_key)
+			<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', $zmc_entry, 'p', $zmc_key) }}" class="{{ $zmc_nav_current === $zmc_key ? 'is-active' : '' }}"><span>{{ $zmc_menu[$zmc_key] }}</span>@if (!empty($zmc_badge[$zmc_key]))<em>{{ $zmc_badge[$zmc_key] > 99 ? '99+' : $zmc_badge[$zmc_key] }}</em>@endif</a>
+			@endforeach
 		</div>
-		@endif
 		@endforeach
 	</nav>
 	<div class="zmc-side-foot">
-		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', '') }}" target="_blank">{{ lang('commerce.admin_view_site') }}</a>
-		<a href="{{ getUrl('', 'mid', '', 'module', 'admin', 'act', '') }}" target="_blank">{{ lang('commerce.admin_go_admin') }}</a>
+		@if ($zmc_is_seller && !empty($zmc_store_url))<a href="{{ $zmc_store_url }}" target="_blank">{{ lang('commerce.sc_view_store') }} ↗</a>@endif
+		<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', '') }}" target="_blank">{{ lang('commerce.admin_view_site') }} ↗</a>
+		@if ($zmc_role === 'owner')<a href="{{ getUrl('', 'mid', '', 'module', 'admin', 'act', '') }}" target="_blank">{{ lang('commerce.admin_go_admin') }} ↗</a>@endif
 	</div>
 </aside>
 <div class="zmc-side-dim" id="zmcSideDim"></div>
 <div class="zmc-top">
 	<button type="button" class="zmc-menu-btn" id="zmcMenuBtn" aria-label="{{ lang('commerce.admin_menu_open') }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2 4.5h14M2 9h14M2 13.5h14"/></svg></button>
-	<h2>{{ $zmc_menu[$zmc_current] ?? '' }}</h2>
+	<div class="zmc-top-title">@if ($zmc_group_of !== '')<small>{{ $zmc_group_of }}</small>@endif<h2>{{ $zmc_title }}</h2></div>
 </div>
+@if ($zmc_is_cfg)
+<nav class="zmc-tabs" aria-label="{{ $zmc_menu['config'] }}">
+	@foreach ($zmc_cfg_tabs as $zmc_key => $zmc_tab)
+	<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', $zmc_entry, 'p', $zmc_key) }}" class="{{ $zmc_current === $zmc_key ? 'is-active' : '' }}">{{ $zmc_tab }}</a>
+	@endforeach
+</nav>
+@endif
 <script>
 (function () {
 	var side = document.querySelector('.zmc-side');
@@ -194,16 +247,20 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 
 <script>
 (function () {
+	var ENTRY = {!! json_encode($zmc_entry) !!};
 	function toP(n) { return n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(); }
 	function rewrite() {
 		document.querySelectorAll('a[href*="dispCommerceAdmin"]').forEach(function (a) {
-			// 콘솔 페이지가 아닌 독립 화면(주문서 인쇄 등)은 그대로 둔다
-			if (a.hasAttribute('data-zmc-keep')) return;
+			if (a.hasAttribute('data-zmc-keep')) {
+				var k = new URL(a.href, location.href);
+				if (k.searchParams.get('module') === 'admin') { k.searchParams.set('module', 'commerce'); a.href = k.toString(); }
+				return;
+			}
 			var m = a.getAttribute('href').match(/dispCommerceAdmin([A-Za-z]+)/);
 			if (!m) return;
 			var u = new URL(a.href, location.href);
 			u.searchParams.delete('module');
-			u.searchParams.set('act', 'dispCommerceConsole');
+			u.searchParams.set('act', ENTRY);
 			u.searchParams.set('p', toP(m[1]));
 			a.href = u.toString();
 		});
@@ -212,13 +269,15 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 			if (!act) return;
 			var m = act.value.match(/^dispCommerceAdmin([A-Za-z]+)$/);
 			if (m) {
-				act.value = 'dispCommerceConsole';
+				act.value = ENTRY;
 				var mod = f.querySelector('input[name="module"]');
 				if (mod) mod.remove();
 				var p = f.querySelector('input[name="p"]');
 				if (!p) { p = document.createElement('input'); p.type = 'hidden'; p.name = 'p'; f.appendChild(p); }
 				p.value = toP(m[1]);
 			} else if (/^proc/.test(act.value)) {
+				var md = f.querySelector('input[name="module"]');
+				if (md && md.value === 'admin') md.value = 'commerce';
 				var s = f.querySelector('input[name="success_return_url"]');
 				if (!s) { s = document.createElement('input'); s.type = 'hidden'; s.name = 'success_return_url'; f.appendChild(s); }
 				s.value = location.href;
@@ -251,5 +310,4 @@ $zmc_current = $zmc_active_alias[$zmc_page] ?? $zmc_page;
 </script>
 @endif
 
-{{-- 관리자 탭 제거: 운영 화면은 전용 콘솔에서만 제공한다 --}}
 @endif

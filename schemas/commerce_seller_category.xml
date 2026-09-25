@@ -1,0 +1,7 @@
+<table name="commerce_seller_category">
+	<column name="category_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="seller_srl" type="bigint" notnull="notnull" index="idx_seller_srl" />
+	<column name="title" type="varchar" size="80" notnull="notnull" />
+	<column name="list_order" type="int" notnull="notnull" default="0" />
+	<column name="regdate" type="char" size="14" />
+</table>

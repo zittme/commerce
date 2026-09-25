@@ -1,0 +1,13 @@
+<table name="commerce_brand">
+	<column name="brand_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="name" type="varchar" size="100" notnull="notnull" />
+	<column name="name_en" type="varchar" size="100" />
+	<column name="slug" type="varchar" size="100" index="idx_slug" />
+	<column name="logo" type="varchar" size="250" />
+	<column name="cover" type="varchar" size="250" />
+	<column name="description" type="text" />
+	<column name="is_visible" type="char" size="1" notnull="notnull" default="Y" />
+	<column name="list_order" type="bigint" notnull="notnull" default="0" index="idx_list_order" />
+	<column name="regdate" type="char" size="14" />
+	<column name="last_update" type="char" size="14" />
+</table>

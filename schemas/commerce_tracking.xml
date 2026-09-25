@@ -1,5 +1,4 @@
 <table name="commerce_tracking">
-	<!-- 배송 조회 결과 저장 — 조회 API 를 주기 폴링해 상태·이력을 쌓는다 (추적 API 대체) -->
 	<column name="tracking_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="order_seller_srl" type="bigint" notnull="notnull" index="idx_order_seller_srl" />
 	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />

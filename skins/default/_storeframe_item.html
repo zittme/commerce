@@ -1,0 +1,15 @@
+@version(2)
+@load('css/shop.css')
+@load('css/store.css')
+
+<div class="shp shp-store st-frame-top" style="--st-color: {{ (string)$store_color }}">
+	@include('_storeframe_head')
+</div>
+
+<div class="st-frame-item" style="--st-color: {{ (string)$store_color }}">
+	@include('item')
+</div>
+
+<div class="shp shp-store st-frame-bottom" style="--st-color: {{ (string)$store_color }}">
+	@include('_storeframe_foot')
+</div>

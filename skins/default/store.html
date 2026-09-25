@@ -1,0 +1,101 @@
+@version(2)
+@load('css/shop.css')
+@load('css/store.css')
+
+@php
+	$st_size = in_array($store_design['image_size'] ?? 'M', ['S', 'M', 'L'], true) ? $store_design['image_size'] : 'M';
+	$st_color = (string)$store_color;
+	$st_sorts = ['display' => $lang->sc_sort_display, 'new' => $lang->sc_sort_new, 'popular' => $lang->sc_sort_popular, 'price_low' => $lang->sc_sort_price_low, 'price_high' => $lang->sc_sort_price_high];
+@endphp
+<div class="shp shp-store st-size-{{ strtolower($st_size) }}" style="--st-color: {{ $st_color }}">
+	@include('_storeframe_head')
+
+	@if (!$store_browsing)
+	@foreach ($store_sections as $st_sec)
+	@if ($st_sec->key === 'banner')
+	<div class="st-banner" id="stBanner">
+		@foreach ($store_design['banners'] as $st_bi => $st_bn)
+		<span class="st-banner-item {{ $st_bi === 0 ? 'is-on' : '' }}" style="background-image:url('{{ escape($st_bn) }}')"></span>
+		@endforeach
+	</div>
+	@elseif ($st_sec->key === 'notice')
+	<section class="st-section st-notice">
+		<div class="st-section-head"><h2>{{ $st_sec->title }}</h2></div>
+		<p>{!! nl2br(escape($store_design['notice'])) !!}</p>
+	</section>
+	@elseif ($st_sec->key === 'cats')
+	@foreach ($st_sec->groups as $st_g)
+	<section class="st-section">
+		<div class="st-section-head"><h2>{{ $st_g->title }}</h2><a href="{{ $st_g->url }}">{{ $lang->shop_view_all }}</a></div>
+		<div class="shp-grid">
+			@foreach ($st_g->items as $it)
+			@include('_storecard', ['it' => $it])
+			@endforeach
+		</div>
+	</section>
+	@endforeach
+	@elseif (count($st_sec->items))
+	<section class="st-section">
+		<div class="st-section-head"><h2>{{ $st_sec->title }}</h2></div>
+		<div class="shp-grid">
+			@foreach ($st_sec->items as $it)
+			@include('_storecard', ['it' => $it])
+			@endforeach
+		</div>
+	</section>
+	@endif
+	@endforeach
+	@endif
+
+	<section class="st-section" id="stAll">
+		<div class="st-section-head">
+			<h2>
+				@if ($store_cat){{ $store_cat->title }}@elseif ($store_q !== ''){{ sprintf($lang->sc_search_result, $store_q) }}@else{{ $lang->shop_all_items }}@endif
+			</h2>
+			<div class="st-sorts">
+				@foreach ($st_sorts as $st_sk => $st_sl)
+				<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceStore', 'shop', $store->shop_id, 'cat', $store_cat ? $store_cat->category_srl : '', 'q', $store_q, 'sort', $st_sk) }}" class="{{ $store_sort === $st_sk ? 'is-on' : '' }}">{{ $st_sl }}</a>
+				@endforeach
+			</div>
+		</div>
+		@if (count($store_items))
+		<div class="shp-grid">
+			@foreach ($store_items as $it)
+			@include('_storecard', ['it' => $it])
+			@endforeach
+		</div>
+		@else
+		<p class="st-empty">{{ $lang->sc_store_empty }}</p>
+		@endif
+
+		@php $st_nav = Context::get('page_navigation'); @endphp
+		@if ($st_nav && (int)$st_nav->last_page > 1)
+		<nav class="shp-paging">
+			@for ($st_p = (int)$st_nav->first_page; $st_p <= (int)$st_nav->last_page; $st_p++)
+			@if ($st_p === (int)$st_nav->cur_page)
+			<span class="is-on">{{ $st_p }}</span>
+			@else
+			<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceStore', 'shop', $store->shop_id, 'cat', $store_cat ? $store_cat->category_srl : '', 'q', $store_q, 'sort', $store_sort, 'page', $st_p) }}">{{ $st_p }}</a>
+			@endif
+			@endfor
+		</nav>
+		@endif
+	</section>
+
+	@include('_storeframe_foot')
+</div>
+
+<script>
+(function () {
+	var wrap = document.getElementById('stBanner');
+	if (!wrap) return;
+	var items = wrap.querySelectorAll('.st-banner-item');
+	if (items.length < 2) return;
+	var cur = 0;
+	setInterval(function () {
+		items[cur].classList.remove('is-on');
+		cur = (cur + 1) % items.length;
+		items[cur].classList.add('is-on');
+	}, 5000);
+})();
+</script>

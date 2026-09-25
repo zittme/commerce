@@ -1,0 +1,29 @@
+<query id="updateSeller" action="update">
+	<tables>
+		<table name="commerce_seller" />
+	</tables>
+	<columns>
+		<column name="shop_name" var="shop_name" />
+		<column name="biz_no" var="biz_no" />
+		<column name="biz_name" var="biz_name" />
+		<column name="ceo_name" var="ceo_name" />
+		<column name="biz_address" var="biz_address" />
+		<column name="mailorder_no" var="mailorder_no" />
+		<column name="tel" var="tel" />
+		<column name="email" var="email" />
+		<column name="bank_name" var="bank_name" />
+		<column name="bank_account" var="bank_account" />
+		<column name="bank_holder" var="bank_holder" />
+		<column name="intro" var="intro" />
+		<column name="shop_id" var="shop_id" />
+		<column name="ship_fee" var="ship_fee" />
+		<column name="free_ship_over" var="free_ship_over" />
+		<column name="status" var="status" />
+		<column name="reject_reason" var="reject_reason" />
+		<column name="approved_date" var="approved_date" />
+		<column name="last_update" var="last_update" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="seller_srl" var="seller_srl" filter="number" required="true" />
+	</conditions>
+</query>

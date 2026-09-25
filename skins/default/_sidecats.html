@@ -1,5 +1,4 @@
 @version(2)
-{{-- 사이드 카테고리 트리 — 하위가 있으면 화살표로 접고 펼친다. 현재 카테고리의 조상은 자동으로 펼쳐진다 --}}
 <aside class="shp-side-cats" id="shpSideCats">
 	<h3>{{ $lang->shop_category ?? '카테고리' }}</h3>
 	<a class="{{ empty($current_category) ? 'is-on' : '' }}" href="{{ getUrl('', 'mid', $mid, 'v', 'list') }}">{{ $lang->shop_all ?? '전체' }}</a>
@@ -37,7 +36,6 @@
 			a.style.display = show ? '' : 'none';
 		});
 	}
-	// 하위가 있는 항목에 토글 화살표를 붙인다
 	links.forEach(function (a) {
 		var srl = a.getAttribute('data-srl');
 		if (!byParent[srl]) return;
@@ -56,14 +54,12 @@
 		});
 		a.appendChild(btn);
 	});
-	// 현재 카테고리에 하위가 있으면 그 하위를 펼친다 (1차 메뉴 클릭 → 이동 후 하위 노출)
 	var on = wrap.querySelector('a.is-on[data-srl]');
 	if (on && byParent[on.getAttribute('data-srl')]) {
 		expanded[on.getAttribute('data-srl')] = true;
 		var onBtn = on.querySelector('.shp-cat-toggle');
 		if (onBtn) onBtn.classList.add('is-open');
 	}
-	// 현재 카테고리의 조상 경로는 자동으로 펼친다
 	if (on) {
 		var p = on.getAttribute('data-parent');
 		var guard = 0;

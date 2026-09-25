@@ -1,8 +1,4 @@
 <table name="commerce_seller">
-	<!--
-	  판매자 — 오픈마켓 대비 1일차부터 존재한다.
-	  독립몰 모드에서는 설치 시 자동 생성되는 기본 판매자(사이트 운영자) 1건만 쓴다.
-	-->
 	<column name="seller_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="member_srl" type="bigint" notnull="notnull" default="0" index="idx_member_srl" />
 	<column name="shop_name" type="varchar" size="120" notnull="notnull" />
@@ -13,12 +9,22 @@
 	<column name="mailorder_no" type="varchar" size="40" />
 	<column name="tel" type="varchar" size="30" />
 	<column name="email" type="varchar" size="120" />
-	<!-- 수수료율(%) — 독립몰에서는 0 -->
-	<column name="commission_rate" type="int" notnull="notnull" default="0" />
+	<column name="commission_rate" type="decimal" size="6,2" />
 	<column name="bank_name" type="varchar" size="40" />
 	<column name="bank_account" type="varchar" size="60" />
 	<column name="bank_holder" type="varchar" size="60" />
-	<!-- pending / active / suspended -->
+	<column name="intro" type="text" />
+	<column name="shop_id" type="varchar" size="30" unique="unique_shop_id" />
+	<column name="shop_prev_id" type="varchar" size="30" index="idx_shop_prev_id" />
+	<column name="shop_logo" type="varchar" size="250" />
+	<column name="shop_cover" type="varchar" size="250" />
+	<column name="shop_design" type="text" />
+	<column name="ship_fee" type="bigint" notnull="notnull" default="0" />
+	<column name="free_ship_over" type="bigint" notnull="notnull" default="0" />
+	<column name="carry_balance" type="bigint" notnull="notnull" default="0" />
 	<column name="status" type="varchar" size="20" notnull="notnull" default="active" index="idx_status" />
+	<column name="reject_reason" type="varchar" size="250" />
+	<column name="approved_date" type="char" size="14" />
 	<column name="regdate" type="char" size="14" />
+	<column name="last_update" type="char" size="14" />
 </table>

@@ -1,0 +1,22 @@
+<table name="commerce_settlement">
+	<column name="settlement_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="seller_srl" type="bigint" notnull="notnull" index="idx_seller_srl" />
+	<column name="period_start" type="char" size="8" notnull="notnull" />
+	<column name="period_end" type="char" size="8" notnull="notnull" index="idx_period_end" />
+	<column name="order_count" type="int" notnull="notnull" default="0" />
+	<column name="item_total" type="bigint" notnull="notnull" default="0" />
+	<column name="delivery_total" type="bigint" notnull="notnull" default="0" />
+	<column name="refund_total" type="bigint" notnull="notnull" default="0" />
+	<column name="commission_total" type="bigint" notnull="notnull" default="0" />
+	<column name="settle_amount" type="bigint" notnull="notnull" default="0" />
+	<column name="carry_in" type="bigint" notnull="notnull" default="0" />
+	<column name="carry_out" type="bigint" notnull="notnull" default="0" />
+	<column name="status" type="varchar" size="10" notnull="notnull" default="ready" index="idx_status" />
+	<column name="bank_name" type="varchar" size="40" />
+	<column name="bank_account" type="varchar" size="60" />
+	<column name="bank_holder" type="varchar" size="60" />
+	<column name="memo" type="varchar" size="250" />
+	<column name="paid_date" type="char" size="14" />
+	<column name="created_by" type="bigint" notnull="notnull" default="0" />
+	<column name="regdate" type="char" size="14" index="idx_regdate" />
+</table>

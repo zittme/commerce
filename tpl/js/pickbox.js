@@ -1,20 +1,3 @@
-/**
- * 검색형 선택 상자 — 국가·행정구역처럼 항목이 많은 목록에 쓴다.
- *
- * 보이는 것은 이름이고 실제로 담기는 것은 코드다. 목록에서 고르지 않고
- * 글자만 친 경우에는 값이 비워진다. 오타가 값으로 남으면 관리자가 정한
- * 규칙과 조용히 어긋나기 때문이다.
- *
- * 쓰는 법:
- *   zmcPickBox(input, {
- *     items: [{code, name, keywords}],
- *     value: 'KR-49',
- *     empty: '일치하는 항목이 없습니다',
- *     onPick: function (code) {}
- *   })
- *
- * input 옆에 같은 이름의 hidden 이 있어야 하며, 코드는 그쪽에 담긴다.
- */
 (function (global) {
 	'use strict';
 
@@ -96,7 +79,6 @@
 
 		input.addEventListener('focus', function () { render(search(input.value)); });
 		input.addEventListener('input', function () {
-			// 고쳐 쓰기 시작하면 고른 값은 풀린다
 			if (hidden) { hidden.value = ''; }
 			input.dataset.picked = '';
 			render(search(input.value));
@@ -122,7 +104,6 @@
 		});
 		input.addEventListener('blur', function () {
 			setTimeout(function () {
-				// 고르지 않고 떠나면 글자를 지운다. 오타가 값으로 남지 않게 한다
 				if (!input.dataset.picked) { setValue('', ''); }
 				close();
 			}, 120);
@@ -133,7 +114,6 @@
 			setValue('', '');
 		};
 		api.setValue = function (code) {
-			// 예전에 저장된 배송지는 코드가 아니라 이름으로 담겨 있다. 이름으로도 찾아 준다
 			var want = normalize(code);
 			var found = null;
 			for (var i = 0; i < items.length; i++) {

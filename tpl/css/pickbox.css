@@ -1,4 +1,3 @@
-/* 검색형 선택 상자 — 관리 화면과 주문서가 함께 쓴다 */
 .zmc-pick { position: relative; display: inline-block; }
 /* 주문서 폼은 라벨이 inline 이라 폭을 채워야 아래로 내려간다 */
 .shp-row .zmc-pick { display: block; width: 100%; }

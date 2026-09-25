@@ -2,50 +2,36 @@
 	<column name="item_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="seller_srl" type="bigint" notnull="notnull" default="0" index="idx_seller_srl" />
 	<column name="category_srl" type="bigint" notnull="notnull" default="0" index="idx_category_srl" />
+	<column name="seller_category_srl" type="bigint" notnull="notnull" default="0" index="idx_seller_category_srl" />
 	<column name="item_name" type="varchar" size="250" notnull="notnull" />
 	<column name="item_code" type="varchar" size="100" index="idx_item_code" />
-	<!-- 정가 / 판매가(0이면 정가로 판매) -->
 	<column name="price" type="bigint" notnull="notnull" default="0" />
 	<column name="sale_price" type="bigint" notnull="notnull" default="0" />
-	<!-- 실판매가 (sale_price>0 ? sale_price : price). 가격순 정렬 전용 - 저장 시 갱신 -->
 	<column name="effective_price" type="bigint" notnull="notnull" default="0" index="idx_effective_price" />
-	<!--
-	  옵션 없는 상품의 재고. 옵션이 있으면(has_options=Y) 재고는 옵션 단위로만 관리하고
-	  차감은 조건부 UPDATE (stock >= n) 로 처리한다.
-	-->
 	<column name="stock" type="int" notnull="notnull" default="0" />
 	<column name="use_stock" type="char" size="1" notnull="notnull" default="Y" />
-	<!-- 재고가 이 수 이하로 떨어지면 알린다. 0 = 설정의 기본 기준을 따른다 -->
 	<column name="low_stock" type="int" notnull="notnull" default="0" />
-	<!-- 이미 알린 상태인지. 다시 채워 기준을 넘기면 풀려서 다음에 또 알린다 -->
 	<column name="low_stock_alerted" type="char" size="1" notnull="notnull" default="N" />
 	<column name="summary" type="varchar" size="250" />
 	<column name="content" type="bigtext" />
 	<column name="thumb" type="varchar" size="250" />
-	<!-- 추가 이미지 갤러리 (JSON 배열) -->
 	<column name="images" type="text" />
-	<!-- 판매기간 예약 (YYYYMMDDHHIISS, 비우면 상시) -->
 	<column name="sale_start" type="char" size="14" />
 	<column name="sale_end" type="char" size="14" />
-	<!-- 구매수량 제한 (0 = 제한 없음) -->
 	<column name="min_qty" type="int" notnull="notnull" default="0" />
 	<column name="max_qty" type="int" notnull="notnull" default="0" />
-	<!-- 세금 구분: taxable(과세) / free(면세) — 결제 시 면세금액을 PG 에 전달한다 -->
 	<column name="tax_type" type="varchar" size="10" notnull="notnull" default="taxable" />
-	<!-- 성인 상품: 구매 시 본인인증 게이트 (member/identity 연동) -->
 	<column name="is_adult" type="char" size="1" notnull="notnull" default="N" />
-	<!-- 회원 등급 할인 적용 여부. N 이면 등급가 없이 판매가 그대로 -->
 	<column name="grade_discount" type="char" size="1" notnull="notnull" default="Y" />
 	<column name="attrs" type="text" />
 	<column name="has_options" type="char" size="1" notnull="notnull" default="N" />
-	<!-- 조합형 옵션 축 정의 (JSON: [{name, values[]}]) -->
 	<column name="option_axes" type="text" />
-	<!-- 기본 옵션 방식: single(직접 입력) / combo(축 조합) -->
 	<column name="option_mode" type="varchar" size="10" notnull="notnull" default="single" />
-	<!-- default(기본 정책) / free / fixed -->
 	<column name="ship_fee_type" type="varchar" size="10" notnull="notnull" default="default" />
 	<column name="ship_fee" type="bigint" notnull="notnull" default="0" />
-	<!-- sale / soldout / hidden / stop -->
+	<column name="is_pin" type="char" size="1" notnull="notnull" default="N" />
+	<column name="hidden_by_market" type="char" size="1" notnull="notnull" default="N" index="idx_hidden_by_market" />
+	<column name="pin_daily_limit" type="int" notnull="notnull" default="0" />
 	<column name="status" type="varchar" size="20" notnull="notnull" default="sale" index="idx_status" />
 	<column name="is_recommend" type="char" size="1" notnull="notnull" default="N" index="idx_recommend" />
 	<column name="is_new" type="char" size="1" notnull="notnull" default="N" />

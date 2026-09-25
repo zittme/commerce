@@ -4,7 +4,6 @@
 <div class="shp">
 	@include('_currency')
 	@php
-	// 상품 이미지 목록: images(json 배열)가 있으면 갤러리, 없으면 대표 이미지 한 장
 	$shp_images = [];
 	if (!empty($item->images))
 	{
@@ -15,7 +14,6 @@
 	$shp_main_image = $shp_images[0] ?? '';
 	$shp_thumb_style = $shp_main_image !== '' ? "background-image:url('" . $shp_main_image . "');" : '';
 	$shp_base_soldout = ($item->use_stock ?? 'Y') === 'Y' && (int)$item->stock <= 0;
-	// 옵션 2종: basic(상품 변형, 판매가+추가금) / extra(별개 추가상품, 추가금이 곧 가격)
 	$shp_basic_opts = [];
 	$shp_extra_opts = [];
 	foreach ($options ?? [] as $shp_o)
@@ -26,6 +24,13 @@
 	$shp_has_basic = count($shp_basic_opts) > 0;
 	@endphp
 
+	@if (!empty($zmc_store_frame))
+	<nav class="shp-breadcrumb">
+		<a href="{{ $zmc_store_frame->url }}">{{ $zmc_store_frame->shop_name }}</a>
+		<span class="shp-bc-sep">&gt;</span>
+		<a href="{{ $zmc_store_frame->all_url }}">{{ $lang->shop_all_items }}</a>
+	</nav>
+	@else
 	<nav class="shp-breadcrumb">
 		<a href="{{ getUrl('', 'mid', $mid, 'v', 'list') }}">{{ $lang->shop_all ?? '전체' }}</a>
 		@foreach ($breadcrumb ?? [] as $bc)
@@ -33,9 +38,12 @@
 		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList', 'category', $bc->category_srl) }}">{{ $bc->title }}</a>
 		@endforeach
 	</nav>
+	@endif
 
 	@php $shp_sticky = (($shop_config->item_sticky ?? 'N') === 'Y'); @endphp
-	{{-- 상단부는 플로팅 여부와 무관하게 기본형 그대로 --}}
+	@if (!empty($item_seller))
+	<p class="shp-seller-line">{{ $lang->mk_seller }} <a href="{{ $item_seller->store_url ?? getUrl('', 'mid', $mid, 'v', 'list', 'seller', $item_seller->seller_srl) }}">{{ $item_seller->shop_name }}</a></p>
+	@endif
 	<div class="shp-detail" id="shpDetailTop">
 		<div class="shp-gallery">
 			<div class="shp-detail-thumb" id="shpGalleryMain" style="{{ $shp_thumb_style }}"></div>
@@ -55,7 +63,6 @@
 	<div class="shp-body @if ($shp_sticky) is-sticky @endif">
 	<div class="shp-main">
 
-	{{-- 상세정보 / 리뷰 / 문의 탭 (앵커 이동) --}}
 	<nav class="shp-tabs">
 		<a href="#shpContent">{{ $lang->shop_detail_info ?? '상세정보' }}</a>
 		<a href="#shpReviews">{{ $lang->shop_reviews ?? '리뷰' }} <small>{{ count($reviews ?? []) }}</small></a>
@@ -88,7 +95,22 @@
 	</div>
 	@endif
 
-	{{-- 리뷰 --}}
+	@if (!empty($item_seller))
+	<div class="shp-section shp-seller-info">
+		<h2>{{ $lang->mk_seller_info }}</h2>
+		<dl>
+			<div><dt>{{ $lang->mk_f_biz_name }}</dt><dd>{{ $item_seller->biz_name ?: $item_seller->shop_name }}</dd></div>
+			<div><dt>{{ $lang->mk_f_ceo_name }}</dt><dd>{{ $item_seller->ceo_name }}</dd></div>
+			<div><dt>{{ $lang->mk_f_biz_no }}</dt><dd>{{ $item_seller->biz_no }}</dd></div>
+			<div><dt>{{ $lang->mk_f_mailorder_no }}</dt><dd>{{ $item_seller->mailorder_no }}</dd></div>
+			<div><dt>{{ $lang->mk_f_tel }}</dt><dd>{{ $item_seller->tel }}</dd></div>
+			@if ($item_seller->email !== '')<div><dt>{{ $lang->mk_f_email }}</dt><dd>{{ $item_seller->email }}</dd></div>@endif
+			@if ($item_seller->biz_address !== '')<div><dt>{{ $lang->mk_f_biz_address }}</dt><dd>{{ $item_seller->biz_address }}</dd></div>@endif
+		</dl>
+		<p class="shp-seller-note">{{ sprintf($lang->mk_intermediary_note, $shop_config->biz_name ?: (Context::getSiteTitle() ?: parse_url(Context::getDefaultUrl(), PHP_URL_HOST))) }}</p>
+	</div>
+	@endif
+
 	<div class="shp-section" id="shpReviews">
 		<h2>{{ $lang->shop_reviews ?? '리뷰' }} <small>{{ count($reviews ?? []) }}</small></h2>
 		@if (!count($reviews ?? []))
@@ -170,7 +192,6 @@
 		</form>
 		<script>
 		(function () {
-			// 리뷰 첨부: 업로드 액션으로 보내고 URL 을 hidden JSON 에 쌓는다
 			var fileEl = document.getElementById('shpReviewFile');
 			var jsonEl = document.getElementById('shpReviewImages');
 			var preview = document.getElementById('shpReviewPreview');
@@ -211,7 +232,6 @@
 			});
 		})();
 		@if (Context::get('review'))
-		// 구매확정 직후 리뷰 유도: 리뷰 폼으로 스크롤 + 입력 포커스
 		(function () {
 			var form = document.getElementById('shpReviewForm');
 			if (!form) return;
@@ -228,7 +248,6 @@
 		@endif
 	</div>
 
-	{{-- 문의 --}}
 	<div class="shp-section" id="shpInquiries">
 		<h2>{{ $lang->shop_inquiries ?? '문의' }} <small>{{ count($inquiries ?? []) }}</small></h2>
 		@if (!count($inquiries ?? []))
@@ -285,12 +304,11 @@
 	</div>
 
 	@if ($shp_sticky)
-	{{-- 본문 구간에서만 구매 박스가 우측에 따라온다 — 스크롤 시 상단 박스를 이쪽으로 옮긴다 --}}
 	<aside class="shp-side" id="shpSide"></aside>
 	@endif
 	</div>
 	<p class="shp-foot-links">
-		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a>
+		<a href="{{ !empty($zmc_store_frame) ? $zmc_store_frame->all_url : getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a>
 		<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceCart') }}">{{ $lang->shop_cart }}</a>
 	</p>
 
@@ -308,7 +326,6 @@
 			});
 		}
 
-		// 우측 플로팅: 본문 구간으로 스크롤하면 구매 박스를 우측 컬럼으로 옮기고, 올라오면 제자리로 되돌린다
 		var side = document.getElementById('shpSide');
 		var topWrap = document.getElementById('shpDetailTop');
 		var buyPanel = document.getElementById('shpBuyPanel');
@@ -330,7 +347,6 @@
 			relocate();
 		}
 
-		// 선택 요약: 본품·추가옵션이 행으로 쌓이고, 수량이 바뀔 때마다 합계를 다시 계산한다
 		var box = document.getElementById('shpSelectBox');
 		if (!box) return;
 		var basePrice = parseInt(box.getAttribute('data-base-price'), 10) || 0;
@@ -343,27 +359,21 @@
 		var totalQtyEl = document.getElementById('shpTotalQty');
 		var totalEl = document.getElementById('shpTotalPrice');
 		var optSels = document.querySelectorAll('.shp-opt-add');
-		// 조합형이면 본품 대신 고른 조합이 줄로 쌓인다
 		var comboMode = document.querySelectorAll('.shp-axis').length > 0;
-		// 조합형 옵션: 축을 모두 고르면 그 조합에 해당하는 기본 옵션이 골라진다
 		var axisSels = document.querySelectorAll('.shp-axis');
 		if (axisSels.length) {
 			var basicSel = document.querySelector('.shp-opt-add[data-opt-type="basic"]');
 			var axesWrap = document.querySelector('.shp-axes');
 			if (basicSel && axesWrap) {
-				// 축으로 고르므로 원래 셀렉트는 감춘다 (값 전달용으로만 남긴다)
 				var basicRow = basicSel.closest('.shp-row');
 				if (basicRow) basicRow.style.display = 'none';
 
-				// 조합 -> option 요소 지도
-				// 열쇠는 축·값의 자리 번호다. 표시 글자는 언어마다 달라지므로 대조에 쓰지 않는다
 				var comboMap = {};
 				Array.prototype.forEach.call(basicSel.options, function (op) {
 					var key = op.getAttribute('data-combokey');
 					if (key) comboMap[key] = op;
 				});
 
-				// 값 하나가 들어간 조합이 모두 품절이면 그 값은 고를 수 없다
 				function soldout(axisIndex, valueIndex) {
 					var want = axisIndex + '=' + valueIndex;
 					var any = false;
@@ -375,7 +385,6 @@
 					return any;
 				}
 
-				// 자리 번호로 고른 값의 표시 글자를 찾는다
 				function labelOf(row, index) {
 					var chip = row.querySelector('[data-chip="' + index + '"]');
 					if (chip) return chip.getAttribute('data-label') || '';
@@ -464,15 +473,12 @@
 		var shpWon = {{ $shp_won_suffix ? 'true' : 'false' }};
 		var shpDispRate = 1;
 		function fmt(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
-		// 금액은 기준 통화 최소단위 정수. 표시 통화로 환산해 서버 표기와 같은 모양으로 맞춘다: 12,000원 / MXN 89.00
 		function smoney(minor) {
 			var major = (shpZero ? minor : minor / 100) / shpDispRate;
-			// KRW 는 한국어 화면에서만 접미사 '원' 을 쓴다 (서버 표기와 맞춘다)
 			if (shpDisp === 'KRW' && shpWon) return fmt(Math.round(major)) + {!! json_encode($shp_unit_label) !!};
 			var pre = shpDispSym || (shpDisp + ' ');
 			if (shpDispZero) return pre + fmt(Math.round(major));
 			var cents = Math.round(major * 100);
-			// 상품 진열은 소수점 끝이 0 이면 뗀다 (서버 표기와 맞춘다)
 			if (cents % 100 === 0) return pre + fmt(cents / 100);
 			return pre + fmt(Math.floor(cents / 100)) + '.' + ('0' + (cents % 100)).slice(-2);
 		}
@@ -517,7 +523,6 @@
 			});
 			totalQtyEl.textContent = {!! json_encode($lang->shop_total_qty) !!}.replace('%d', totalQty);
 			totalEl.textContent = smoney(totalPrice);
-			// 적립 혜택: 현재 선택 기준 예상 적립금
 			var creditEl = document.getElementById('shpCreditEarn');
 			if (creditEl) {
 				var creditRate = parseFloat(creditEl.getAttribute('data-credit-rate')) || 0;
@@ -542,8 +547,6 @@
 		rowsEl.addEventListener('input', render);
 		rowsEl.addEventListener('change', render);
 
-		// 상품 행(main)은 항상 1개 — 기본옵션 셀렉트가 본품 or 옵션으로 "교체"한다.
-		// 추가옵션은 그 아래에 별개 행으로 쌓인다.
 		function setMainRow(srl, label, unit) {
 			var current = rowsEl.querySelector('.shp-select-row[data-main="1"]');
 			var keepQty = minQty;
@@ -565,7 +568,6 @@
 				var add = parseInt(opt.getAttribute('data-price-add') || '0', 10) || 0;
 				var label = opt.getAttribute('data-label') || '';
 				if (optType === 'extra') {
-					// 추가 옵션: 별개 추가상품 — 추가금이 곧 단가, 같은 항목은 수량 +1
 					var exists = rowsEl.querySelector('.shp-select-row[data-opt="' + srl + '"]:not([data-main="1"])');
 					if (exists) {
 						var input = exists.querySelector('.shp-qty');
@@ -575,10 +577,8 @@
 					}
 					optSel.selectedIndex = 0;
 				} else if (srl === '0') {
-					// 선택 안 함 = 본품으로 교체
 					setMainRow('0', itemName, basePrice);
 				} else if (comboMode) {
-					// 조합형: 본품을 미리 담지 않고, 고른 조합을 한 줄씩 쌓는다
 					var already = rowsEl.querySelector('.shp-select-row[data-opt="' + srl + '"]');
 					if (already) {
 						var qtyEl = already.querySelector('.shp-qty');
@@ -588,20 +588,17 @@
 					}
 					optSel.selectedIndex = 0;
 				} else {
-					// 기본 옵션: 상품이 이 옵션으로 바뀐다 — 본품/다른 옵션 행을 교체
 					setMainRow(srl, itemName + ' - ' + label, basePrice + add);
 				}
 				render();
 			});
 		});
 
-		// 초기 상품 행: 조합형은 고르기 전까지 아무것도 담지 않는다
 		if (!baseSoldout && !comboMode) {
 			setMainRow('0', itemName, basePrice);
 		}
 		render();
 
-		// 총금액 안내 (배송비 미포함)
 		var tipBtn = document.getElementById('shpTipBtn');
 		var tipNote = document.getElementById('shpShipNote');
 		if (tipBtn && tipNote) {

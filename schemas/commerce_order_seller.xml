@@ -1,24 +1,22 @@
 <table name="commerce_order_seller">
-	<!--
-	  판매자별 하위주문. 독립몰에서는 1건, 오픈마켓에서는 판매자마다 나뉜다.
-	  독립몰 모드에서도 1건을 생성한다. 배송·클레임·정산이 이 단위로 이뤄진다.
-	-->
 	<column name="order_seller_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />
 	<column name="seller_srl" type="bigint" notnull="notnull" index="idx_seller_srl" />
 	<column name="item_total" type="bigint" notnull="notnull" default="0" />
 	<column name="delivery_fee" type="bigint" notnull="notnull" default="0" />
+	<column name="operator_fee" type="bigint" notnull="notnull" default="0" />
+	<column name="settle_refund" type="bigint" notnull="notnull" default="0" />
+	<column name="settle_refund_commission" type="bigint" notnull="notnull" default="0" />
 	<column name="discount" type="bigint" notnull="notnull" default="0" />
-	<!-- 정산 대상액 (부분환불 시 감액) -->
 	<column name="settle_amount" type="bigint" notnull="notnull" default="0" />
-	<!-- pending / paid / preparing / shipping / delivered / cancelled / refunded -->
 	<column name="status" type="varchar" size="20" notnull="notnull" default="pending" index="idx_status" />
 	<column name="shipping_company" type="varchar" size="60" />
 	<column name="shipping_invoice" type="varchar" size="60" />
 	<column name="shipped_date" type="char" size="14" />
 	<column name="delivered_date" type="char" size="14" />
-	<!-- none / ready / done (정산은 2차) -->
+	<column name="commission" type="bigint" notnull="notnull" default="0" />
 	<column name="settle_status" type="varchar" size="10" notnull="notnull" default="none" />
 	<column name="settle_date" type="char" size="14" />
+	<column name="settlement_srl" type="bigint" notnull="notnull" default="0" index="idx_settlement_srl" />
 	<column name="regdate" type="char" size="14" />
 </table>

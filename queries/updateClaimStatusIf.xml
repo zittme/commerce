@@ -1,5 +1,4 @@
 <query id="updateClaimStatusIf" action="update">
-	<!-- 클레임 처리 — 조건부 전이 (중복 승인 방지) -->
 	<tables>
 		<table name="commerce_claim" />
 	</tables>

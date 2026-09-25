@@ -4,6 +4,7 @@ namespace Zittme\Modules\Commerce\Controllers;
 
 use Zittme\Modules\Commerce\Models\Address as AddressModel;
 use Zittme\Modules\Commerce\Models\Badge as BadgeModel;
+use Zittme\Modules\Commerce\Models\Brand as BrandModel;
 use Zittme\Modules\Commerce\Models\Combo as ComboModel;
 use Zittme\Modules\Commerce\Models\Config as ConfigModel;
 use Zittme\Modules\Commerce\Models\Grade as GradeModel;
@@ -13,23 +14,38 @@ use Zittme\Modules\Commerce\Models\Money as MoneyModel;
 use Zittme\Modules\Commerce\Models\Notify as NotifyModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
 use Zittme\Modules\Commerce\Models\Region as RegionModel;
+use Zittme\Modules\Commerce\Models\Seller as SellerModel;
+use Zittme\Modules\Commerce\Models\Settlement as SettlementModel;
+use Zittme\Modules\Commerce\Models\Staff as StaffModel;
+use Zittme\Modules\Commerce\Models\Audit as AuditModel;
 use Zittme\Modules\Commerce\Models\Stats as StatsModel;
 use Zittme\Modules\Commerce\Models\Stock as StockModel;
 use Zittme\Modules\Commerce\Models\Tax as TaxModel;
 
-/**
- * 전용 운영 화면 (대시보드 + 업무 화면 세트).
- */
 class Admin extends Base
 {
-	/**
-	 * 설정 저장 허용 키.
-	 */
+	public function init()
+	{
+		StaffModel::authorize((string)$this->act);
+	}
+
+	public function proc()
+	{
+		$act = (string)$this->act;
+		$snap = $this->stop_proc ? [] : AuditModel::snapshot($act);
+		$result = parent::proc();
+		if (!$this->stop_proc)
+		{
+			AuditModel::after($act, $this, $snap);
+		}
+		return $result;
+	}
+
 	public const CONFIG_FIELDS = [
-		'enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes',
-		'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key',
-		'shop_main', 'category_layout', 'show_shop_nav', 'show_search', 'show_admin_fab', 'home_show_recommend', 'home_show_new',
-		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones',
+		'enabled', 'market_mode', 'market_commission', 'market_apply', 'market_item_review', 'seller_item_in_store', 'code_prefix', 'allow_guest', 'pending_minutes',
+		'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key', 'couriers',
+		'shop_main', 'category_layout', 'item_image_size', 'show_shop_nav', 'show_search', 'show_admin_fab', 'home_show_recommend', 'home_show_new',
+		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones', 'show_seller_on_card',
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
 		'privacy_text', 'privacy_version', 'retention_days',
 		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note', 'biz_logo',
@@ -43,20 +59,17 @@ class Admin extends Base
 		'notify_buyer_delivered', 'notify_buyer_claim_done',
 	];
 
-	// 다국어 버튼으로 문구를 연결할 수 있는 설정 항목
 	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note', 'ship_guide', 'claim_guide'];
 
-	protected const BOOLEAN_FIELDS = ['enabled', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
+	protected const BOOLEAN_FIELDS = ['enabled', 'market_apply', 'market_item_review', 'seller_item_in_store', 'show_seller_on_card', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
 		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale'];
-	// 소수점 2자리 허용 (적립률 0.00~100.00%)
-	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100]];
+	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100], 'market_commission' => [0, 100]];
 	protected const INT_FIELDS = [
 		'pending_minutes' => [10, 1440],
 		'claim_days' => [0, 90],
 		'retention_days' => [0, 3650],
 		'home_count' => [4, 24],
 	];
-	// 금액 설정 — 기준 통화 최소단위로 저장 (소수부 통화는 100.50 형태 입력 허용)
 	protected const MONEY_FIELDS = [
 		'default_ship_fee' => [0, 100000000],
 		'free_ship_over' => [0, 10000000000],
@@ -65,9 +78,6 @@ class Admin extends Base
 		'review_credit_photo' => [0, 10000000],
 	];
 
-	/**
-	 * 공통 렌더.
-	 */
 	protected function renderView(string $tab, string $file): void
 	{
 		\Context::set('shop_tab', $tab);
@@ -76,11 +86,6 @@ class Admin extends Base
 		$this->setTemplateFile($file);
 	}
 
-	/**
-	 * 카테고리 전체 (평면, list_order 순).
-	 *
-	 * @return array<int, object>
-	 */
 	protected static function collectItemAttrs(): string
 	{
 		$names = (array)\Context::get('attr_name');
@@ -118,7 +123,6 @@ class Admin extends Base
 			}
 		}
 
-		// 트리 순서(상위 → 하위)로 정렬하고 depth 를 붙인 맵을 돌려준다
 		$children = [];
 		foreach ($rows as $row)
 		{
@@ -142,23 +146,16 @@ class Admin extends Base
 				$map[(int)$row->category_srl] = $row;
 			}
 		}
-		// 연결된 다국어 문구는 실제 값으로 보여준다 (편집 시 코드는 위젯이 따로 들고 있다)
 		LangModel::textAll(array_values($map), ['title']);
 		return $map;
 	}
 
-	// 화면
-
-	/**
-	 * 대시보드.
-	 */
 	public function dispCommerceAdminDashboard()
 	{
 		OrderModel::expireStalePending();
 		$instance = self::getDefaultInstance();
 		\Context::set('shop_mid', $instance ? $instance->mid : self::DEFAULT_MID);
 
-		// 개설 체크리스트 — 결제수단, 기본 설정, 카테고리, 첫 상품
 		$db = \Zittme\Framework\DB::getInstance();
 		$saved_config = \ModuleModel::getModuleConfig('commerce');
 		$checklist = [
@@ -212,13 +209,6 @@ class Admin extends Base
 		$this->renderView('dashboard', 'dashboard');
 	}
 
-	/**
-	 * 상품 관리 목록.
-	 */
-	/**
-	 * 재고 관리 — 상품·옵션 재고 현황과 입고/출고/손실 처리, 이동 로그.
-	 * 재고 수량 변경은 이 화면에서만 한다 (상품 편집에는 사용 여부만 둔다).
-	 */
 	public function dispCommerceAdminStock()
 	{
 		$args = new \stdClass;
@@ -244,6 +234,7 @@ class Admin extends Base
 			elseif ($field !== 'stock')
 			{
 				$args->search_keyword = '%' . $keyword . '%';
+				$args->search_brand_srl_list = BrandModel::searchSrls($keyword) ?: null;
 			}
 		}
 		if (strlen($date_from) === 8)
@@ -261,9 +252,7 @@ class Admin extends Base
 		foreach ($items as $stock_item)
 		{
 			$stock_options = ItemModel::getOptions((int)$stock_item->item_srl, true);
-			// 연결된 다국어 문구는 실제 값으로 보여준다
 			LangModel::textAll($stock_options, ['option_label']);
-			// 조합 옵션 이름은 축 값에서 다시 만든다 (저장된 이름은 만든 시점 글자로 굳는다)
 			foreach ($stock_options as $stock_option)
 			{
 				$stock_option->option_label = ComboModel::optionLabel($stock_item, $stock_option);
@@ -306,34 +295,47 @@ class Admin extends Base
 		$this->renderView('stock', 'stock');
 	}
 
-	/**
-	 * 기획전 목록 + 편집.
-	 */
 	public function dispCommerceAdminPromotions()
 	{
 		$promotions = \Zittme\Modules\Commerce\Models\Promotion::listAll();
 		\Context::set('promotions', $promotions);
 		\Context::set('promo_now', self::now());
 
-		// 편집 대상 (promo_srl 지정 시)
 		$edit_srl = (int)\Context::get('promo_srl');
 		$edit = $edit_srl > 0 ? \Zittme\Modules\Commerce\Models\Promotion::get($edit_srl) : null;
 		\Context::set('promo_edit', $edit);
 		\Context::set('promo_edit_items', $edit ? \Zittme\Modules\Commerce\Models\Promotion::itemSrlsOf((int)$edit->promo_srl) : []);
 
-		// 상품 선택용 전체 상품 (판매·품절)
-		$output = executeQueryArray('commerce.getItemList', (object)['status_list' => 'sale,soldout', 'list_count' => 500, 'sort_index' => 'item_srl', 'order_type' => 'desc']);
-		$promo_items = ($output->toBool() && !empty($output->data)) ? $output->data : [];
-		// 다국어 코드는 서버에서 푼다. 템플릿이 이스케이프한 뒤에는 코어 치환이 걸리지 않는다
-		LangModel::textAll($promo_items, ['item_name']);
+		$promo_cards = [];
+		foreach ($promotions as $pm)
+		{
+			$promo_cards[(int)$pm->promo_srl] = (object)[
+				'banner' => \Zittme\Modules\Commerce\Models\Promotion::bannerOf($pm),
+				'count' => count(\Zittme\Modules\Commerce\Models\Promotion::itemSrlsOf((int)$pm->promo_srl)),
+			];
+		}
+		\Context::set('promo_cards', $promo_cards);
+
+		$promo_items = [];
+		if ($edit)
+		{
+			$output = executeQueryArray('commerce.getItemList', (object)['status_list' => 'sale,soldout', 'list_count' => 2000, 'sort_index' => 'item_srl', 'order_type' => 'desc']);
+			$promo_items = ($output->toBool() && !empty($output->data)) ? $output->data : [];
+			// 다국어 코드는 서버에서 푼다. 템플릿이 이스케이프한 뒤에는 코어 치환이 걸리지 않는다
+			LangModel::textAll($promo_items, ['item_name']);
+			BrandModel::attach($promo_items);
+		}
 		\Context::set('promo_all_items', $promo_items);
+		\Context::set('promo_categories', $edit ? array_values(self::getCategories()) : []);
+		\Context::set('promo_brands', $edit ? BrandModel::getList() : []);
+		$shop_mids = \ModuleModel::getMidList((object)['module' => 'commerce'], ['mid']) ?: [];
+		$shop_mid = '';
+		foreach ($shop_mids as $row) { $shop_mid = (string)$row->mid; break; }
+		\Context::set('promo_shop_mid', $shop_mid);
 
 		$this->renderView('promotions', 'promotions');
 	}
 
-	/**
-	 * 기획전 저장 (신규/수정 + 상품 매핑 동기화).
-	 */
 	public function procCommerceAdminInsertPromotion()
 	{
 		$promo_srl = (int)\Context::get('promo_srl');
@@ -343,7 +345,6 @@ class Admin extends Base
 			return new \BaseObject(-1, lang('commerce.admin_msg_1'));
 		}
 
-		// 슬러그: 미입력 시 자동 생성, 영문/숫자/하이픈만
 		$slug = strtolower(trim((string)\Context::get('slug')));
 		$slug = preg_replace('/[^a-z0-9\-]/', '-', $slug);
 		$slug = trim(preg_replace('/-+/', '-', $slug), '-');
@@ -368,7 +369,7 @@ class Admin extends Base
 		foreach (['start_date', 'end_date'] as $k)
 		{
 			$raw = preg_replace('/[^0-9]/', '', (string)\Context::get($k));
-			$dates[$k] = strlen($raw) >= 8 ? str_pad(substr($raw, 0, 14), 14, '0') : '';
+			$dates[$k] = strlen($raw) >= 8 ? (strlen($raw) >= 14 ? substr($raw, 0, 14) : substr($raw, 0, 8) . ($k === 'end_date' ? '235959' : '000000')) : '';
 		}
 
 		$args = (object)[
@@ -394,7 +395,6 @@ class Admin extends Base
 			executeQuery('commerce.insertPromotion', $args);
 		}
 
-		// 상품 매핑 (순서 포함 JSON 배열)
 		$item_srls = json_decode((string)\Context::get('item_srls'), true);
 		if (is_array($item_srls))
 		{
@@ -405,9 +405,60 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminPromotions'));
 	}
 
-	/**
-	 * 기획전 삭제.
-	 */
+	public function procCommerceAdminCreatePromotion()
+	{
+		$title = mb_substr(trim((string)\Context::get('title')), 0, 120);
+		if ($title === '')
+		{
+			$title = lang('commerce.pm_default_title');
+		}
+		$promo_srl = getNextSequence();
+		$today = substr(self::now(), 0, 8);
+		executeQuery('commerce.insertPromotion', (object)[
+			'promo_srl' => $promo_srl,
+			'title' => $title,
+			'slug' => 'promo-' . $promo_srl,
+			'banner' => json_encode(['bg_type' => 'gradient', 'bg_color' => '#26345c', 'bg_color2' => '#151c33', 'text_color' => '#ffffff', 'shadow' => 'Y', 'main' => 'N'], \JSON_UNESCAPED_SLASHES),
+			'description' => '',
+			'start_date' => $today . '000000',
+			'end_date' => date('Ymd', strtotime('+30 days')) . '235959',
+			'status' => 'N',
+			'list_order' => 0,
+			'regdate' => self::now(),
+		]);
+		$this->add('promo_srl', $promo_srl);
+	}
+
+	public function procCommerceAdminPreviewPromotion()
+	{
+		$promo_srl = (int)\Context::get('promo_srl');
+		if ($promo_srl <= 0)
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$banner = json_decode((string)\Context::get('banner'), true);
+		$items = json_decode((string)\Context::get('item_srls'), true);
+		$dates = [];
+		foreach (['start_date', 'end_date'] as $k)
+		{
+			$raw = preg_replace('/[^0-9]/', '', (string)\Context::get($k));
+			$dates[$k] = strlen($raw) >= 8 ? substr($raw, 0, 8) . ($k === 'end_date' ? '235959' : '000000') : '';
+		}
+		$_SESSION['commerce_promo_preview'] = [
+			'srl' => $promo_srl,
+			'time' => time(),
+			'values' => [
+				'title' => mb_substr(trim((string)\Context::get('title')), 0, 120),
+				'description' => trim((string)\Context::get('description')),
+				'banner' => is_array($banner) ? json_encode($banner, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES) : '',
+				'start_date' => $dates['start_date'],
+				'end_date' => $dates['end_date'],
+			],
+			'items' => is_array($items) ? array_values(array_filter(array_map('intval', $items))) : null,
+		];
+		$this->add('saved', 1);
+	}
+
 	public function procCommerceAdminDeletePromotion()
 	{
 		$promo_srl = (int)\Context::get('promo_srl');
@@ -421,9 +472,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminPromotions'));
 	}
 
-	/**
-	 * 재고 부족 알림 기준 저장 — 재고 관리 화면에서 줄마다 정한다.
-	 */
 	public function procCommerceAdminSaveLowStock()
 	{
 		$rows = json_decode((string)\Context::get('rows'), true);
@@ -457,7 +505,6 @@ class Admin extends Base
 			}
 		}
 
-		// 기준이 바뀌면 이미 알린 표시도 다시 판정해야 한다
 		foreach ($rows as $row)
 		{
 			$item_srl = (int)($row['item_srl'] ?? 0);
@@ -472,9 +519,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock'));
 	}
 
-	/**
-	 * 주문 지우기 — 최고관리자만. 결제된 주문은 대상에서 빠진다.
-	 */
 	public function procCommerceAdminDeleteOrders()
 	{
 		if (($this->user->is_admin ?? '') !== 'Y')
@@ -506,9 +550,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminOrders'));
 	}
 
-	/**
-	 * 재고 조정 처리.
-	 */
 	public function procCommerceAdminStockAdjust()
 	{
 		$item_srl = (int)\Context::get('item_srl');
@@ -533,9 +574,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminStock', 'f_keyword', (string)\Context::get('f_keyword')));
 	}
 
-	/**
-	 * 프론트 관리 플로팅 — 메인 형태·카테고리 배치·배너를 일괄 저장한다.
-	 */
 	public function procCommerceAdminSaveFront()
 	{
 		$config = \ModuleModel::getModuleConfig('commerce') ?: new \stdClass;
@@ -565,9 +603,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedFullUrl('', 'mid', self::getDefaultInstance()->mid ?? self::DEFAULT_MID));
 	}
 
-	/**
-	 * 프론트 배너 이미지 업로드 — 파일을 받아 URL 을 JSON 으로 돌려준다.
-	 */
 	public function procCommerceAdminUploadBanner()
 	{
 		header('Content-Type: application/json; charset=utf-8');
@@ -596,9 +631,6 @@ class Admin extends Base
 		echo json_encode(['error' => 0, 'url' => \RX_BASEURL . 'files/attach/images/commerce/banner/' . $filename]); exit;
 	}
 
-	/**
-	 * 리뷰·문의 관리 — 답변 등록과 삭제.
-	 */
 	public function dispCommerceAdminQna()
 	{
 		$item_output = executeQueryArray('commerce.getItemList', (object)['list_count' => 1000, 'sort_index' => 'item_srl', 'order_type' => 'desc']);
@@ -632,9 +664,6 @@ class Admin extends Base
 		$this->renderView('qna', 'qna');
 	}
 
-	/**
-	 * 리뷰 답변 등록·수정 (빈 값이면 답변 삭제).
-	 */
 	public function procCommerceAdminReviewReply()
 	{
 		$review_srl = (int)\Context::get('review_srl');
@@ -656,9 +685,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminQna'));
 	}
 
-	/**
-	 * 문의 답변 등록·수정 (빈 값이면 답변 삭제).
-	 */
 	public function procCommerceAdminInquiryAnswer()
 	{
 		$inquiry_srl = (int)\Context::get('inquiry_srl');
@@ -668,7 +694,6 @@ class Admin extends Base
 		}
 		// 빈 값이면 '' 로 지운다 — null 은 쿼리 빌더가 컬럼을 빼버려 SET 절 없는 UPDATE(1064)가 된다
 		$answer = trim((string)\Context::get('answer'));
-		// 알림 대상을 알아야 하므로 갱신 전에 원글을 집어 둔다
 		$asked = null;
 		if ($answer !== '')
 		{
@@ -715,27 +740,93 @@ class Admin extends Base
 		if ($keyword !== '')
 		{
 			$args->search_keyword = '%' . $keyword . '%';
+			$args->search_brand_srl_list = BrandModel::searchSrls($keyword) ?: null;
+		}
+		$brand_srl = (int)(\Context::get('f_brand') ?: \Context::get('brand_srl'));
+		if ($brand_srl > 0)
+		{
+			$args->brand_srl = $brand_srl;
+		}
+		$my_seller = StaffModel::seller();
+		$f_seller = 0;
+		if ($my_seller)
+		{
+			$args->seller_srl = (int)$my_seller->seller_srl;
+		}
+		elseif (SellerModel::isOpen())
+		{
+			$f_seller = (int)\Context::get('f_seller');
+			if ($f_seller > 0)
+			{
+				$args->seller_srl = $f_seller;
+			}
 		}
 		$args->page = max(1, (int)\Context::get('page'));
 		$args->list_count = 20;
-		// 쇼핑몰에 보이는 차례와 같게 둔다. 여기서 끌어 옮긴 순서가 곧 진열 순서다
 		$args->sort_index = 'list_order';
 		$args->order_type = 'asc';
 
 		$output = executeQuery('commerce.getItemList', $args);
 		$items = ($output->toBool() && !empty($output->data)) ? (is_array($output->data) ? $output->data : [$output->data]) : [];
 
-		// 목록은 연결된 다국어 문구를 실제 값으로 보여준다 (편집 화면은 위젯이 따로 처리)
-		\Context::set('items', LangModel::textAll($items, ['item_name', 'summary']));
+		$items = LangModel::textAll($items, ['item_name', 'summary']);
+		BrandModel::attach($items);
+		\Context::set('items', $items);
 		\Context::set('page_navigation', $output->page_navigation ?? null);
 		\Context::set('categories', self::getCategories());
-		\Context::set('filters', (object)['status' => $status, 'category' => $category_srl, 'keyword' => $keyword]);
+		\Context::set('brands', BrandModel::getList());
+		$status_counts = ['' => 0, 'sale' => 0, 'soldout' => 0, 'hidden' => 0, 'stop' => 0, 'review' => 0];
+		$st = isset($args->seller_srl)
+			? \Zittme\Framework\DB::getInstance()->query('SELECT status, COUNT(*) AS cnt FROM commerce_item WHERE seller_srl = ? GROUP BY status', [(int)$args->seller_srl])
+			: \Zittme\Framework\DB::getInstance()->query('SELECT status, COUNT(*) AS cnt FROM commerce_item GROUP BY status');
+		foreach ($st ? $st->fetchAll() : [] as $row)
+		{
+			$status_counts[(string)$row->status] = (int)$row->cnt;
+			$status_counts[''] += (int)$row->cnt;
+		}
+		\Context::set('status_counts', $status_counts);
+		\Context::set('filters', (object)['status' => $status, 'category' => $category_srl, 'keyword' => $keyword, 'brand' => $brand_srl, 'seller' => $f_seller]);
+		\Context::set('seller_mode', $my_seller ? 'seller' : (SellerModel::isOpen() ? 'operator' : ''));
+		\Context::set('seller_names', !$my_seller && SellerModel::isOpen() ? SellerModel::nameMap() : []);
 		$this->renderView('items', 'items');
 	}
 
-	/**
-	 * 상품 편집 (신규/수정) — 옵션까지 한 화면.
-	 */
+	public function procCommerceAdminBulkItemStatus()
+	{
+		$status = (string)\Context::get('status');
+		if (!in_array($status, ['sale', 'soldout', 'hidden', 'stop'], true))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$srls = [];
+		foreach ((array)\Context::get('item_srls') as $one)
+		{
+			if (is_scalar($one) && (int)$one > 0)
+			{
+				$srls[] = (int)$one;
+			}
+		}
+		$srls = array_values(array_unique($srls));
+		$my_seller = StaffModel::seller();
+		if ($my_seller && SellerModel::needsReview() && in_array($status, ['sale', 'soldout'], true))
+		{
+			$status = 'review';
+		}
+		if ($srls)
+		{
+			$sql = 'UPDATE commerce_item SET status = ?, last_update = ? WHERE item_srl IN (' . implode(',', $srls) . ')';
+			$params = [$status, self::now()];
+			if ($my_seller)
+			{
+				$sql .= ' AND seller_srl = ?';
+				$params[] = (int)$my_seller->seller_srl;
+			}
+			\Zittme\Framework\DB::getInstance()->query($sql, $params);
+		}
+		$this->setMessage(sprintf(lang('commerce.admin_items_bulk_done'), count($srls)));
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems'));
+	}
+
 	public function dispCommerceAdminItemEdit()
 	{
 		$item_srl = (int)\Context::get('item_srl');
@@ -761,12 +852,9 @@ class Admin extends Base
 		if ($item_srl > 0)
 		{
 			$item = ItemModel::get($item_srl);
-			// 저장 전 상품도 미리 발급한 srl 로 옵션을 담을 수 있다.
-			// 행이 아직 없으면 그 srl 을 그대로 들고 등록 화면으로 이어서 연다
 			$options = ItemModel::getOptions($item_srl);
 		}
 
-		// 다통화 판매 — 통화 목록과 이 상품의 외화 가격 (화면 표기용 소수 값으로 변환)
 		$fx_currencies = array_values(array_diff(MoneyModel::currencies(), [MoneyModel::base()]));
 		$fx_values = [];
 		if (count($fx_currencies) && $item_srl > 0)
@@ -787,15 +875,18 @@ class Admin extends Base
 		\Context::set('fx_currencies', $fx_currencies);
 		\Context::set('fx_values', $fx_values);
 
-		// 기획전 노출 체크박스 (개설된 기획전 + 이 상품의 소속)
-		\Context::set('item_promotions', \Zittme\Modules\Commerce\Models\Promotion::listAll());
+		\Context::set('item_promotions', StaffModel::seller() ? [] : \Zittme\Modules\Commerce\Models\Promotion::listAll());
 		\Context::set('item_promo_srls', $item_srl > 0 ? \Zittme\Modules\Commerce\Models\Promotion::promoSrlsOfItem($item_srl) : []);
 
-		// 신규 상품도 에디터 첨부가 귀속될 srl 을 미리 발급한다 (저장 시 이 srl 로 INSERT)
 		$editor_target_srl = $item_srl > 0 ? $item_srl : getNextSequence();
 		\Context::set('editor_target_srl', $editor_target_srl);
+		$edit_seller = StaffModel::seller();
+		if ($edit_seller && !$item)
+		{
+			SellerModel::claimDraft($editor_target_srl, (int)$edit_seller->seller_srl);
+		}
+		\Context::set('seller_mode', $edit_seller ? 'seller' : '');
 
-		// 상세설명 — 코어 zittme 에디터(editor 모듈 설정 연동). 일반 textarea 를 쓰지 않는다
 		\Context::set('content', $item->content ?? '');
 		$editor_option = new \stdClass;
 		$editor_option->primary_key_name = 'item_srl';
@@ -809,10 +900,7 @@ class Admin extends Base
 		\Context::set('editor', \EditorModel::getEditor($editor_target_srl, $editor_option));
 
 		\Context::set('item', $item);
-		// 연결된 다국어 문구는 실제 값으로 보여준다 (편집 시 코드는 위젯이 따로 들고 있다)
 		LangModel::textAll($options, ['option_label']);
-		// 조합 옵션 이름은 축 값에서 다시 만든다. 저장된 이름은 조합을 만든 시점의
-		// 글자라, 뒤늦게 축에 다국어 코드를 연결해도 그대로 남는다.
 		$edit_axes = ComboModel::axes($item->option_axes ?? '');
 		if (count($edit_axes))
 		{
@@ -837,8 +925,6 @@ class Admin extends Base
 				}
 			}
 		}
-		// 저장 전 상품은 행이 없어 축 정의를 적어 둘 자리가 없다.
-		// 이미 만들어 둔 조합에서 축을 되짚어 화면이 빈 채로 열리지 않게 한다.
 		$pending_axes = '';
 		if (!$item && count($options))
 		{
@@ -849,24 +935,16 @@ class Admin extends Base
 		\Context::set('options', $options);
 		\Context::set('categories', self::getCategories());
 		\Context::set('badges', BadgeModel::getList(true));
+		\Context::set('item_brands', BrandModel::getList());
 		$this->renderView('items', 'item_edit');
 	}
 
-	/**
-	 * 카테고리 관리.
-	 */
 	public function dispCommerceAdminCategories()
 	{
 		\Context::set('categories', array_values(self::getCategories()));
 		$this->renderView('categories', 'categories');
 	}
 
-	/**
-	 * 카테고리 순서·계층 저장.
-	 *
-	 * 화면에서 끌어 옮긴 결과를 [번호, 상위번호] 목록으로 받아 그대로 반영한다.
-	 * 순서는 목록에 나온 차례를 1 부터 매긴다.
-	 */
 	public function procCommerceAdminSortCategories()
 	{
 		$raw = (string)\Context::get('tree');
@@ -876,7 +954,6 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		// 자기 자신이나 자기 하위를 상위로 삼으면 트리가 끊긴다. 화면에서도 막지만 여기서 한 번 더 본다
 		$parents = [];
 		foreach ($rows as $row)
 		{
@@ -910,14 +987,6 @@ class Admin extends Base
 		$this->add('sorted', count($rows));
 	}
 
-	/**
-	 * $maybe_child 가 $ancestor 의 하위인가 (순환 방지용).
-	 *
-	 * @param int $maybe_child
-	 * @param int $ancestor
-	 * @param array<int,int> $parents 번호 => 상위번호
-	 * @return bool
-	 */
 	protected static function isDescendantCategory(int $maybe_child, int $ancestor, array $parents): bool
 	{
 		$cur = $maybe_child;
@@ -933,18 +1002,135 @@ class Admin extends Base
 		return false;
 	}
 
-	/**
-	 * 뱃지 관리 — 상품 카드에 붙일 표시를 직접 만든다.
-	 */
 	public function dispCommerceAdminBadges()
 	{
 		\Context::set('badges', BadgeModel::getList());
 		$this->renderView('badges', 'badges');
 	}
 
-	/**
-	 * 뱃지 등록·수정.
-	 */
+	public function dispCommerceAdminBrands()
+	{
+		\Context::set('brands', BrandModel::getList());
+		\Context::set('brand_counts', BrandModel::itemCounts(false));
+		$edit = (int)\Context::get('brand_srl');
+		\Context::set('brand_edit', $edit > 0 ? BrandModel::get($edit) : null);
+		$named = BrandModel::findNamedItems();
+		\Context::set('brand_named', $named);
+		\Context::set('brand_named_count', array_sum(array_map('count', $named)));
+		$instance = self::getDefaultInstance();
+		\Context::set('shop_mid', $instance ? $instance->mid : self::DEFAULT_MID);
+
+		$brand_items = [];
+		if ($edit > 0)
+		{
+			$output = executeQueryArray('commerce.getItemList', (object)['list_count' => 3000, 'sort_index' => 'item_srl', 'order_type' => 'desc']);
+			$brand_items = ($output->toBool() && !empty($output->data)) ? $output->data : [];
+			LangModel::textAll($brand_items, ['item_name']);
+			BrandModel::attach($brand_items);
+		}
+		\Context::set('brand_all_items', $brand_items);
+		\Context::set('brand_categories', $edit > 0 ? array_values(self::getCategories()) : []);
+		$this->renderView('brands', 'brands');
+	}
+
+	public function procCommerceAdminSaveBrand()
+	{
+		$brand_srl = (int)\Context::get('brand_srl');
+		$name = trim((string)\Context::get('name'));
+		if ($name === '')
+		{
+			return new \BaseObject(-1, lang('commerce.admin_brand_need_name'));
+		}
+		$old = $brand_srl > 0 ? BrandModel::get($brand_srl) : null;
+		$upload_target = $brand_srl > 0 ? $brand_srl : getNextSequence();
+		$logo = $this->saveImage($upload_target, 'logo_file');
+		$cover = $this->saveImage($upload_target, 'cover_file');
+		$saved = BrandModel::save($old ? $brand_srl : 0, [
+			'name' => self::langValue('name', mb_substr($name, 0, 100)),
+			'name_en' => (string)\Context::get('name_en'),
+			'slug' => (string)\Context::get('slug'),
+			'logo' => $logo ?? (\Context::get('logo_url') !== null ? (string)\Context::get('logo_url') : (\Context::get('logo_clear') === 'Y' ? '' : (string)($old->logo ?? ''))),
+			'cover' => $cover ?? (\Context::get('cover_url') !== null ? (string)\Context::get('cover_url') : (\Context::get('cover_clear') === 'Y' ? '' : (string)($old->cover ?? ''))),
+			'description' => mb_substr(trim((string)\Context::get('description')), 0, 2000),
+			'is_visible' => \Context::get('is_visible') === 'N' ? 'N' : 'Y',
+		]);
+		if (!$saved)
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$item_srls = json_decode((string)\Context::get('item_srls'), true);
+		if (is_array($item_srls))
+		{
+			BrandModel::setItems($saved, $item_srls);
+		}
+		$this->setMessage('success_registed');
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'brands', 'module', '', 'mid', ''));
+	}
+
+	public function procCommerceAdminCreateBrand()
+	{
+		$name = mb_substr(trim((string)\Context::get('name')), 0, 100);
+		$saved = BrandModel::save(0, ['name' => $name !== '' ? $name : lang('commerce.br_default_name'), 'is_visible' => 'N']);
+		if (!$saved)
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$this->add('brand_srl', $saved);
+	}
+
+	public function procCommerceAdminReorderBrands()
+	{
+		$srls = json_decode((string)\Context::get('brand_srls'), true);
+		BrandModel::reorder(is_array($srls) ? $srls : []);
+		$this->add('saved', 1);
+	}
+
+	public function procCommerceAdminPreviewBrand()
+	{
+		$brand_srl = (int)\Context::get('brand_srl');
+		if ($brand_srl <= 0)
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$items = json_decode((string)\Context::get('item_srls'), true);
+		$values = [];
+		foreach (['name', 'name_en', 'description', 'logo', 'cover'] as $key)
+		{
+			$values[$key] = trim((string)\Context::get($key));
+		}
+		$_SESSION['commerce_brand_preview'] = [
+			'srl' => $brand_srl,
+			'time' => time(),
+			'values' => $values,
+			'items' => is_array($items) ? array_values(array_filter(array_map('intval', $items))) : null,
+		];
+		$this->add('saved', 1);
+	}
+
+	public function procCommerceAdminDeleteBrand()
+	{
+		$brand_srl = (int)\Context::get('brand_srl');
+		if ($brand_srl > 0)
+		{
+			BrandModel::delete($brand_srl);
+		}
+		$this->setMessage('success_deleted');
+		$this->setRedirectUrl(getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'brands', 'module', '', 'mid', ''));
+	}
+
+	public function procCommerceAdminMoveBrand()
+	{
+		BrandModel::move((int)\Context::get('brand_srl'), \Context::get('dir') === 'up' ? 'up' : 'down');
+		$this->setRedirectUrl(getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'brands', 'module', '', 'mid', ''));
+	}
+
+	public function procCommerceAdminMigrateBrands()
+	{
+		$r = BrandModel::migrateFromNames();
+		$this->setMessage(sprintf(lang('commerce.admin_brand_migrated'), $r['items'], $r['brands']));
+		$this->setRedirectUrl(getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'brands', 'module', '', 'mid', ''));
+	}
+
 	public function procCommerceAdminInsertBadge()
 	{
 		$badge_srl = (int)\Context::get('badge_srl');
@@ -977,9 +1163,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminBadges'));
 	}
 
-	/**
-	 * 뱃지 삭제. 상품에 붙어 있던 값은 화면에서 자동으로 무시된다.
-	 */
 	public function procCommerceAdminDeleteBadge()
 	{
 		$badge_srl = (int)\Context::get('badge_srl');
@@ -990,26 +1173,16 @@ class Admin extends Base
 		executeQuery('commerce.deleteBadge', (object)['badge_srl' => $badge_srl]);
 
 		$this->setMessage('success_deleted');
-		// 뱃지 화면은 관리자와 전용 콘솔 두 곳에서 쓰인다 — 지운 자리로 돌아간다
 		$return = trim((string)\Context::get('success_return_url'));
 		$this->setRedirectUrl($return !== '' ? $return : getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminBadges', 'badge_srl', ''));
 	}
 
-	/**
-	 * 색상값 정리. #RGB · #RRGGBB 형식만 통과시킨다.
-	 *
-	 * @param string $value
-	 * @return string
-	 */
 	protected static function filterColor(string $value): string
 	{
 		$value = trim($value);
 		return preg_match('/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/', $value) ? $value : '';
 	}
 
-	/**
-	 * 주문 관리 목록.
-	 */
 	public function dispCommerceAdminOrders()
 	{
 		OrderModel::expireStalePending();
@@ -1017,7 +1190,6 @@ class Admin extends Base
 
 		$args = new \stdClass;
 		$status = trim((string)\Context::get('f_status'));
-		// 만료 주문은 기록으로 남기되 목록에서는 기본으로 감춘다. 거르개로 언제든 꺼내 본다
 		$show_expired = \Context::get('f_expired') === 'Y';
 		if ($status !== '')
 		{
@@ -1053,7 +1225,6 @@ class Admin extends Base
 		$args->page = max(1, (int)\Context::get('page'));
 		$args->list_count = 20;
 
-		// 배송 단계 필터 — 단계는 하위주문(commerce_order_seller)에 있어서 조인 쿼리를 쓴다
 		$ship = trim((string)\Context::get('f_ship'));
 		$ship_map = ['to_ship' => 'paid,preparing', 'shipping' => 'shipping', 'delivered' => 'delivered'];
 		$order_query = 'commerce.getOrderList';
@@ -1070,7 +1241,6 @@ class Admin extends Base
 		$output = executeQuery($order_query, $args);
 		$orders = ($output->toBool() && !empty($output->data)) ? (is_array($output->data) ? $output->data : [$output->data]) : [];
 
-		// 하위주문 상태(배송 단계)를 함께 표시
 		$seller_map = [];
 		foreach ($orders as $o)
 		{
@@ -1078,7 +1248,6 @@ class Admin extends Base
 			$seller_map[(int)$o->order_srl] = count($sellers) ? $sellers[0] : null;
 		}
 
-		// 감춰 둔 만료 주문이 몇 건인지 알려 준다. 사라진 것이 아니라 접혀 있을 뿐임을 보이기 위해
 		$hidden_expired = 0;
 		if ($status === '' && !$show_expired)
 		{
@@ -1095,9 +1264,6 @@ class Admin extends Base
 		$this->renderView('orders', 'orders');
 	}
 
-	/**
-	 * 주문 상세 — 품목·배송지·이력·클레임까지 한 화면.
-	 */
 	public function dispCommerceAdminOrderView()
 	{
 		$order_srl = (int)\Context::get('order_srl');
@@ -1116,7 +1282,6 @@ class Admin extends Base
 			return is_array($output->data) ? $output->data : [$output->data];
 		};
 
-		// 짓미페이 결제 정보 — 결제번호 표기와 입금확인 연동
 		$pay_order = null;
 		if ((int)($order->pay_order_srl ?? 0) > 0 && class_exists('\\Zittme\\Modules\\Zittme_pay\\Models\\Order'))
 		{
@@ -1137,22 +1302,12 @@ class Admin extends Base
 		$this->renderView('orders', 'order_view');
 	}
 
-	/**
-	 * 다국어 문구를 연결했으면 코어 규약값('$user_lang->코드')을, 아니면 입력한 글자를 돌려준다.
-	 *
-	 * @param string $field 폼 필드 이름
-	 * @param string $fallback 다국어를 안 쓸 때 저장할 값
-	 * @return string
-	 */
 	protected static function langValue(string $field, string $fallback): string
 	{
 		$code = LangModel::filterCode((string)\Context::get($field . '_langcode'));
 		return $code !== '' ? LangModel::toValue($code) : $fallback;
 	}
 
-	/**
-	 * 다국어 코드 목록 — 이미 만들어 둔 코드를 골라 쓰기 위한 검색.
-	 */
 	public function procCommerceAdminGetLangCodes()
 	{
 		$rows = [];
@@ -1163,9 +1318,6 @@ class Admin extends Base
 		$this->add('codes', $rows);
 	}
 
-	/**
-	 * 다국어 코드 저장 — 코어 lang 테이블에 그대로 쓴다.
-	 */
 	public function procCommerceAdminSaveLangCode()
 	{
 		$values = \Context::get('values');
@@ -1178,9 +1330,6 @@ class Admin extends Base
 		$this->add('value', LangModel::display($code));
 	}
 
-	/**
-	 * 다국어 코드 하나의 언어별 값.
-	 */
 	public function procCommerceAdminGetLangCode()
 	{
 		$code = LangModel::filterCode((string)\Context::get('code'));
@@ -1188,18 +1337,11 @@ class Admin extends Base
 		$this->add('values', LangModel::values($code));
 	}
 
-	/**
-	 * CSV 의 주소 칸. 우편번호와 주소2 는 각각 다른 칸에 담기므로 여기서는 뺀다.
-	 *
-	 * @param object $address
-	 * @return string
-	 */
 	protected static function csvAddressLine(object $address): string
 	{
 		$country = strtoupper((string)($address->country ?? '')) ?: AddressModel::baseCountry();
 		$parts = [(string)($address->address1 ?? '')];
 
-		// 한국 주소는 시·도가 주소1 에 들어 있다. 그 밖의 나라는 칸이 따로다
 		if ($country !== 'KR')
 		{
 			$parts[] = (string)($address->city ?? '');
@@ -1217,17 +1359,9 @@ class Admin extends Base
 		return trim(implode(' ', array_filter($parts, function($part) { return trim($part) !== ''; })));
 	}
 
-	/**
-	 * 주문 CSV 내보내기 — 택배사 송장 업로드용.
-	 *
-	 * 선택한 주문(order_srls)이 있으면 그것만, 없으면 현재 검색 조건 전체를 내린다.
-	 * 엑셀에서 한글이 깨지지 않도록 UTF-8 BOM 을 붙인다.
-	 * standalone 이라 코어의 admin 권한 검사를 타지 않으므로 여기서 직접 확인한다.
-	 */
 	public function dispCommerceAdminExportOrders()
 	{
-		$logged_info = \Context::get('logged_info');
-		if (!$logged_info || $logged_info->is_admin !== 'Y')
+		if (!StaffModel::isStaff())
 		{
 			throw new \Zittme\Framework\Exceptions\NotPermitted;
 		}
@@ -1277,7 +1411,6 @@ class Admin extends Base
 			{
 				$args->to_date = str_replace('-', '', $to) . '235959';
 			}
-			// 내보내기는 한 화면 분량이 아니라 조건에 맞는 전체가 대상이다
 			$args->page = 1;
 			$args->list_count = 5000;
 
@@ -1358,17 +1491,9 @@ class Admin extends Base
 		exit;
 	}
 
-	/**
-	 * 주문서(거래명세서) 인쇄 화면.
-	 *
-	 * 사이트·관리자 껍데기 없이 A4 로 뽑는 용도라 layout 'none' 으로 띄운다.
-	 * order_srl 하나 또는 order_srls(쉼표) 여러 건을 받아 한 창에 이어 출력한다.
-	 * standalone 이라 코어의 admin 권한 검사를 타지 않으므로 여기서 직접 확인한다.
-	 */
 	public function dispCommerceAdminOrderInvoice()
 	{
-		$logged_info = \Context::get('logged_info');
-		if (!$logged_info || $logged_info->is_admin !== 'Y')
+		if (!StaffModel::isStaff())
 		{
 			throw new \Zittme\Framework\Exceptions\NotPermitted;
 		}
@@ -1391,7 +1516,6 @@ class Admin extends Base
 		{
 			return new \BaseObject(-1, 'msg_shop_order_not_found');
 		}
-		// 한 번에 너무 많이 뽑으면 브라우저 인쇄가 버티지 못한다
 		$srls = array_slice(array_values($srls), 0, 50);
 
 		$invoices = [];
@@ -1408,7 +1532,6 @@ class Admin extends Base
 				(is_array($address_output->data) ? $address_output->data[0] : $address_output->data) : null;
 
 			$items = OrderModel::getItems($srl);
-			// 세금 컬럼이 생기기 전 주문은 스냅샷이 비어 있다 — 상품의 현재 설정으로 메운다
 			foreach ($items as $oi)
 			{
 				if (empty($oi->tax_type))
@@ -1449,9 +1572,6 @@ class Admin extends Base
 		$this->setTemplateFile('invoice');
 	}
 
-	/**
-	 * 취소·반품 관리.
-	 */
 	public function dispCommerceAdminClaims()
 	{
 		$args = new \stdClass;
@@ -1466,7 +1586,6 @@ class Admin extends Base
 		$output = executeQuery('commerce.getClaimList', $args);
 		$claims = ($output->toBool() && !empty($output->data)) ? (is_array($output->data) ? $output->data : [$output->data]) : [];
 
-		// 주문 코드 매핑
 		$order_map = [];
 		foreach ($claims as $c)
 		{
@@ -1483,14 +1602,10 @@ class Admin extends Base
 		$this->renderView('claims', 'claims');
 	}
 
-	/**
-	 * 쿠폰 관리.
-	 */
 	public function dispCommerceAdminCoupons()
 	{
 		$coupons = \Zittme\Modules\Commerce\Models\Coupon::getList();
 
-		// 발급 수 매핑
 		$issue_counts = [];
 		foreach ($coupons as $c)
 		{
@@ -1503,9 +1618,6 @@ class Admin extends Base
 		$this->renderView('coupons', 'coupons');
 	}
 
-	/**
-	 * 쿠폰 생성·수정.
-	 */
 	public function procCommerceAdminInsertCoupon()
 	{
 		$coupon_srl = (int)\Context::get('coupon_srl');
@@ -1563,9 +1675,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedFullUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCoupons'));
 	}
 
-	/**
-	 * 쿠폰 삭제 (발급 이력은 보존).
-	 */
 	public function procCommerceAdminDeleteCoupon()
 	{
 		$coupon_srl = (int)\Context::get('coupon_srl');
@@ -1577,9 +1686,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedFullUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCoupons'));
 	}
 
-	/**
-	 * 회원에게 쿠폰 발급 — 아이디 또는 이메일로.
-	 */
 	public function procCommerceAdminIssueCoupon()
 	{
 		$coupon_srl = (int)\Context::get('coupon_srl');
@@ -1610,9 +1716,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedFullUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCoupons'));
 	}
 
-	/**
-	 * 적립금 관리 — 회원 조회·수동 조정.
-	 */
 	public function dispCommerceAdminCredits()
 	{
 		$target = trim((string)\Context::get('f_target'));
@@ -1632,7 +1735,6 @@ class Admin extends Base
 			}
 		}
 
-		// 최근 원장 (전체) — 회원 번호 대신 닉네임을 보여 주기 위해 회원 정보를 붙인다
 		$output = executeQuery('commerce.getCreditLogs', (object)['list_count' => 30]);
 		$recent = ($output->toBool() && !empty($output->data)) ? (is_array($output->data) ? $output->data : [$output->data]) : [];
 		$name_cache = [];
@@ -1657,9 +1759,6 @@ class Admin extends Base
 		$this->renderView('credits', 'credits');
 	}
 
-	/**
-	 * 적립금 수동 조정 (+지급 / -회수).
-	 */
 	public function procCommerceAdminAdjustCredit()
 	{
 		$target = trim((string)\Context::get('target'));
@@ -1684,9 +1783,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedFullUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCredits', 'f_target', $target));
 	}
 
-	/**
-	 * 구매 등급 관리.
-	 */
 	public function dispCommerceAdminGrades()
 	{
 		\Context::set('grades', GradeModel::getList());
@@ -1695,9 +1791,6 @@ class Admin extends Base
 		$this->renderView('grades', 'grades');
 	}
 
-	/**
-	 * 등급 생성·수정.
-	 */
 	public function procCommerceAdminInsertGrade()
 	{
 		$grade_srl = (int)\Context::get('grade_srl');
@@ -1707,7 +1800,6 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		// 등급별 상품 할인 (정액/정률). 정률은 0~100 으로 제한
 		$discount_type = (string)\Context::get('discount_type');
 		if (!in_array($discount_type, ['amount', 'percent'], true))
 		{
@@ -1755,15 +1847,11 @@ class Admin extends Base
 			return $output;
 		}
 
-		// 연동을 걸거나 바꾸면 이미 이 등급인 회원도 함께 옮긴다. 다음 구매까지 기다릴 수 없다
 		GradeModel::applyGroupToMembers((int)$args->grade_srl, $old_group, $group_srl);
 
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminGrades'));
 	}
 
-	/**
-	 * 등급 삭제.
-	 */
 	public function procCommerceAdminDeleteGrade()
 	{
 		$grade_srl = (int)\Context::get('grade_srl');
@@ -1771,7 +1859,6 @@ class Admin extends Base
 		{
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
-		// 등급이 사라지면 그 등급으로 넣어 둔 회원도 그룹에서 뺀다
 		GradeModel::applyGroupToMembers($grade_srl, GradeModel::groupOf($grade_srl), 0);
 
 		executeQuery('commerce.deleteGrade', (object)['grade_srl' => $grade_srl]);
@@ -1817,11 +1904,6 @@ class Admin extends Base
 		$this->renderView('stats', 'stats');
 	}
 
-	/**
-	 * 통계 조회 기간 — 지정이 없으면 최근 30일.
-	 *
-	 * @return array{0: string, 1: string}
-	 */
 	protected static function statsRange(): array
 	{
 		$clean = function($v) {
@@ -1846,13 +1928,9 @@ class Admin extends Base
 		return [$from, $to];
 	}
 
-	/**
-	 * 통계 CSV 내보내기 — 화면에 보이는 표를 그대로 내린다.
-	 */
 	public function dispCommerceAdminExportStats()
 	{
-		$logged_info = \Context::get('logged_info');
-		if (!$logged_info || $logged_info->is_admin !== 'Y')
+		if (!StaffModel::isStaff())
 		{
 			throw new \Zittme\Framework\Exceptions\NotPermitted;
 		}
@@ -1908,21 +1986,6 @@ class Admin extends Base
 		exit;
 	}
 
-	/**
-	 * 설정.
-	 */
-	/**
-	 * 축 정의가 바뀌면 기존 조합 옵션의 축 이름·값을 새 정의로 옮긴다.
-	 *
-	 * 조합은 축의 차례대로 만들어지므로 자리 번호로 짝을 맞춘다.
-	 * 축 개수나 값 개수가 달라졌으면 짝을 확신할 수 없어 손대지 않는다
-	 * (그때는 관리자가 조합 만들기를 다시 눌러야 한다).
-	 *
-	 * @param int $item_srl
-	 * @param mixed $old_axes 저장 전 축 정의
-	 * @param mixed $new_axes 저장할 축 정의
-	 * @return void
-	 */
 	protected static function remapCombos(int $item_srl, $old_axes, $new_axes): void
 	{
 		$old = ComboModel::axes($old_axes);
@@ -1932,7 +1995,6 @@ class Admin extends Base
 			return;
 		}
 
-		// 축 이름과 값의 옛 표기 => 새 표기 대응표
 		$name_map = [];
 		$value_map = [];
 		foreach ($old as $axis_index => $old_axis)
@@ -1988,7 +2050,6 @@ class Admin extends Base
 	{
 		\Context::set('pay_available', self::isPayAvailable());
 
-		// 지역 추가 배송비는 기준 통화 최소단위로 저장돼 있다. 입력칸에는 사람이 쓰는 표기로 보여 준다
 		$zones = json_decode((string)(self::config()->ship_extra_zones ?? '[]'), true);
 		$zones = is_array($zones) ? array_values($zones) : [];
 		foreach ($zones as $zone_index => $zone_row)
@@ -2025,23 +2086,18 @@ class Admin extends Base
 		\Context::addCSSFile('./modules/commerce/tpl/css/pickbox.css');
 		\Context::addJsFile('./modules/commerce/tpl/js/pickbox.js');
 
-		// 스킨 — 테마 패키지(레이아웃+커머스+짓미페이+게시판 스킨) 배포 규약의 일부
 		$instance = self::getDefaultInstance();
 		$module_info = $instance ? \ModuleModel::getModuleInfoByMid($instance->mid) : null;
 		\Context::set('shop_instance', $module_info);
 		\Context::set('shop_skins', \ModuleModel::getSkins(\RX_BASEDIR . 'modules/commerce') ?: []);
 		\Context::set('shop_mskins', \ModuleModel::getSkins(\RX_BASEDIR . 'modules/commerce', 'm.skins') ?: []);
 
-		// 레이아웃 — 스킨과 한자리에서 고르게 둔다. 모듈 관리 화면까지 찾아가지 않아도 된다
 		$layout_model = getModel('layout');
 		\Context::set('shop_layouts', $layout_model->getLayoutList(0, 'P') ?: []);
 		\Context::set('shop_mlayouts', $layout_model->getLayoutList(0, 'M') ?: []);
 		$this->renderView('config', 'config');
 	}
 
-	/**
-	 * 스킨 저장 — 기본 인스턴스(mid)의 skin/mskin 갱신.
-	 */
 	public function procCommerceAdminUpdateSkin()
 	{
 		$instance = self::getDefaultInstance();
@@ -2051,7 +2107,6 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		// 테마 결합명('테마|@|스킨')도 저장할 수 있어야 한다
 		$sanitize = function($v) { return preg_replace('/[^A-Za-z0-9_\-.\/|@]/', '', (string)$v); };
 		$skin = $sanitize(\Context::get('skin'));
 		$mskin = $sanitize(\Context::get('mskin'));
@@ -2067,7 +2122,6 @@ class Admin extends Base
 			$module_info->is_mskin_fix = ($mskin === '/USE_DEFAULT/' || $mskin === '/USE_RESPONSIVE/') ? 'N' : 'Y';
 		}
 
-		// 레이아웃 — -1 은 사이트 기본, -2 는 모바일에서 PC 설정을 따름
 		$layout_srl = \Context::get('layout_srl');
 		if ($layout_srl !== null && $layout_srl !== '')
 		{
@@ -2089,14 +2143,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminConfig'));
 	}
 
-	// 처리
-
-	/**
-	 * 상품 이미지 즉시 업로드.
-	 *
-	 * 편집 화면에서 사진을 고르는 즉시 서버에 올려 미리보기를 보여 준다.
-	 * 저장을 누르기 전에는 목록(images_json)에만 담겨 있고, 저장 시 상품에 확정된다.
-	 */
 	public function procCommerceAdminUploadItemImage()
 	{
 		$item_srl = (int)\Context::get('item_srl');
@@ -2122,12 +2168,6 @@ class Admin extends Base
 		$this->add('urls', $urls);
 	}
 
-	/**
-	 * 상품 이미지 목록 즉시 반영.
-	 *
-	 * 올리기·삭제·대표 변경을 저장 버튼 없이 바로 상품에 적용한다.
-	 * 아직 저장 전인 새 상품은 반영할 행이 없으므로 화면 값만 유지하고 넘어간다.
-	 */
 	public function procCommerceAdminSaveItemImages()
 	{
 		$item_srl = (int)\Context::get('item_srl');
@@ -2136,14 +2176,13 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		// 우리 서버에 올린 파일만 받아들인다
 		$decoded = json_decode((string)\Context::get('images_json'), true);
 		$images = [];
 		if (is_array($decoded))
 		{
 			foreach ($decoded as $url)
 			{
-				if (is_string($url) && strpos($url, \RX_BASEURL . 'files/') === 0)
+				if (self::imageUrlAllowed($url, $item_srl))
 				{
 					$images[] = $url;
 				}
@@ -2153,7 +2192,6 @@ class Admin extends Base
 
 		if (!ItemModel::get($item_srl))
 		{
-			// 아직 등록 전이면 저장할 곳이 없다. 폼 저장 때 함께 반영된다
 			$this->add('pending', true);
 			return;
 		}
@@ -2195,13 +2233,6 @@ class Admin extends Base
 		return \RX_BASEURL . 'files/attach/images/commerce/' . $item_srl . '/' . $filename;
 	}
 
-	/**
-	 * 상품 이미지 다중 업로드 (image_files[]). 검증은 saveImage 와 동일.
-	 *
-	 * @param int $item_srl
-	 * @param int $limit 저장 가능한 남은 장수
-	 * @return array 저장된 URL 목록
-	 */
 	protected function saveImages(int $item_srl, int $limit): array
 	{
 		$files = $_FILES['image_files'] ?? null;
@@ -2239,9 +2270,6 @@ class Admin extends Base
 		return $saved;
 	}
 
-	/**
-	 * 상품 저장 (신규/수정/복제).
-	 */
 	public function procCommerceAdminInsertItem()
 	{
 		$item_srl = (int)\Context::get('item_srl');
@@ -2254,7 +2282,6 @@ class Admin extends Base
 
 		$seller = self::getDefaultSeller();
 
-		// 판매기간: datetime-local(YYYY-MM-DDTHH:MM) → 14자리
 		$to14 = function(string $v): string {
 			$digits = preg_replace('/\D/', '', $v);
 			if (strlen($digits) === 12)
@@ -2267,24 +2294,23 @@ class Admin extends Base
 		$fields = (object)[
 			'seller_srl' => $seller ? (int)$seller->seller_srl : 0,
 			'category_srl' => max(0, (int)\Context::get('category_srl')),
-			// 다국어 문구를 연결했으면 코어 규약대로 '$user_lang->코드' 를 저장한다
+			'brand_srl' => max(0, (int)\Context::get('brand_srl')),
 			'item_name' => LangModel::filterCode((string)\Context::get('item_name_langcode')) !== ''
 				? LangModel::toValue((string)\Context::get('item_name_langcode'))
 				: mb_substr($item_name, 0, 250),
 			'item_code' => mb_substr(trim((string)\Context::get('item_code')), 0, 100),
 			'price' => max(0, MoneyModel::inputToMinor(\Context::get('price'))),
 			'sale_price' => max(0, MoneyModel::inputToMinor(\Context::get('sale_price'))),
-			// 가격순 정렬 전용 실판매가 — 할인 있으면 할인가
 			'effective_price' => max(0, MoneyModel::inputToMinor(\Context::get('sale_price'))) > 0
 				? max(0, MoneyModel::inputToMinor(\Context::get('sale_price')))
 				: max(0, MoneyModel::inputToMinor(\Context::get('price'))),
-			// 재고 수량은 재고 관리 화면(입고/출고/손실)에서만 바꾼다.
-			// 여기서 받으면 저장할 때마다 재고가 폼 값으로 덮인다.
 			'use_stock' => \Context::get('use_stock') === 'N' ? 'N' : 'Y',
 			'summary' => LangModel::filterCode((string)\Context::get('summary_langcode')) !== ''
 				? LangModel::toValue((string)\Context::get('summary_langcode'))
 				: mb_substr(trim((string)\Context::get('summary')), 0, 250),
-			'content' => (string)\Context::get('content'),
+			'content' => StaffModel::seller()
+				? \Zittme\Framework\Filters\HTMLFilter::clean((string)\Context::get('content'), false, true)
+				: (string)\Context::get('content'),
 			'sale_start' => $to14((string)\Context::get('sale_start')),
 			'sale_end' => $to14((string)\Context::get('sale_end')),
 			'min_qty' => max(0, min(9999, (int)\Context::get('min_qty'))),
@@ -2292,8 +2318,9 @@ class Admin extends Base
 			'tax_type' => \Context::get('tax_type') === 'free' ? 'free' : 'taxable',
 			'is_adult' => \Context::get('is_adult') === 'Y' ? 'Y' : 'N',
 			'grade_discount' => \Context::get('grade_discount') === 'N' ? 'N' : 'Y',
+			'is_pin' => \Context::get('is_pin') === 'Y' ? 'Y' : 'N',
+			'pin_daily_limit' => max(0, min(999, (int)\Context::get('pin_daily_limit'))),
 			'attrs' => self::collectItemAttrs(),
-			// 조합형 옵션 축 정의 (조합 행 자체는 아래 옵션 저장에서 만든다)
 			'option_axes' => ComboModel::encodeAxes(\Context::get('option_axes')),
 			'option_mode' => \Context::get('option_mode') === 'combo' ? 'combo' : 'single',
 			'ship_fee_type' => in_array(\Context::get('ship_fee_type'), ['default', 'free', 'fixed'], true) ? \Context::get('ship_fee_type') : 'default',
@@ -2301,7 +2328,6 @@ class Admin extends Base
 			'status' => in_array(\Context::get('status'), ['sale', 'soldout', 'hidden', 'stop'], true) ? \Context::get('status') : 'sale',
 			'is_recommend' => \Context::get('is_recommend') === 'Y' ? 'Y' : 'N',
 			'is_new' => \Context::get('is_new') === 'Y' ? 'Y' : 'N',
-			// 직접 만든 뱃지들. 고른 차례대로 저장해 상품 카드에도 같은 차례로 찍힌다
 			'badges' => implode(',', array_slice(array_map('intval', array_filter((array)\Context::get('badge_srls'), function($v) {
 				return (int)$v > 0;
 			})), 0, 10)),
@@ -2309,31 +2335,51 @@ class Admin extends Base
 			'last_update' => self::now(),
 		];
 
-		// 편집 화면에서 에디터 첨부 귀속용으로 srl 을 미리 발급하므로,
-		// "srl 이 있어도 아직 저장 전"일 수 있다 — 존재 여부로 신규를 판정한다
 		$is_new = $item_srl <= 0 || !ItemModel::get($item_srl);
 		if ($item_srl <= 0)
 		{
 			$item_srl = getNextSequence();
 		}
 
-		// 신규 상품은 진열 맨 앞(관리 목록 맨 위)으로. 코어 문서와 같은 규약:
-		// list_order = -srl 이라 오름차순 정렬에서 최신이 먼저 온다. 드래그 정렬이 이후 값을 덮는다.
+		$my_seller = StaffModel::seller();
+		if ($my_seller)
+		{
+			$fields->seller_srl = (int)$my_seller->seller_srl;
+			$fields->is_recommend = 'N';
+			$fields->badges = '';
+			if (SellerModel::needsReview() && in_array($fields->status, ['sale', 'soldout'], true))
+			{
+				$fields->status = 'review';
+			}
+			$fields->item_name = mb_substr(trim(strip_tags($item_name)), 0, 250);
+			$fields->summary = mb_substr(trim(strip_tags((string)\Context::get('summary'))), 0, 250);
+			if ($fields->item_name === '')
+			{
+				return new \BaseObject(-1, 'msg_invalid_request');
+			}
+			if (!$is_new)
+			{
+				unset($fields->seller_srl, $fields->is_recommend, $fields->badges, $fields->list_order);
+			}
+		}
+		elseif (!$is_new)
+		{
+			unset($fields->seller_srl);
+		}
+
 		if ($is_new)
 		{
 			$fields->list_order = -$item_srl;
 		}
 
-		// 이미지 갤러리 (최대 7장) — 유지 목록(순서 반영) + 새 업로드. 첫 장이 대표 썸네일이다
 		if (\Context::get('images_json') !== null)
 		{
 			$keep = json_decode((string)\Context::get('images_json'), true);
-			$keep = is_array($keep) ? array_values(array_filter($keep, function($u) {
-				return is_string($u) && strpos($u, \RX_BASEURL . 'files/') === 0;
+			$keep = is_array($keep) ? array_values(array_filter($keep, function($u) use ($item_srl) {
+				return self::imageUrlAllowed($u, $item_srl);
 			})) : [];
 			$new_images = $this->saveImages($item_srl, 7 - count($keep));
 			$images = array_slice(array_merge($keep, $new_images), 0, 7);
-			// 복제 신규인데 이미지가 하나도 없으면 원본 계승에 맡긴다
 			if (count($images) || !$clone_from)
 			{
 				$fields->images = json_encode($images, \JSON_UNESCAPED_SLASHES);
@@ -2342,7 +2388,6 @@ class Admin extends Base
 		}
 		else
 		{
-			// 구형 단일 썸네일 폼 호환
 			$thumb = $this->saveImage($item_srl);
 			if ($thumb !== null)
 			{
@@ -2357,7 +2402,6 @@ class Admin extends Base
 		$fields->item_srl = $item_srl;
 		if ($is_new)
 		{
-			// 복제: 원본 값 계승 (요청 값이 우선)
 			if ($clone_from > 0)
 			{
 				$src = ItemModel::get($clone_from);
@@ -2368,7 +2412,6 @@ class Admin extends Base
 				}
 			}
 			$fields->thumb = $fields->thumb ?? '';
-			// 등록 화면에서 옵션을 먼저 담아 두면 이 srl 로 이미 행이 들어와 있다
 			$fields->has_options = count(ItemModel::getOptions($item_srl)) ? 'Y' : 'N';
 			$fields->stock = 0;
 			$fields->regdate = self::now();
@@ -2380,7 +2423,6 @@ class Admin extends Base
 				StockModel::adjust($item_srl, 0, 'in', $init_stock, lang('commerce.adm_init_stock_memo'), (int)(\Context::get('logged_info')->member_srl ?? 0));
 			}
 
-			// 복제: 옵션도 복사
 			if ($output->toBool() && $clone_from > 0)
 			{
 				foreach (ItemModel::getOptions($clone_from) as $opt)
@@ -2409,8 +2451,6 @@ class Admin extends Base
 		}
 		else
 		{
-			// 축 이름·값을 바꾸면(다국어 문구 연결 포함) 기존 조합 옵션이 옛 값을 들고 있어
-			// 구매 화면에서 어느 조합과도 맞지 않는다. 자리 순서를 기준으로 옮겨 준다.
 			self::remapCombos($item_srl, ItemModel::get($item_srl)->option_axes ?? '', $fields->option_axes ?? '');
 			$output = executeQuery('commerce.updateItem', $fields);
 		}
@@ -2419,8 +2459,6 @@ class Admin extends Base
 			return $output;
 		}
 
-		// 통화별 외화 가격. 화면 입력은 통화 단위 소수(12.34)라 최소단위 정수로 바꿔 담는다.
-		// 다통화가 꺼져 있으면 저장을 건드리지 않는다 — 잠시 껐다 켜도 등록해 둔 외화 가격이 남아야 한다.
 		$fx_currencies_on = MoneyModel::currencies();
 		if (count($fx_currencies_on) > 1)
 		{
@@ -2450,15 +2488,13 @@ class Admin extends Base
 		ItemModel::setPrices($item_srl, $fx_prices);
 		}
 
-		// 에디터에서 업로드한 첨부(상세 이미지 등)를 상품에 귀속·유효화
 		if ((int)\Context::get('editor_sequence') > 0)
 		{
 			\FileController::getInstance()->setFilesValid($item_srl);
 		}
 
-		// 기획전 노출 동기화 — 화면에 보여준 기획전만 담기/빼기 반영 (다른 기획전 소속은 건드리지 않음)
 		$shown = json_decode((string)\Context::get('promo_shown'), true);
-		if (is_array($shown))
+		if (is_array($shown) && !$my_seller)
 		{
 			$checked = array_map('intval', (array)\Context::get('promo_srls'));
 			foreach (array_map('intval', $shown) as $promo_srl)
@@ -2470,7 +2506,6 @@ class Admin extends Base
 			}
 		}
 
-		// 변경사항 저장에 실려 온 옵션 일괄 수정 (행별 저장과 같은 규칙)
 		$opt_rows = json_decode((string)\Context::get('options_json'), true);
 		if (is_array($opt_rows))
 		{
@@ -2501,23 +2536,12 @@ class Admin extends Base
 		}
 
 		$this->setMessage('success_registed');
-		// 신규 등록 폼의 success_return_url 은 srl 이 비어 새 등록 화면으로 되돌아간다.
-		// 등록 직후에는 항상 그 상품의 편집 화면을 연다. 콘솔에서 왔으면 콘솔 주소로
 		$edit_url = \Context::get('from_console') === 'Y'
 			? getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'item_edit', 'item_srl', $item_srl)
 			: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item_srl);
 		$this->setRedirectUrl($is_new ? $edit_url : (\Context::get('success_return_url') ?: $edit_url));
 	}
 
-	/**
-	 * 상품 삭제 — 주문 이력이 있으면 숨김 전환(스냅샷 보존과 별개로 재노출 방지).
-	 */
-	/**
-	 * 상품 진열 순서 저장.
-	 *
-	 * 목록에서 끌어 옮긴 차례대로 번호를 다시 매긴다. 쇼핑몰 목록의 기본 정렬이
-	 * 이 값이라 저장 즉시 같은 순서로 보인다.
-	 */
 	public function procCommerceAdminSortItems()
 	{
 		$raw = (string)\Context::get('item_srls');
@@ -2535,8 +2559,6 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		// 목록이 페이지로 잘려 와도 전체 진열 순서가 안 깨지도록,
-		// 제출된 상품들이 원래 갖고 있던 순번 슬롯 안에서만 재배치한다
 		$slots = [];
 		foreach ($srls as $srl)
 		{
@@ -2587,15 +2609,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItems'));
 	}
 
-	/**
-	 * 옵션 추가.
-	 */
-	/**
-	 * 조합형 옵션 만들기 — 축을 곱해 옵션 행을 채운다.
-	 *
-	 * 이미 있는 조합은 추가금·재고·SKU 를 그대로 두고, 축에서 사라진 조합은
-	 * 판매 이력이 걸려 있을 수 있으므로 지우지 않고 숨김(status=N)으로 돌린다.
-	 */
 	public function procCommerceAdminBuildCombos()
 	{
 		$item_srl = (int)\Context::get('item_srl');
@@ -2617,7 +2630,6 @@ class Admin extends Base
 			return new \BaseObject(-1, lang('commerce.admin_msg_6'));
 		}
 
-		// 지금 있는 조합 옵션을 열쇠로 모아 둔다. 직접 입력해 둔 기본 옵션은 따로 챙긴다
 		$existing = [];
 		$manual = [];
 		foreach (ItemModel::getOptions($item_srl) as $option)
@@ -2648,7 +2660,6 @@ class Admin extends Base
 
 			if (isset($existing[$key]))
 			{
-				// 값은 건드리지 않고 라벨·차례만 축 정의에 맞춘다. 이전 버전에서 숨겨 둔 행은 다시 켠다
 				executeQuery('commerce.updateOption', (object)[
 					'option_srl' => (int)$existing[$key]->option_srl,
 					'option_label' => $label,
@@ -2745,9 +2756,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item_srl));
 	}
 
-	/**
-	 * 옵션 수정.
-	 */
 	public function procCommerceAdminUpdateOption()
 	{
 		$option_srl = (int)\Context::get('option_srl');
@@ -2785,9 +2793,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item_srl));
 	}
 
-	/**
-	 * 옵션 삭제.
-	 */
 	public function procCommerceAdminDeleteOption()
 	{
 		$option_srl = (int)\Context::get('option_srl');
@@ -2809,9 +2814,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $item_srl));
 	}
 
-	/**
-	 * 카테고리 추가/수정.
-	 */
 	public function procCommerceAdminInsertCategory()
 	{
 		$category_srl = (int)\Context::get('category_srl');
@@ -2821,7 +2823,6 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
-		// 다국어 문구를 연결했으면 코어 규약대로 '$user_lang->코드' 를 저장한다
 		$title_code = LangModel::filterCode((string)\Context::get('title_langcode'));
 		$fields = (object)[
 			'parent_srl' => max(0, (int)\Context::get('parent_srl')),
@@ -2853,9 +2854,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCategories'));
 	}
 
-	/**
-	 * 카테고리 삭제 — 하위·소속 상품은 미분류(0)로.
-	 */
 	public function procCommerceAdminDeleteCategory()
 	{
 		$category_srl = (int)\Context::get('category_srl');
@@ -2871,9 +2869,35 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminCategories'));
 	}
 
-	/**
-	 * 설정 저장.
-	 */
+	public const PREVIEW_FIELDS = ['shop_main', 'category_layout', 'item_image_size', 'show_shop_nav', 'show_search', 'show_admin_fab', 'item_sticky', 'currency_code_prefix',
+		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'show_seller_on_card'];
+
+	public function procCommerceAdminPreviewConfig()
+	{
+		$values = [];
+		foreach (self::PREVIEW_FIELDS as $key)
+		{
+			$value = \Context::get($key);
+			if ($value === null)
+			{
+				continue;
+			}
+			if ($key === 'shop_main') { $value = $value === 'home' ? 'home' : 'list'; }
+			elseif ($key === 'category_layout') { $value = $value === 'side' ? 'side' : 'top'; }
+			elseif ($key === 'item_image_size') { $value = in_array($value, ['S', 'L'], true) ? $value : 'M'; }
+			elseif ($key === 'home_count') { $value = max(4, min(24, (int)$value)); }
+			elseif ($key === 'home_banners')
+			{
+				$decoded = json_decode((string)$value, true);
+				$value = json_encode(is_array($decoded) ? array_values($decoded) : [], \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES);
+			}
+			else { $value = $value === 'Y' ? 'Y' : 'N'; }
+			$values[$key] = $value;
+		}
+		$_SESSION['commerce_preview'] = ['time' => time(), 'values' => $values];
+		$this->add('saved', count($values));
+	}
+
 	public function procCommerceAdminInsertConfig()
 	{
 		$config = \ModuleModel::getModuleConfig('commerce') ?: new \stdClass;
@@ -2887,7 +2911,6 @@ class Admin extends Base
 			}
 			if (in_array($key, self::LANG_CONFIG_FIELDS, true))
 			{
-				// 다국어 버튼으로 문구를 연결했으면 '$user_lang->코드' 로 담는다
 				$value = self::langValue($key, trim((string)$value));
 			}
 			elseif (in_array($key, self::BOOLEAN_FIELDS, true))
@@ -2912,6 +2935,17 @@ class Admin extends Base
 			elseif ($key === 'market_mode')
 			{
 				$value = $value === 'open' ? 'open' : 'single';
+				if ($value === 'single' && ($config->market_mode ?? 'single') === 'open')
+				{
+					if (SellerModel::schemaReady())
+					{
+						SellerModel::hideMarketItems();
+					}
+				}
+				elseif ($value === 'open' && ($config->market_mode ?? 'single') !== 'open' && SellerModel::schemaReady())
+				{
+					SellerModel::restoreMarketItems();
+				}
 			}
 			elseif ($key === 'shop_main')
 			{
@@ -2921,9 +2955,12 @@ class Admin extends Base
 			{
 				$value = $value === 'side' ? 'side' : 'top';
 			}
+			elseif ($key === 'item_image_size')
+			{
+				$value = in_array($value, ['S', 'L'], true) ? $value : 'M';
+			}
 			elseif ($key === 'currencies')
 			{
-				// 병행 판매 통화 — 대표 통화 목록 안에서만 고른다. 기준 통화는 기본이라 뺀다.
 				$raw = is_array($value) ? $value : preg_split('/[\s,]+/', strtoupper((string)$value));
 				$allowed = class_exists('\\Zittme\\Modules\\Zittme_pay\\Models\\Currency')
 					? \Zittme\Modules\Zittme_pay\Models\Currency::MAJOR_CURRENCIES : [];
@@ -2943,20 +2980,21 @@ class Admin extends Base
 			{
 				$value = $value === 'none' ? 'none' : 'convert';
 			}
+			elseif ($key === 'couriers')
+			{
+				$value = json_encode(\Zittme\Modules\Commerce\Models\Courier::parseLines((string)$value), \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES);
+			}
 			elseif ($key === 'home_banners' || $key === 'ship_extra_zones')
 			{
-				// JSON 배열만 저장 — 깨진 값이면 빈 배열
 				$decoded = json_decode((string)$value, true);
 				$decoded = is_array($decoded) ? array_values($decoded) : [];
 				if ($key === 'ship_extra_zones')
 				{
-					// 지역 추가 배송비도 다른 금액 항목과 같이 기준 통화 최소단위로 저장한다
 					foreach ($decoded as &$zone_row)
 					{
 						if (is_array($zone_row))
 						{
 							$zone_row['fee'] = MoneyModel::inputToMinor($zone_row['fee'] ?? 0);
-							// 구간의 기준액과 추가금도 같은 단위로 담는다
 							if (is_array($zone_row['tiers'] ?? null))
 							{
 								foreach ($zone_row['tiers'] as &$zone_tier)
@@ -2987,11 +3025,435 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminConfig'));
 	}
 
-	/**
-	 * 주문 처리 — 발주확인 / 송장 등록(배송중) / 배송완료 / 전체 취소.
-	 *
-	 * 배송 단계 전이는 하위주문(order_seller) 단위 조건부 UPDATE — 중복 클릭에 안전하다.
-	 */
+	public function dispCommerceAdminStaff()
+	{
+		\Context::set('staff_list', StaffModel::getList());
+		\Context::set('staff_perms', StaffModel::PERMS);
+		\Context::set('staff_role', StaffModel::role());
+		\Context::set('staff_me', (int)(\Context::get('logged_info')->member_srl ?? 0));
+		$this->renderView('staff', 'staff');
+	}
+
+	public function procCommerceAdminSaveStaff()
+	{
+		$srl = (int)\Context::get('target_member_srl');
+		if ($srl <= 0)
+		{
+			$member = StaffModel::findMember((string)\Context::get('find'));
+			if (!$member)
+			{
+				return new \BaseObject(-1, lang('commerce.st_msg_no_member'));
+			}
+			$srl = (int)$member->member_srl;
+			\Context::set('target_member_srl', $srl);
+		}
+		$member = \MemberModel::getMemberInfoByMemberSrl($srl);
+		if (empty($member->member_srl))
+		{
+			return new \BaseObject(-1, lang('commerce.st_msg_no_member'));
+		}
+		if (($member->is_admin ?? 'N') === 'Y')
+		{
+			return new \BaseObject(-1, lang('commerce.st_msg_is_owner'));
+		}
+		$as_seller = SellerModel::getByMember($srl);
+		if ($as_seller && in_array($as_seller->status, ['pending', 'approved', 'suspended'], true))
+		{
+			return new \BaseObject(-1, lang('commerce.sc_msg_seller_not_staff'));
+		}
+		$role = (string)\Context::get('role');
+		$role = in_array($role, StaffModel::ROLES, true) ? $role : 'manager';
+		$old = StaffModel::get($srl);
+		if (!StaffModel::canManage($old, $role))
+		{
+			return new \BaseObject(-1, lang('commerce.st_msg_cannot'));
+		}
+		$perms = \Context::get('perms');
+		$perms = is_array($perms) ? $perms : array_filter(explode(',', (string)$perms));
+		$actor = (int)(\Context::get('logged_info')->member_srl ?? 0);
+		StaffModel::save($srl, $role, $perms, trim((string)\Context::get('memo')), $actor);
+		$this->add('member_srl', $srl);
+		$this->setMessage('success_saved');
+	}
+
+	public function procCommerceAdminStaffStatus()
+	{
+		$srl = (int)\Context::get('target_member_srl');
+		$old = StaffModel::get($srl);
+		if (!$old || !StaffModel::canManage($old, $old->role))
+		{
+			return new \BaseObject(-1, lang('commerce.st_msg_cannot'));
+		}
+		StaffModel::setStatus($srl, \Context::get('status') === 'suspended' ? 'suspended' : 'active');
+		$this->setMessage('success_updated');
+	}
+
+	public function procCommerceAdminDeleteStaff()
+	{
+		$srl = (int)\Context::get('target_member_srl');
+		$old = StaffModel::get($srl);
+		if (!$old || !StaffModel::canManage($old, $old->role))
+		{
+			return new \BaseObject(-1, lang('commerce.st_msg_cannot'));
+		}
+		StaffModel::delete($srl);
+		$this->setMessage('success_deleted');
+	}
+
+	public function dispCommerceAdminAudit()
+	{
+		$filters = [
+			'member' => (int)\Context::get('f_member'),
+			'kind' => in_array(\Context::get('f_kind'), ['change', 'view', 'export', 'denied', 'staff'], true) ? (string)\Context::get('f_kind') : '',
+			'alert' => \Context::get('f_alert') === 'Y' ? 'Y' : '',
+			'q' => trim((string)\Context::get('f_q')),
+			'from' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)\Context::get('f_from')) ? (string)\Context::get('f_from') : '',
+			'to' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)\Context::get('f_to')) ? (string)\Context::get('f_to') : '',
+		];
+		$page = max(1, (int)\Context::get('page'));
+		$result = AuditModel::getList($filters, $page);
+		\Context::set('audit_rows', $result['rows']);
+		\Context::set('audit_total', $result['total']);
+		\Context::set('audit_pages', $result['pages']);
+		\Context::set('audit_page', $page);
+		\Context::set('audit_filters', (object)$filters);
+		\Context::set('audit_actors', AuditModel::actors());
+		\Context::set('audit_days', AuditModel::retentionDays());
+		\Context::set('audit_is_owner', StaffModel::isRoot());
+		$this->renderView('audit', 'audit');
+	}
+
+	public function procCommerceAdminAuditConfig()
+	{
+		$config = \ModuleModel::getModuleConfig('commerce') ?: new \stdClass;
+		$config->audit_days = max(30, min(3650, (int)\Context::get('audit_days') ?: 365));
+		\ModuleController::getInstance()->insertModuleConfig('commerce', $config);
+		$this->setMessage('success_updated');
+	}
+
+	public function dispCommerceAdminTimesale()
+	{
+		$edit_srl = (int)\Context::get('sale_srl');
+		$edit = $edit_srl > 0 ? \Zittme\Modules\Commerce\Models\Timesale::get($edit_srl) : null;
+		$is_new = !$edit && \Context::get('new') === 'Y';
+		\Context::set('ts_list', \Zittme\Modules\Commerce\Models\Timesale::getList());
+		\Context::set('ts_edit', $edit);
+		\Context::set('ts_new', $is_new);
+		\Context::set('ts_edit_items', $edit ? \Zittme\Modules\Commerce\Models\Timesale::itemsOf($edit_srl) : []);
+		$items = [];
+		if ($edit || $is_new)
+		{
+			$output = executeQueryArray('commerce.getItemList', (object)['status_list' => 'sale,soldout', 'list_count' => 2000, 'sort_index' => 'item_srl', 'order_type' => 'desc']);
+			$items = ($output->toBool() && !empty($output->data)) ? $output->data : [];
+			LangModel::textAll($items, ['item_name']);
+		}
+		\Context::set('ts_all_items', $items);
+		\Context::set('ts_categories', ($edit || $is_new) ? array_values(self::getCategories()) : []);
+		$this->renderView('timesale', 'timesale');
+	}
+
+	public function procCommerceAdminSaveTimesale()
+	{
+		$title = trim((string)\Context::get('title'));
+		if ($title === '')
+		{
+			return new \BaseObject(-1, lang('commerce.ts_msg_need_title'));
+		}
+		$mode = \Context::get('mode') === 'daily' ? 'daily' : 'once';
+		$digits = function ($v) { return preg_replace('/\D/', '', (string)$v); };
+		if ($mode === 'daily')
+		{
+			$start = substr($digits(\Context::get('start_day')), 0, 8);
+			$end = substr($digits(\Context::get('end_day')), 0, 8);
+			$ds = str_pad(substr($digits(\Context::get('daily_start')), 0, 4), 4, '0');
+			$de = str_pad(substr($digits(\Context::get('daily_end')), 0, 4), 4, '0');
+			if (strlen($start) !== 8 || strlen($end) !== 8 || $ds === $de)
+			{
+				return new \BaseObject(-1, lang('commerce.ts_msg_bad_time'));
+			}
+			$start .= '000000';
+			$end .= '235959';
+		}
+		else
+		{
+			$start = str_pad(substr($digits(\Context::get('start_at')), 0, 12), 12, '0') . '00';
+			$end = str_pad(substr($digits(\Context::get('end_at')), 0, 12), 12, '0') . '00';
+			$ds = $de = '';
+		}
+		if (strlen($start) !== 14 || strlen($end) !== 14 || $end <= $start)
+		{
+			return new \BaseObject(-1, lang('commerce.ts_msg_bad_time'));
+		}
+		$items = json_decode((string)\Context::get('items'), true);
+		$saved = \Zittme\Modules\Commerce\Models\Timesale::save((int)\Context::get('sale_srl'), [
+			'title' => $title, 'mode' => $mode, 'start_date' => $start, 'end_date' => $end,
+			'daily_start' => $ds, 'daily_end' => $de, 'status' => \Context::get('status') === 'N' ? 'N' : 'Y',
+		], is_array($items) ? $items : []);
+		$this->add('sale_srl', $saved);
+		$this->setMessage('success_saved');
+	}
+
+	public function procCommerceAdminDeleteTimesale()
+	{
+		\Zittme\Modules\Commerce\Models\Timesale::delete((int)\Context::get('sale_srl'));
+		$this->setMessage('success_deleted');
+	}
+
+	public function dispCommerceAdminPins()
+	{
+		$output = executeQueryArray('commerce.getItemList', (object)['list_count' => 1000, 'sort_index' => 'item_srl', 'order_type' => 'desc']);
+		$pin_items = [];
+		foreach (($output->toBool() && !empty($output->data)) ? $output->data : [] as $it)
+		{
+			if (($it->is_pin ?? 'N') === 'Y')
+			{
+				$pin_items[] = $it;
+			}
+		}
+		LangModel::textAll($pin_items, ['item_name']);
+		$f_item = (int)\Context::get('f_item');
+		$f_status = (string)\Context::get('f_status');
+		$f_q = trim((string)\Context::get('f_q'));
+		$page = max(1, (int)\Context::get('page'));
+		$list = \Zittme\Modules\Commerce\Models\Pin::getList($f_item, $f_status, $f_q, $page);
+		\Context::set('pin_items', $pin_items);
+		\Context::set('pin_counts', \Zittme\Modules\Commerce\Models\Pin::counts());
+		\Context::set('pin_rows', $list['rows']);
+		\Context::set('pin_total', $list['total']);
+		\Context::set('pin_pages', $list['pages']);
+		\Context::set('pin_page', $page);
+		\Context::set('pin_filters', (object)['item' => $f_item, 'status' => $f_status, 'q' => $f_q]);
+		$this->renderView('pins', 'pins');
+	}
+
+	public function procCommerceAdminAddPins()
+	{
+		$item_srl = (int)\Context::get('item_srl');
+		$item = ItemModel::get($item_srl);
+		if (!$item || ($item->is_pin ?? 'N') !== 'Y')
+		{
+			return new \BaseObject(-1, lang('commerce.pin_msg_not_pin_item'));
+		}
+		$r = \Zittme\Modules\Commerce\Models\Pin::add($item_srl, (string)\Context::get('pins'), trim((string)\Context::get('memo')));
+		$this->add('added', $r['added']);
+		$this->add('dup', $r['dup']);
+		$this->add('bad', $r['bad']);
+	}
+
+	public function procCommerceAdminVoidPins()
+	{
+		$srls = json_decode((string)\Context::get('pin_srls'), true);
+		$this->add('voided', \Zittme\Modules\Commerce\Models\Pin::voidStock(is_array($srls) ? $srls : []));
+	}
+
+	public const SHIP_TABS = ['paid' => 'paid', 'preparing' => 'preparing', 'shipping' => 'shipping', 'delivered' => 'delivered'];
+
+	public function dispCommerceAdminShipping()
+	{
+		if (!StaffModel::seller() || !\Zittme\Framework\Cache::get('commerce_ship_sync_seller'))
+		{
+			if (StaffModel::seller())
+			{
+				\Zittme\Framework\Cache::set('commerce_ship_sync_seller', 1, 600);
+			}
+			\Zittme\Modules\Commerce\Models\Tracking::syncShipping();
+		}
+		$db = \Zittme\Framework\DB::getInstance();
+		$tab = (string)\Context::get('st');
+		if (!isset(self::SHIP_TABS[$tab]))
+		{
+			$tab = 'paid';
+		}
+
+		$my_seller = StaffModel::seller();
+		$scope_seller = $my_seller ? (int)$my_seller->seller_srl : (SellerModel::isOpen() ? max(0, (int)\Context::get('f_seller')) : 0);
+
+		$since = date('YmdHis', strtotime('-30 days'));
+		$counts = [];
+		foreach (self::SHIP_TABS as $key => $status)
+		{
+			$sql = 'SELECT COUNT(*) FROM commerce_order_seller JOIN commerce_order ON commerce_order.order_srl = commerce_order_seller.order_srl WHERE commerce_order_seller.status = ? AND commerce_order.status = ?';
+			$params = [$status, self::ORDER_PAID];
+			if ($key === 'delivered') { $sql .= ' AND commerce_order_seller.delivered_date >= ?'; $params[] = $since; }
+			if ($scope_seller > 0) { $sql .= ' AND commerce_order_seller.seller_srl = ?'; $params[] = $scope_seller; }
+			$counts[$key] = (int)($db->query($sql, $params)->fetchAll(\PDO::FETCH_NUM)[0][0] ?? 0);
+		}
+
+		$keyword = trim((string)\Context::get('q'));
+		$sql = 'SELECT commerce_order_seller.order_seller_srl, commerce_order_seller.order_srl, commerce_order_seller.seller_srl, commerce_order_seller.status AS ship_status, commerce_order_seller.shipping_company, commerce_order_seller.shipping_invoice, commerce_order_seller.shipped_date, commerce_order_seller.delivered_date,'
+			. ' commerce_order.order_code, commerce_order.orderer_name, commerce_order.orderer_phone, commerce_order.regdate, commerce_order.paid_date, commerce_order.memo, commerce_order.payment_price, commerce_order.currency'
+			. ' FROM commerce_order_seller JOIN commerce_order ON commerce_order.order_srl = commerce_order_seller.order_srl'
+			. ' WHERE commerce_order_seller.status = ? AND commerce_order.status = ?';
+		$params = [self::SHIP_TABS[$tab], self::ORDER_PAID];
+		if ($tab === 'delivered') { $sql .= ' AND commerce_order_seller.delivered_date >= ?'; $params[] = $since; }
+		if ($scope_seller > 0) { $sql .= ' AND commerce_order_seller.seller_srl = ?'; $params[] = $scope_seller; }
+		if ($keyword !== '')
+		{
+			$sql .= ' AND (commerce_order.order_code LIKE ? OR commerce_order.orderer_name LIKE ? OR commerce_order_seller.shipping_invoice LIKE ?)';
+			$like = '%' . $keyword . '%';
+			array_push($params, $like, $like, $like);
+		}
+		$sql .= in_array($tab, ['paid', 'preparing'], true) ? ' ORDER BY commerce_order.paid_date ASC, commerce_order.order_srl ASC' : ' ORDER BY commerce_order_seller.shipped_date DESC, commerce_order.order_srl DESC';
+		$sql .= ' LIMIT 300';
+		$rows = $db->query($sql, $params)->fetchAll();
+
+		$order_srls = [];
+		$seller_srls = [];
+		foreach ($rows as $row)
+		{
+			$order_srls[] = (int)$row->order_srl;
+			$seller_srls[] = (int)$row->order_seller_srl;
+		}
+		$addr = [];
+		$items = [];
+		if (count($order_srls))
+		{
+			$marks = implode(',', array_fill(0, count($order_srls), '?'));
+			foreach ($db->query('SELECT * FROM commerce_order_address WHERE order_srl IN (' . $marks . ')', $order_srls)->fetchAll() as $a)
+			{
+				$addr[(int)$a->order_srl] = $a;
+			}
+			$marks = implode(',', array_fill(0, count($seller_srls), '?'));
+			foreach ($db->query('SELECT order_seller_srl, item_name, option_name, qty, thumb, claim_status FROM commerce_order_item WHERE order_seller_srl IN (' . $marks . ') ORDER BY order_item_srl ASC', $seller_srls)->fetchAll() as $it)
+			{
+				$items[(int)$it->order_seller_srl][] = $it;
+			}
+		}
+		foreach ($rows as $row)
+		{
+			$row->address = $addr[(int)$row->order_srl] ?? null;
+			$row->items = $items[(int)$row->order_seller_srl] ?? [];
+			LangModel::textAll($row->items, ['item_name', 'option_name']);
+		}
+
+		\Context::set('ship_tab', $tab);
+		\Context::set('ship_counts', $counts);
+		\Context::set('ship_rows', $rows);
+		\Context::set('ship_q', $keyword);
+		\Context::set('ship_seller', $scope_seller);
+		\Context::set('seller_mode', $my_seller ? 'seller' : (SellerModel::isOpen() ? 'operator' : ''));
+		\Context::set('seller_names', !$my_seller && SellerModel::isOpen() ? SellerModel::nameMap() : []);
+		$this->renderView('shipping', 'shipping');
+	}
+
+	public function procCommerceAdminBulkShipping()
+	{
+		$action = (string)\Context::get('ship_action');
+		$rows = json_decode((string)\Context::get('rows'), true);
+		if (!in_array($action, ['confirm', 'ship', 'reinvoice', 'deliver'], true) || !is_array($rows) || !count($rows))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$logged_info = \Context::get('logged_info');
+		$actor = $logged_info ? (int)$logged_info->member_srl : 0;
+		$my_seller = StaffModel::seller();
+		if ($my_seller && $action === 'deliver')
+		{
+			return new \BaseObject(-1, lang('commerce.sc_msg_no_deliver'));
+		}
+		$done = 0;
+		$failed = [];
+		foreach (array_slice($rows, 0, 500) as $row)
+		{
+			$order_srl = (int)($row['order_srl'] ?? 0);
+			$only_os = (int)($row['order_seller_srl'] ?? 0);
+			$order = $order_srl > 0 ? OrderModel::get($order_srl) : null;
+			if (!$order || $order->status !== self::ORDER_PAID)
+			{
+				$failed[] = $my_seller ? (string)($only_os ?: $order_srl) : (string)($order->order_code ?? $order_srl);
+				continue;
+			}
+			$company = mb_substr(trim((string)($row['company'] ?? '')), 0, 60);
+			$invoice = mb_substr(preg_replace('/\s+/', '', (string)($row['invoice'] ?? '')), 0, 60);
+			$direct = ($row['direct'] ?? '') === 'Y';
+			if ($direct)
+			{
+				$company = lang('commerce.shop_ship_direct');
+				$invoice = '';
+			}
+			if (in_array($action, ['ship', 'reinvoice'], true) && !$direct && ($company === '' || $invoice === ''))
+			{
+				$failed[] = $my_seller ? (string)($only_os ?: $order_srl) : (string)$order->order_code;
+				continue;
+			}
+			$changed = false;
+			$touched_os = 0;
+			foreach (OrderModel::getSellerOrders($order_srl) as $os)
+			{
+				if ($my_seller && (int)$os->seller_srl !== (int)$my_seller->seller_srl)
+				{
+					continue;
+				}
+				if ($only_os > 0 && (int)$os->order_seller_srl !== $only_os)
+				{
+					continue;
+				}
+				$args = (object)['order_seller_srl' => (int)$os->order_seller_srl];
+				if ($action === 'confirm' && $os->status === self::SELLER_PAID)
+				{
+					$args->status = self::SELLER_PREPARING;
+					$args->from_status_list = self::SELLER_PAID;
+				}
+				elseif ($action === 'ship' && in_array($os->status, [self::SELLER_PAID, self::SELLER_PREPARING], true))
+				{
+					$args->status = self::SELLER_SHIPPING;
+					$args->from_status_list = self::SELLER_PAID . ',' . self::SELLER_PREPARING;
+					$args->shipping_company = $company;
+					$args->shipping_invoice = $invoice;
+					$args->shipped_date = self::now();
+				}
+				elseif ($action === 'reinvoice' && $os->status === self::SELLER_SHIPPING)
+				{
+					$args->status = self::SELLER_SHIPPING;
+					$args->from_status_list = self::SELLER_SHIPPING;
+					$args->shipping_company = $company;
+					$args->shipping_invoice = $invoice;
+				}
+				elseif ($action === 'deliver' && $os->status === self::SELLER_SHIPPING)
+				{
+					$args->status = self::SELLER_DELIVERED;
+					$args->from_status_list = self::SELLER_SHIPPING;
+					$args->delivered_date = self::now();
+				}
+				else
+				{
+					continue;
+				}
+				if (executeQuery('commerce.updateOrderSellerShipping', $args)->toBool())
+				{
+					$changed = true;
+					$touched_os = (int)$os->order_seller_srl;
+				}
+			}
+			if (!$changed)
+			{
+				$failed[] = $my_seller ? (string)($only_os ?: $order_srl) : (string)$order->order_code;
+				continue;
+			}
+			$done++;
+			if ($action === 'confirm')
+			{
+				OrderModel::log($order_srl, $my_seller ? $touched_os : 0, 'confirm', self::SELLER_PAID, self::SELLER_PREPARING, $actor);
+			}
+			elseif ($action === 'ship')
+			{
+				OrderModel::log($order_srl, $my_seller ? $touched_os : 0, 'ship', '', self::SELLER_SHIPPING, $actor, $company . ' ' . $invoice);
+				OrderModel::notifyMail('shipping', $order);
+			}
+			elseif ($action === 'reinvoice')
+			{
+				OrderModel::log($order_srl, $my_seller ? $touched_os : 0, 'memo', '', '', $actor, lang('commerce.sh_log_reinvoice') . ' ' . $company . ' ' . $invoice);
+			}
+			else
+			{
+				OrderModel::log($order_srl, $my_seller ? $touched_os : 0, 'deliver', self::SELLER_SHIPPING, self::SELLER_DELIVERED, $actor);
+				OrderModel::notifyMail('delivered', $order);
+			}
+		}
+		$this->add('done', $done);
+		$this->add('failed', $failed);
+	}
+
 	public function procCommerceAdminUpdateOrder()
 	{
 		$order_srl = (int)\Context::get('order_srl');
@@ -3008,7 +3470,7 @@ class Admin extends Base
 
 		switch ($action)
 		{
-			case 'confirm': // 발주확인 → 배송준비
+			case 'confirm':
 				foreach ($sellers as $os)
 				{
 					executeQuery('commerce.updateOrderSellerShipping', (object)[
@@ -3020,10 +3482,9 @@ class Admin extends Base
 				OrderModel::log($order_srl, 0, 'confirm', self::SELLER_PAID, self::SELLER_PREPARING, $actor);
 				break;
 
-			case 'ship': // 송장 등록 → 배송중
+			case 'ship':
 				$company = trim((string)\Context::get('shipping_company'));
 				$invoice = trim((string)\Context::get('shipping_invoice'));
-				// 직접배송은 택배사 없이 배송중으로 넘긴다. 송장·배송조회는 생략된다
 				$direct_ship = \Context::get('direct_ship') === 'Y';
 				if ($direct_ship)
 				{
@@ -3049,7 +3510,7 @@ class Admin extends Base
 				OrderModel::notifyMail('shipping', $order);
 				break;
 
-			case 'deliver': // 배송완료
+			case 'deliver':
 				foreach ($sellers as $os)
 				{
 					executeQuery('commerce.updateOrderSellerShipping', (object)[
@@ -3063,7 +3524,7 @@ class Admin extends Base
 				OrderModel::notifyMail('delivered', $order);
 				break;
 
-			case 'cancel': // 전체 취소 (유료면 전액 환불 시도)
+			case 'cancel':
 				if ((int)$order->pay_order_srl > 0 && $order->status === self::ORDER_PAID && self::isPayAvailable())
 				{
 					$refund = \Zittme\Modules\Zittme_pay\PayService::cancel((int)$order->pay_order_srl, lang('commerce.shop_admin_cancel_reason'));
@@ -3087,11 +3548,6 @@ class Admin extends Base
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $order_srl));
 	}
 
-	/**
-	 * 클레임 처리 — 승인(환불+재입고) / 거절.
-	 *
-	 * 조건부 전이에 이긴 요청만 환불·재입고를 실행하므로 중복 승인이 없다.
-	 */
 	public function procCommerceAdminUpdateClaim()
 	{
 		$claim_srl = (int)\Context::get('claim_srl');
@@ -3121,15 +3577,23 @@ class Admin extends Base
 		}
 		elseif ($action === 'approve')
 		{
-			// 환불액: 관리자 입력값(반품배송비 차감 반영) — 상한은 주문 결제액
 			$refund_amount = max(0, MoneyModel::inputToMinor(\Context::get('refund_amount')));
 			if ($order)
 			{
 				$refund_amount = min($refund_amount, (int)$order->payment_price);
 			}
+			if ((int)$claim->order_seller_srl > 0)
+			{
+				$cap_db = \Zittme\Framework\DB::getInstance();
+				$cap_os = $cap_db->query('SELECT settle_amount FROM commerce_order_seller WHERE order_seller_srl = ?', [(int)$claim->order_seller_srl])->fetchAll();
+				$cap_done = $cap_db->query("SELECT SUM(refund_amount) AS total FROM commerce_claim WHERE order_seller_srl = ? AND status = 'done' AND claim_srl <> ?", [(int)$claim->order_seller_srl, $claim_srl])->fetchAll();
+				if (count($cap_os))
+				{
+					$refund_amount = min($refund_amount, max(0, (int)$cap_os[0]->settle_amount - (int)($cap_done[0]->total ?? 0)));
+				}
+			}
 			$restock = \Context::get('restock') === 'N' ? 'N' : 'Y';
 
-			// 조건부 전이 승자만 실행
 			$won_output = executeQuery('commerce.updateClaimStatusIf', (object)[
 				'claim_srl' => $claim_srl,
 				'status' => 'done',
@@ -3144,7 +3608,6 @@ class Admin extends Base
 				return new \BaseObject(-1, 'msg_shop_claim_already');
 			}
 
-			// 환불 (부분 가능)
 			if ($refund_amount > 0 && $order && (int)$order->pay_order_srl > 0 && self::isPayAvailable())
 			{
 				$refund = \Zittme\Modules\Zittme_pay\PayService::cancel(
@@ -3158,7 +3621,6 @@ class Admin extends Base
 				}
 			}
 
-			// 재입고 + 품목 클레임 상태
 			$targets = json_decode((string)$claim->items, true) ?: [];
 			$order_items = [];
 			foreach (OrderModel::getItems((int)$claim->order_srl) as $oi)
@@ -3183,6 +3645,10 @@ class Admin extends Base
 				);
 			}
 
+			if (in_array((string)$claim->claim_type, SettlementModel::REFUND_CLAIMS, true) && SellerModel::schemaReady())
+			{
+				SettlementModel::markRefundedBundles((int)$claim->order_srl);
+			}
 			OrderModel::log((int)$claim->order_srl, 0, 'refund', 'requested', 'done', $actor, 'refund=' . $refund_amount);
 			OrderModel::notifyMail('claim_done', $order);
 		}
@@ -3193,5 +3659,373 @@ class Admin extends Base
 
 		$this->setMessage('success_updated');
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'module', 'admin', 'act', 'dispCommerceAdminClaims'));
+	}
+
+	public function dispCommerceAdminSellers()
+	{
+		if (!SellerModel::isOpen())
+		{
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
+		$status = (string)\Context::get('f_status');
+		$status = in_array($status, SellerModel::STATUSES, true) ? $status : '';
+		$keyword = trim((string)\Context::get('q'));
+		$args = (object)['page' => max(1, (int)\Context::get('page')), 'list_count' => 30];
+		if ($status !== '')
+		{
+			$args->status = $status;
+		}
+		if ($keyword !== '')
+		{
+			$args->search_keyword = '%' . $keyword . '%';
+		}
+		$output = executeQueryArray('commerce.getSellerPage', $args);
+		$sellers = [];
+		foreach ($output->toBool() ? (array)$output->data : [] as $row)
+		{
+			if (empty($row->seller_srl) || SellerModel::isOperator((int)$row->seller_srl))
+			{
+				continue;
+			}
+			$member = \MemberModel::getMemberInfoByMemberSrl((int)$row->member_srl);
+			$row->user_id = (string)($member->user_id ?? '');
+			$row->nick_name = (string)($member->nick_name ?? '');
+			$row->rate_text = ($row->commission_rate === null || $row->commission_rate === '') ? '' : rtrim(rtrim(number_format((float)$row->commission_rate, 2, '.', ''), '0'), '.');
+			$row->carry = max(0, (int)($row->carry_balance ?? 0));
+			$row->carry_text = $row->carry > 0 ? MoneyModel::format($row->carry, MoneyModel::base()) : '';
+			$row->effective_rate = SellerModel::commissionRate($row);
+			$row->regdate_text = $row->regdate ? zdate($row->regdate, 'Y.m.d') : '';
+			$row->ship_fee_text = MoneyModel::format((int)$row->ship_fee, MoneyModel::base());
+			$row->free_over_text = (int)$row->free_ship_over > 0 ? MoneyModel::format((int)$row->free_ship_over, MoneyModel::base()) : '';
+			$sellers[] = $row;
+		}
+
+		$counts = ['' => 0];
+		foreach (SellerModel::STATUSES as $st)
+		{
+			$counts[$st] = 0;
+		}
+		$rows = \Zittme\Framework\DB::getInstance()->query('SELECT seller_srl, status FROM commerce_seller WHERE member_srl > 0')->fetchAll();
+		foreach ($rows as $row)
+		{
+			if (SellerModel::isOperator((int)$row->seller_srl) || !isset($counts[$row->status]))
+			{
+				continue;
+			}
+			$counts[$row->status]++;
+			$counts['']++;
+		}
+
+		\Context::set('mk_sellers', $sellers);
+		\Context::set('mk_counts', $counts);
+		\Context::set('mk_status', $status);
+		\Context::set('mk_q', $keyword);
+		\Context::set('mk_default_rate', (float)(self::config()->market_commission ?? 0));
+		\Context::set('page_navigation', $output->page_navigation ?? null);
+		$this->renderView('sellers', 'sellers');
+	}
+
+	public function procCommerceAdminSellerStatus()
+	{
+		$seller_srl = (int)\Context::get('seller_srl');
+		$status = (string)\Context::get('status');
+		if (!SellerModel::isOpen() || !in_array($status, ['approved', 'rejected', 'suspended'], true) || !SellerModel::get($seller_srl) || SellerModel::isOperator($seller_srl))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$carry = SettlementModel::carryOf($seller_srl);
+		if ($carry > 0 && in_array($status, ['rejected', 'suspended'], true) && \Context::get('carry_ok') !== 'Y')
+		{
+			return new \BaseObject(-1, sprintf(lang('commerce.sc_warn_carry_status'), MoneyModel::format($carry, MoneyModel::base())));
+		}
+		if (!SellerModel::setStatus($seller_srl, $status, (string)\Context::get('reason')))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$this->setMessage('success_updated');
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'sellers'));
+	}
+
+	public function procCommerceAdminSellerCommission()
+	{
+		$seller_srl = (int)\Context::get('seller_srl');
+		if (!SellerModel::isOpen() || !SellerModel::get($seller_srl) || SellerModel::isOperator($seller_srl))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$raw = trim((string)\Context::get('commission_rate'));
+		if ($raw !== '' && !is_numeric($raw))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		SellerModel::setCommission($seller_srl, $raw === '' ? null : (float)$raw);
+		$this->setMessage('success_updated');
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'sellers'));
+	}
+
+	public function dispCommerceAdminSettlements()
+	{
+		if (!SellerModel::schemaReady())
+		{
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
+		$my_seller = StaffModel::seller();
+		$f_seller = $my_seller ? (int)$my_seller->seller_srl : max(0, (int)\Context::get('f_seller'));
+		$f_status = (string)\Context::get('f_status');
+		$result = SettlementModel::getList($f_seller, $f_status, (int)\Context::get('page'));
+		$names = SellerModel::nameMap();
+		foreach ($result->list as $row)
+		{
+			$row->shop_name = $names[(int)$row->seller_srl] ?? ((SellerModel::get((int)$row->seller_srl)->shop_name ?? '') ?: '#' . $row->seller_srl);
+			$row->period_text = self::ymdText((string)$row->period_start) . ' ~ ' . self::ymdText((string)$row->period_end);
+			$row->paid_text = $row->paid_date ? zdate($row->paid_date, 'Y.m.d H:i') : '';
+			foreach (['item_total', 'delivery_total', 'refund_total', 'commission_total', 'settle_amount', 'carry_in', 'carry_out'] as $money_key)
+			{
+				$row->{$money_key . '_text'} = MoneyModel::format((int)($row->{$money_key} ?? 0), MoneyModel::base());
+			}
+		}
+
+		$preview = [];
+		$from = preg_replace('/\D/', '', (string)\Context::get('from'));
+		$to = preg_replace('/\D/', '', (string)\Context::get('to'));
+		if (strlen($from) !== 8 || strlen($to) !== 8)
+		{
+			$from = date('Ymd', strtotime('first day of last month'));
+			$to = date('Ymd', strtotime('last day of last month'));
+		}
+		if (!$my_seller && \Context::get('preview') === 'Y')
+		{
+			foreach (SettlementModel::preview($from, $to, $f_seller) as $row)
+			{
+				foreach (['item_total', 'delivery_total', 'refund_total', 'commission_total', 'settle_amount', 'carry_in', 'carry_out'] as $money_key)
+				{
+					$row->{$money_key . '_text'} = MoneyModel::format((int)($row->{$money_key} ?? 0), MoneyModel::base());
+				}
+				$preview[] = $row;
+			}
+		}
+
+		$detail = null;
+		$detail_lines = [];
+		$detail_srl = (int)\Context::get('settlement_srl');
+		if ($detail_srl > 0)
+		{
+			$detail = SettlementModel::get($detail_srl);
+			if ($detail && $my_seller && (int)$detail->seller_srl !== (int)$my_seller->seller_srl)
+			{
+				$detail = null;
+			}
+			if ($detail)
+			{
+				foreach (SettlementModel::lines($detail_srl) as $line)
+				{
+					$line->item_total_text = MoneyModel::format((int)$line->item_total, MoneyModel::base());
+					$line->delivery_text = MoneyModel::format((int)$line->delivery_fee, MoneyModel::base());
+					$line->refund_text = MoneyModel::format((int)$line->refund, MoneyModel::base());
+					$line->commission_text = MoneyModel::format((int)$line->commission, MoneyModel::base());
+					$line->settle_text = MoneyModel::format((int)$line->settle_amount, MoneyModel::base());
+					$line->delivered_text = $line->delivered_date ? zdate($line->delivered_date, 'Y.m.d') : '';
+					$detail_lines[] = $line;
+				}
+			}
+		}
+
+		\Context::set('mk_is_seller', (bool)$my_seller);
+		\Context::set('mk_settlements', $result->list);
+		$carries = [];
+		foreach (SettlementModel::carryBalances() as $carry_srl => $carry_amount)
+		{
+			if ($my_seller && $carry_srl !== (int)$my_seller->seller_srl)
+			{
+				continue;
+			}
+			$carries[] = (object)[
+				'seller_srl' => $carry_srl,
+				'shop_name' => $names[$carry_srl] ?? ((SellerModel::get($carry_srl)->shop_name ?? '') ?: '#' . $carry_srl),
+				'amount_text' => MoneyModel::format($carry_amount, MoneyModel::base()),
+			];
+		}
+		\Context::set('mk_carries', $carries);
+		\Context::set('page_navigation', $result->page_navigation);
+		\Context::set('mk_seller_names', $my_seller ? [] : $names);
+		\Context::set('mk_f_seller', $f_seller);
+		\Context::set('mk_f_status', $f_status);
+		\Context::set('mk_from', self::ymdText($from, '-'));
+		\Context::set('mk_to', self::ymdText($to, '-'));
+		\Context::set('mk_preview', $preview);
+		\Context::set('mk_preview_on', \Context::get('preview') === 'Y');
+		\Context::set('mk_detail', $detail);
+		\Context::set('mk_detail_lines', $detail_lines);
+		$this->renderView('settlements', 'settlements');
+	}
+
+	public function procCommerceAdminCreateSettlement()
+	{
+		$from = preg_replace('/\D/', '', (string)\Context::get('from'));
+		$to = preg_replace('/\D/', '', (string)\Context::get('to'));
+		if (!SellerModel::isOpen() || strlen($from) !== 8 || strlen($to) !== 8 || $from > $to || $to > date('Ymd'))
+		{
+			return new \BaseObject(-1, lang('commerce.mk_msg_bad_period'));
+		}
+		$actor = (int)(\Context::get('logged_info')->member_srl ?? 0);
+		$count = SettlementModel::create($from, $to, max(0, (int)\Context::get('seller_srl')), $actor);
+		if ($count <= 0)
+		{
+			return new \BaseObject(-1, lang('commerce.mk_msg_nothing'));
+		}
+		$this->setMessage(sprintf(lang('commerce.mk_msg_created'), $count));
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'settlements'));
+	}
+
+	public function procCommerceAdminSettlementPaid()
+	{
+		$settlement_srl = (int)\Context::get('settlement_srl');
+		if (!SettlementModel::markPaid($settlement_srl, trim((string)\Context::get('memo'))))
+		{
+			return new \BaseObject(-1, SettlementModel::$error !== '' ? lang('commerce.' . SettlementModel::$error) : 'msg_invalid_request');
+		}
+		$this->setMessage('success_updated');
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'settlements'));
+	}
+
+	public function procCommerceAdminCancelSettlement()
+	{
+		if (!SettlementModel::cancel((int)\Context::get('settlement_srl')))
+		{
+			return new \BaseObject(-1, SettlementModel::$error !== '' ? lang('commerce.' . SettlementModel::$error) : 'msg_invalid_request');
+		}
+		$this->setMessage('success_deleted');
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'settlements'));
+	}
+
+	public function dispCommerceAdminExportSettlement()
+	{
+		if (!SellerModel::schemaReady() || !StaffModel::isStaff())
+		{
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
+		$my_seller = StaffModel::seller();
+		$settlement_srl = (int)\Context::get('settlement_srl');
+		$rows = [];
+		if ($settlement_srl > 0)
+		{
+			$st = SettlementModel::get($settlement_srl);
+			if (!$st || ($my_seller && (int)$st->seller_srl !== (int)$my_seller->seller_srl))
+			{
+				throw new \Zittme\Framework\Exceptions\NotPermitted;
+			}
+			$rows[] = [lang('commerce.mk_col_order'), lang('commerce.mk_col_delivered'), lang('commerce.mk_col_sales'), lang('commerce.mk_col_delivery'), lang('commerce.mk_col_refund'), lang('commerce.mk_col_commission'), lang('commerce.mk_col_settle')];
+			foreach (SettlementModel::lines($settlement_srl) as $line)
+			{
+				$rows[] = [(string)$line->order_code, (string)$line->delivered_date, (int)$line->item_total, (int)$line->delivery_fee, (int)$line->refund, (int)$line->commission, (int)$line->settle_amount];
+			}
+			$filename = 'settlement_' . $settlement_srl . '.csv';
+		}
+		else
+		{
+			$f_seller = $my_seller ? (int)$my_seller->seller_srl : max(0, (int)\Context::get('f_seller'));
+			$rows[] = [lang('commerce.mk_col_no'), lang('commerce.mk_col_seller'), lang('commerce.mk_col_period'), lang('commerce.mk_col_orders'), lang('commerce.mk_col_sales'), lang('commerce.mk_col_delivery'), lang('commerce.mk_col_refund'), lang('commerce.mk_col_commission'), lang('commerce.mk_col_settle'), lang('commerce.mk_col_status'), lang('commerce.mk_col_bank'), lang('commerce.mk_col_paid')];
+			$page = 1;
+			do
+			{
+				$result = SettlementModel::getList($f_seller, (string)\Context::get('f_status'), $page);
+				foreach ($result->list as $st)
+				{
+					$shop = SellerModel::get((int)$st->seller_srl);
+					$rows[] = [
+						(int)$st->settlement_srl, (string)($shop->shop_name ?? ''), $st->period_start . '-' . $st->period_end, (int)$st->order_count,
+						(int)$st->item_total, (int)$st->delivery_total, (int)$st->refund_total, (int)$st->commission_total, (int)$st->settle_amount,
+						lang('commerce.mk_st_' . $st->status), trim($st->bank_name . ' ' . $st->bank_account . ' ' . $st->bank_holder), (string)$st->paid_date,
+					];
+				}
+				$page++;
+			}
+			while (count($result->list) && $page <= 100);
+			$filename = 'settlements_' . date('Ymd_His') . '.csv';
+		}
+
+		header('Content-Type: text/csv; charset=UTF-8');
+		header('Content-Disposition: attachment; filename="' . $filename . '"');
+		header('Cache-Control: no-store');
+		echo "\xEF\xBB\xBF";
+		$fp = fopen('php://output', 'w');
+		foreach ($rows as $row)
+		{
+			fputcsv($fp, array_map(function ($cell) {
+				return is_string($cell) && preg_match('/^[=+\-@]/', $cell) ? "'" . $cell : $cell;
+			}, $row));
+		}
+		fclose($fp);
+		exit;
+	}
+
+	public function dispCommerceAdminSellerProfile()
+	{
+		$my_seller = StaffModel::seller();
+		if (!$my_seller)
+		{
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
+		$my_seller = SellerModel::get((int)$my_seller->seller_srl);
+		$my_seller->ship_fee_input = MoneyModel::minorToInput((int)$my_seller->ship_fee);
+		$my_seller->free_over_input = (int)$my_seller->free_ship_over > 0 ? MoneyModel::minorToInput((int)$my_seller->free_ship_over) : '';
+		\Context::set('mk_me', $my_seller);
+		\Context::set('mk_rate', SellerModel::commissionRate($my_seller));
+		\Context::set('mk_store_url', \Zittme\Modules\Commerce\Models\Shop::url((string)($my_seller->shop_id ?? '')));
+		$this->renderView('seller_profile', 'seller_profile');
+	}
+
+	public function procCommerceAdminSaveSellerProfile()
+	{
+		$my_seller = StaffModel::seller();
+		if (!$my_seller)
+		{
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
+		$data = SellerModel::filterInput(true);
+		$save = (object)[
+			'tel' => $data->tel,
+			'email' => $data->email,
+			'bank_name' => $data->bank_name,
+			'bank_account' => $data->bank_account,
+			'bank_holder' => $data->bank_holder,
+			'intro' => $data->intro,
+			'ship_fee' => $data->ship_fee,
+			'free_ship_over' => $data->free_ship_over,
+		];
+		if ($save->tel === '' || $save->bank_name === '' || $save->bank_account === '' || $save->bank_holder === '')
+		{
+			return new \BaseObject(-1, lang('commerce.mk_msg_need_fields'));
+		}
+		$before = SellerModel::get((int)$my_seller->seller_srl);
+		SellerModel::update((int)$my_seller->seller_srl, $save);
+		if ($before && ((string)$before->bank_name !== $save->bank_name || (string)$before->bank_account !== $save->bank_account || (string)$before->bank_holder !== $save->bank_holder))
+		{
+			\Zittme\Modules\Commerce\Models\Notify::toAdmins(
+				sprintf(lang('commerce.sc_msg_bank_changed'), (string)$before->shop_name),
+				\Zittme\Modules\Commerce\Models\Notify::consoleUrl('sellers')
+			);
+		}
+		$this->setMessage('success_saved');
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceSellerCenter', 'p', 'seller_profile'));
+	}
+
+	protected static function imageUrlAllowed($url, int $item_srl): bool
+	{
+		if (!is_string($url) || strpos($url, '..') !== false)
+		{
+			return false;
+		}
+		if (StaffModel::seller())
+		{
+			$prefix = \RX_BASEURL . 'files/attach/images/commerce/' . $item_srl . '/';
+			return $item_srl > 0 && strpos($url, $prefix) === 0 && preg_match('/^[A-Za-z0-9_.-]+$/', substr($url, strlen($prefix)));
+		}
+		return strpos($url, \RX_BASEURL . 'files/') === 0;
+	}
+
+	protected static function ymdText(string $ymd, string $sep = '.'): string
+	{
+		return strlen($ymd) === 8 ? substr($ymd, 0, 4) . $sep . substr($ymd, 4, 2) . $sep . substr($ymd, 6, 2) : $ymd;
 	}
 }

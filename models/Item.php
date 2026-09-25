@@ -4,30 +4,14 @@ namespace Zittme\Modules\Commerce\Models;
 
 use Zittme\Modules\Commerce\Controllers\Base;
 
-/**
- * 상품.
- */
 class Item
 {
-	/**
-	 * 상품 1건.
-	 *
-	 * @param int $item_srl
-	 * @return ?object
-	 */
 	public static function get(int $item_srl): ?object
 	{
 		$output = executeQuery('commerce.getItem', (object)['item_srl' => $item_srl]);
 		return ($output->toBool() && is_object($output->data) && !empty($output->data->item_srl)) ? $output->data : null;
 	}
 
-	/**
-	 * 옵션 목록.
-	 *
-	 * @param int $item_srl
-	 * @param bool $active_only
-	 * @return array
-	 */
 	public static function getOptions(int $item_srl, bool $active_only = false): array
 	{
 		$output = executeQuery('commerce.getOptionsByItem', (object)['item_srl' => $item_srl]);
@@ -45,25 +29,14 @@ class Item
 		}));
 	}
 
-	/**
-	 * 실제 판매가 — 판매가가 0 이면 정가.
-	 *
-	 * @param object $item
-	 * @return int
-	 */
 	public static function effectivePrice(object $item): int
 	{
 		$sale = (int)($item->sale_price ?? 0);
-		return $sale > 0 ? $sale : (int)($item->price ?? 0);
+		$base = $sale > 0 ? $sale : (int)($item->price ?? 0);
+		$ts = Timesale::forItem($item);
+		return $ts ? min($base, (int)$ts->price) : $base;
 	}
 
-	/**
-	 * 상품의 외화 가격 행들. ['USD' => (object)['price'=>..., 'sale_price'=>...], ...]
-	 * 금액은 통화 최소단위 정수.
-	 *
-	 * @param int $item_srl
-	 * @return array<string, object>
-	 */
 	public static function getPrices(int $item_srl): array
 	{
 		$output = executeQueryArray('commerce.getItemPrices', (object)['item_srl' => $item_srl]);
@@ -78,13 +51,6 @@ class Item
 		return $result;
 	}
 
-	/**
-	 * 외화 가격 저장. 넘긴 맵으로 전체를 갈아끼운다.
-	 *
-	 * @param int $item_srl
-	 * @param array $prices ['USD' => ['price' => 1234, 'sale_price' => 0], ...] 최소단위 정수
-	 * @return void
-	 */
 	public static function setPrices(int $item_srl, array $prices): void
 	{
 		executeQuery('commerce.deleteItemPrices', (object)['item_srl' => $item_srl]);
@@ -106,16 +72,6 @@ class Item
 		}
 	}
 
-	/**
-	 * 특정 통화의 실제 판매가 (최소단위 정수).
-	 *
-	 * 우선순위: 등록된 통화별 가격 → (설정이 convert 면) KRW 가격 환산 → -1 (판매 불가).
-	 *
-	 * @param object $item
-	 * @param string $currency
-	 * @param ?array $prices getPrices() 결과를 이미 들고 있으면 넘겨서 재조회를 피한다
-	 * @return int -1 이면 이 통화로 팔 수 없다
-	 */
 	public static function effectivePriceIn(object $item, string $currency, ?array $prices = null): int
 	{
 		$currency = strtoupper(trim($currency));
@@ -129,7 +85,9 @@ class Item
 		{
 			$row = $prices[$currency];
 			$sale = (int)($row->sale_price ?? 0);
-			return $sale > 0 ? $sale : (int)($row->price ?? 0);
+			$foreign = $sale > 0 ? $sale : (int)($row->price ?? 0);
+			$ts = Timesale::forItem($item);
+			return $ts ? min($foreign, Timesale::priceIn($ts, $foreign, $currency)) : $foreign;
 		}
 
 		if ((Config::getConfig()->currency_fallback ?? 'convert') !== 'convert')
@@ -139,16 +97,6 @@ class Item
 		return Money::convertMinor(self::effectivePrice($item), $currency);
 	}
 
-	/**
-	 * 화면에 찍을 통화의 정가·판매가 (최소단위 정수).
-	 *
-	 * 계산 쪽(effectivePriceIn)과 같은 규칙을 쓴다. 등록가가 있으면 등록가,
-	 * 없으면 설정에 따라 환산가. 표시와 결제 금액이 어긋나지 않게 한 곳에서 정한다.
-	 *
-	 * @param object $item
-	 * @param string $currency
-	 * @return array{price: int, sale_price: int, effective: int, sellable: bool}
-	 */
 	public static function displayPrices(object $item, string $currency): array
 	{
 		$price = (int)($item->price ?? 0);
@@ -157,7 +105,12 @@ class Item
 
 		if ($currency === '' || $currency === Money::base())
 		{
-			return ['price' => $price, 'sale_price' => $sale, 'effective' => self::effectivePrice($item), 'sellable' => true];
+			$effective = self::effectivePrice($item);
+			if (!empty($item->timesale))
+			{
+				$sale = $effective;
+			}
+			return ['price' => $price, 'sale_price' => $sale, 'effective' => $effective, 'sellable' => true];
 		}
 
 		$rows = self::getPrices((int)$item->item_srl);
@@ -165,7 +118,12 @@ class Item
 		{
 			$price = (int)($rows[$currency]->price ?? 0);
 			$sale = (int)($rows[$currency]->sale_price ?? 0);
-			return ['price' => $price, 'sale_price' => $sale, 'effective' => $sale > 0 ? $sale : $price, 'sellable' => true];
+			$effective = self::effectivePriceIn($item, $currency, $rows);
+			if (!empty($item->timesale))
+			{
+				$sale = $effective;
+			}
+			return ['price' => $price, 'sale_price' => $sale, 'effective' => $effective > 0 ? $effective : ($sale > 0 ? $sale : $price), 'sellable' => true];
 		}
 
 		if ((Config::getConfig()->currency_fallback ?? 'convert') !== 'convert')
@@ -175,21 +133,14 @@ class Item
 
 		$price = max(0, Money::convertMinor($price, $currency));
 		$sale = $sale > 0 ? max(0, Money::convertMinor($sale, $currency)) : 0;
-		return ['price' => $price, 'sale_price' => $sale, 'effective' => $sale > 0 ? $sale : $price, 'sellable' => true];
+		$effective = $sale > 0 ? $sale : $price;
+		if (Timesale::forItem($item))
+		{
+			$sale = $effective = max(0, Money::convertMinor(self::effectivePrice($item), $currency));
+		}
+		return ['price' => $price, 'sale_price' => $sale, 'effective' => $effective, 'sellable' => true];
 	}
 
-	/**
-	 * 지금 판매 가능한가 — 상태 + 판매기간 + 재고까지 종합 판정.
-	 *
-	 * @param object $item
-	 * @return bool
-	 */
-	/**
-	 * 판매 중인 기본 옵션(변형)이 있는지. 있으면 본품 단독 주문은 막는다.
-	 *
-	 * @param int $item_srl
-	 * @return bool
-	 */
 	public static function hasBasicOptions(int $item_srl): bool
 	{
 		foreach (self::getOptions($item_srl, true) as $opt)
@@ -208,6 +159,10 @@ class Item
 		{
 			return false;
 		}
+		if (!Seller::isOperator((int)($item->seller_srl ?? 0)) && !Seller::isOpen())
+		{
+			return false;
+		}
 		$now = Base::now();
 		if (!empty($item->sale_start) && $now < $item->sale_start)
 		{
@@ -217,13 +172,10 @@ class Item
 		{
 			return false;
 		}
-		// 재고 관리를 쓰지 않는 상품은 옵션 여부와 무관하게 항상 구매 가능
 		if (($item->use_stock ?? 'Y') !== 'Y')
 		{
 			return true;
 		}
-		// 본품 재고가 있으면 구매 가능. 옵션은 변형 상품이라, 옵션이 전부
-		// 매진이어도 본품은 팔 수 있다 (매진 옵션은 화면에서 선택만 막는다).
 		if ((int)$item->stock > 0)
 		{
 			return true;
@@ -241,13 +193,6 @@ class Item
 		return false;
 	}
 
-	/**
-	 * 수량 제한 검사.
-	 *
-	 * @param object $item
-	 * @param int $qty
-	 * @return bool
-	 */
 	public static function isQtyAllowed(object $item, int $qty): bool
 	{
 		if ($qty < 1)
@@ -267,12 +212,6 @@ class Item
 		return true;
 	}
 
-	/**
-	 * 재고 소진 상품을 품절 상태로 전환 (옵션 상품 포함).
-	 *
-	 * @param int $item_srl
-	 * @return void
-	 */
 	public static function syncSoldout(int $item_srl): void
 	{
 		$item = self::get($item_srl);

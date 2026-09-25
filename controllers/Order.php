@@ -10,18 +10,8 @@ use Zittme\Modules\Commerce\Models\Item as ItemModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
 use Zittme\Modules\Commerce\Models\Stock;
 
-/**
- * 주문 생성·조회·클레임.
- *
- * 금액은 브라우저 값을 쓰지 않는다. 장바구니를 서버에서 다시 해석해
- *   단가·합계·배송비를 전부 재계산한다. 재고는 품목마다 원자 선점하고,
- *   중간에 하나라도 실패하면 이미 선점한 것을 전부 되돌린다.
- */
 class Order extends Base
 {
-	/**
-	 * 주문 생성 — 장바구니 전체 주문.
-	 */
 	public function procCommerceOrder()
 	{
 		$config = self::config();
@@ -37,8 +27,6 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_login_required');
 		}
 
-		// 결제가 끝나지 않은 주문이 있으면 새로 만들지 않는다.
-		// 대기 주문이 쌓이면 그만큼 재고가 묶인다
 		OrderModel::expireStalePending();
 		$open_pending = OrderModel::findOpenPending($member_srl);
 		if ($open_pending)
@@ -49,24 +37,23 @@ class Order extends Base
 			return;
 		}
 
-		// 주문자·배송지
+		$pin_only = CartModel::isPinOnly(CartModel::resolve(CartModel::owner()));
+
 		$orderer_name = trim((string)\Context::get('orderer_name'));
 		$orderer_phone = trim((string)\Context::get('orderer_phone'));
 		$receiver_name = trim((string)\Context::get('receiver_name')) ?: $orderer_name;
 		$address1 = trim((string)\Context::get('address1'));
-		if ($orderer_name === '' || $orderer_phone === '' || $address1 === '')
+		if ($orderer_name === '' || $orderer_phone === '' || ($address1 === '' && !$pin_only))
 		{
 			return new \BaseObject(-1, 'msg_shop_need_fields');
 		}
 
-		// 해외 주소는 우편번호가 없는 국가가 있어 선택 입력이고, 대신 도시를 받는다
-		if (\Zittme\Modules\Commerce\Models\Address::isOverseasInput((string)\Context::get('country'))
+		if (!$pin_only && \Zittme\Modules\Commerce\Models\Address::isOverseasInput((string)\Context::get('country'))
 			&& trim((string)\Context::get('city')) === '')
 		{
 			return new \BaseObject(-1, 'msg_shop_need_city');
 		}
 
-		// 비회원 조회 비밀번호
 		$guest_password = '';
 		if ($member_srl <= 0)
 		{
@@ -83,7 +70,6 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_need_agreement');
 		}
 
-		// 서버 재계산 — 장바구니를 지금 시점 가격으로 다시 해석
 		$owner = CartModel::owner();
 		$resolved = CartModel::resolve($owner);
 		$entries = array_values(array_filter($resolved->items, function($e) { return !$e->blocked; }));
@@ -92,7 +78,6 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_cart_empty');
 		}
 
-		// 성인 상품 게이트 — 본인인증으로 성인 확인된 회원만
 		foreach ($entries as $entry)
 		{
 			if (($entry->item->is_adult ?? 'N') === 'Y' && !self::isAdultVerified($member_srl))
@@ -101,26 +86,40 @@ class Order extends Base
 			}
 		}
 
+		foreach ($entries as $entry)
+		{
+			if (($entry->item->is_pin ?? 'N') !== 'Y' || (int)($entry->item->pin_daily_limit ?? 0) <= 0)
+			{
+				continue;
+			}
+			if ($member_srl <= 0)
+			{
+				return new \BaseObject(-1, lang('commerce.pin_msg_login'));
+			}
+			$limit = (int)$entry->item->pin_daily_limit;
+			if (\Zittme\Modules\Commerce\Models\Pin::boughtToday((int)$entry->item->item_srl, $member_srl) + (int)$entry->qty > $limit)
+			{
+				return new \BaseObject(-1, $entry->item->item_name . ': ' . sprintf(lang('commerce.pin_msg_daily'), $limit));
+			}
+		}
+
 		// 주·도를 반드시 받는 곳. 화면 검사만으로는 우회된다
-		if (AddressModel::requiresState((string)\Context::get('country')) && trim((string)\Context::get('state')) === '')
+		if (!$pin_only && AddressModel::requiresState((string)\Context::get('country')) && trim((string)\Context::get('state')) === '')
 		{
 			return new \BaseObject(-1, 'msg_shop_state_required');
 		}
 
 		$item_total = $resolved->item_total;
 		$delivery_fee = CartModel::calcShipFee($resolved);
-		// 지역 추가 배송비. 지역별 면제 기준을 보므로 상품 금액도 함께 넘긴다
-		$delivery_fee += CartModel::extraShipFee(
+		$delivery_fee += $pin_only ? 0 : CartModel::extraShipFee(
 			(string)\Context::get('zipcode'),
 			(string)\Context::get('address1'),
 			self::filterCountry((string)\Context::get('country')),
 			(string)\Context::get('state'),
 			(string)\Context::get('city'),
-			// 지역 면제 기준도 무료배송 기준과 같이 등급 할인 전 금액으로 본다
 			(int)($resolved->item_total_listed ?? $item_total)
 		);
 
-		// 재고 원자 선점 — 실패 시 이미 선점한 것 전부 롤백
 		$reserved = [];
 		foreach ($entries as $entry)
 		{
@@ -140,11 +139,30 @@ class Order extends Base
 			$reserved[] = [(int)$entry->item->item_srl, $entry->option ? (int)$entry->option->option_srl : 0, $entry->qty];
 		}
 
+		$ts_reserved = [];
+		foreach ($entries as $entry)
+		{
+			$ts = $entry->item->timesale ?? null;
+			if (!$ts || ($entry->option && ($entry->option->option_type ?? 'basic') === 'extra'))
+			{
+				continue;
+			}
+			$ts_error = \Zittme\Modules\Commerce\Models\Timesale::reserve($ts, (int)$entry->qty, $member_srl);
+			if ($ts_error !== '')
+			{
+				foreach ($reserved as $r)
+				{
+					Stock::release($r[0], $r[1], $r[2]);
+				}
+				\Zittme\Modules\Commerce\Models\Timesale::release($ts_reserved);
+				return new \BaseObject(-1, $entry->item->item_name . ': ' . $ts_error);
+			}
+			$ts_reserved[] = [(int)$ts->ts_item_srl, (int)$entry->qty];
+			$entry->timesale_item_srl = (int)$ts->ts_item_srl;
+		}
+
 		$order_srl = getNextSequence();
 
-		// 주문 통화 — 표시 통화로 결제한다. 기준 통화 주문이 기본이고, 기준이 KRW 인
-		// 상점의 외화 병행 판매 주문만 환율이 붙는다. 병행 판매 주문은 기준 통화 원장의
-		// 쿠폰·적립금을 지원하지 않으므로 입력을 무시한다 (주문서 화면도 해당 칸을 숨긴다)
 		$base_currency = \Zittme\Modules\Commerce\Models\Money::base();
 		$order_currency = \Zittme\Modules\Commerce\Models\Money::current();
 		$exchange_rate = 1.0;
@@ -157,6 +175,7 @@ class Order extends Base
 				{
 					Stock::release($r[0], $r[1], $r[2]);
 				}
+				\Zittme\Modules\Commerce\Models\Timesale::release($ts_reserved);
 				return new \BaseObject(-1, 'msg_shop_fx_unavailable');
 			}
 			\Context::set('coupon_issue_srl', 0);
@@ -175,7 +194,6 @@ class Order extends Base
 			\Context::set('use_credit', 0);
 		}
 
-		// 쿠폰 (회원 전용) — 원자 점유. 이 아래에서 실패하면 재고와 함께 반환한다
 		$discount_total = 0;
 		$coupon_issue_srl = (int)\Context::get('coupon_issue_srl');
 		$coupon_code = trim((string)\Context::get('coupon_code'));
@@ -214,13 +232,12 @@ class Order extends Base
 				{
 					Stock::release($r[0], $r[1], $r[2]);
 				}
+				\Zittme\Modules\Commerce\Models\Timesale::release($ts_reserved);
 				return new \BaseObject(-1, $coupon_error);
 			}
 		}
 
-		// 적립금 사용 (회원 전용, 원자 차감 — 잔액 부족이면 실패)
 		$credit_used = 0;
-		// 화면은 사람이 읽는 단위로 받는다. 다른 금액과 같이 최소 단위로 바꿔 쓴다
 		$want_credit = max(0, \Zittme\Modules\Commerce\Models\Money::inputToMinor(\Context::get('use_credit')));
 		if ($member_srl > 0 && $want_credit > 0)
 		{
@@ -235,6 +252,7 @@ class Order extends Base
 					{
 						Stock::release($r[0], $r[1], $r[2]);
 					}
+					\Zittme\Modules\Commerce\Models\Timesale::release($ts_reserved);
 					CouponModel::releaseByOrder($order_srl);
 					return new \BaseObject(-1, 'msg_shop_credit_insufficient');
 				}
@@ -242,8 +260,6 @@ class Order extends Base
 			}
 		}
 
-		// 외화 병행 판매 주문 — 상품·배송비를 주문 통화(최소단위 정수)로 재계산한다.
-		// 통화별 등록가가 있으면 그 값을, 없으면 설정에 따라 환산가를 쓴다.
 		if ($order_currency !== $base_currency)
 		{
 			$fx_item_total = 0;
@@ -257,12 +273,9 @@ class Order extends Base
 					{
 						Stock::release($r[0], $r[1], $r[2]);
 					}
+					\Zittme\Modules\Commerce\Models\Timesale::release($ts_reserved);
 					return new \BaseObject(-1, sprintf(lang('commerce.msg_shop_fx_not_sellable'), (string)$entry->item->item_name));
 				}
-				// 품목 스냅샷(order_item)도 주문 통화로 남아야 한다. KRW 단가가 섞이면
-				// 명세서·환불 계산이 전부 어긋난다.
-				// 등급 할인은 장바구니에서 기준 통화로 매겨 두므로 여기서 다시 매긴다.
-				// 그러지 않으면 외화 주문만 정가로 결제된다
 				$entry->unit_price = ($entry->item->grade_discount ?? 'Y') === 'N'
 					? $fx_unit + $fx_add
 					: \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn(
@@ -279,7 +292,6 @@ class Order extends Base
 
 		$payment_price = max(0, $item_total - $discount_total - $credit_used) + $delivery_fee;
 
-		// 주문 3계층 생성 (독립몰: order_seller 1건 — 분기하지 않는 규약)
 		$seller = self::getDefaultSeller();
 		$order_code = self::generateOrderCode();
 		$now = self::now();
@@ -314,6 +326,7 @@ class Order extends Base
 			{
 				Stock::release($r[0], $r[1], $r[2]);
 			}
+			\Zittme\Modules\Commerce\Models\Timesale::release($ts_reserved);
 			CouponModel::releaseByOrder($order_srl);
 			if ($credit_used > 0)
 			{
@@ -322,30 +335,49 @@ class Order extends Base
 			return $output;
 		}
 
-		$order_seller_srl = getNextSequence();
-		executeQuery('commerce.insertOrderSeller', (object)[
-			'order_seller_srl' => $order_seller_srl,
-			'order_srl' => $order_srl,
-			'seller_srl' => $seller ? (int)$seller->seller_srl : 0,
-			'item_total' => $item_total,
-			'delivery_fee' => $delivery_fee,
-			'discount' => $discount_total,
-			'settle_amount' => $payment_price,
-			'status' => self::SELLER_PENDING,
-			'regdate' => $now,
-		]);
+		$bundles = self::buildBundles($entries, $seller, $item_total, $delivery_fee, $discount_total, $payment_price, $order_currency !== $base_currency ? $order_currency : '');
+		$order_seller_srl = 0;
+		foreach ($bundles as $bundle)
+		{
+			$bundle->order_seller_srl = getNextSequence();
+			if ($order_seller_srl === 0)
+			{
+				$order_seller_srl = $bundle->order_seller_srl;
+			}
+			$bundle_args = (object)[
+				'order_seller_srl' => $bundle->order_seller_srl,
+				'order_srl' => $order_srl,
+				'seller_srl' => $bundle->seller_srl,
+				'item_total' => $bundle->item_total,
+				'delivery_fee' => $bundle->delivery_fee,
+				'discount' => $bundle->discount,
+				'settle_amount' => $bundle->settle_amount,
+				'status' => self::SELLER_PENDING,
+				'regdate' => $now,
+			];
+			if ($bundle->market)
+			{
+				$bundle_args->commission = $bundle->commission;
+				$bundle_args->operator_fee = (int)($bundle->operator_fee ?? 0);
+			}
+			executeQuery('commerce.insertOrderSeller', $bundle_args);
+			foreach ($bundle->entries as $entry)
+			{
+				$entry->order_seller_srl = $bundle->order_seller_srl;
+				$entry->bundle = $bundle;
+			}
+		}
 
 		foreach ($entries as $entry)
 		{
-			executeQuery('commerce.insertOrderItem', (object)[
+			$item_args = (object)[
 				'order_item_srl' => getNextSequence(),
-				'order_seller_srl' => $order_seller_srl,
+				'order_seller_srl' => (int)$entry->order_seller_srl,
 				'order_srl' => $order_srl,
 				'item_srl' => (int)$entry->item->item_srl,
 				'option_srl' => $entry->option ? (int)$entry->option->option_srl : 0,
 				'item_name' => (string)$entry->item->item_name,
 				'option_name' => $entry->option ? (string)$entry->option->option_label : '',
-				// 명세서·출고용 SKU 스냅샷 — 옵션 SKU 우선, 없으면 상품 코드
 				'sku' => $entry->option && trim((string)($entry->option->sku ?? '')) !== ''
 					? trim((string)$entry->option->sku)
 					: trim((string)($entry->item->item_code ?? '')),
@@ -353,11 +385,18 @@ class Order extends Base
 				'price' => $entry->unit_price,
 				'qty' => $entry->qty,
 				'subtotal' => $entry->subtotal,
-				// 상품 설정이 나중에 바뀌어도 명세서의 과세 구분은 그대로 남아야 한다
 				'tax_type' => ($entry->item->tax_type ?? 'taxable') === 'free' ? 'free' : 'taxable',
 				'claim_status' => 'none',
+				'timesale_item_srl' => (int)($entry->timesale_item_srl ?? 0),
 				'regdate' => $now,
-			]);
+			];
+			if ($entry->bundle->market)
+			{
+				$item_args->seller_srl = $entry->bundle->seller_srl;
+				$item_args->commission_rate = $entry->bundle->rate;
+				$item_args->commission = (int)($entry->commission ?? 0);
+			}
+			executeQuery('commerce.insertOrderItem', $item_args);
 			ItemModel::syncSoldout((int)$entry->item->item_srl);
 		}
 
@@ -377,7 +416,6 @@ class Order extends Base
 			'regdate' => $now,
 		]);
 
-		// 연락처 저장 (회원, 요청 시): 회원 정보의 전화번호를 주문자 연락처로 갱신한다
 		if ($logged_info && !empty($logged_info->member_srl) && \Context::get('save_phone') === 'Y')
 		{
 			$new_phone = preg_replace('/[^0-9+]/', '', $orderer_phone);
@@ -391,7 +429,6 @@ class Order extends Base
 			}
 		}
 
-		// 배송지 저장 (회원, 요청 시): 같은 주소가 이미 있으면 중복 저장하지 않는다
 		$save_member_srl = ($logged_info && !empty($logged_info->member_srl)) ? (int)$logged_info->member_srl : 0;
 		if ($save_member_srl > 0 && \Context::get('save_address') === 'Y')
 		{
@@ -430,18 +467,13 @@ class Order extends Base
 
 		OrderModel::log($order_srl, $order_seller_srl, 'create', '', self::ORDER_PENDING, $member_srl);
 
-		// 주문 알림 메일 — 관리자(신규 주문) + 구매자(접수 안내)
 		$notify_order = OrderModel::get($order_srl);
 		OrderModel::notifyMail('new_order', $notify_order);
 		OrderModel::notifyMail('received', $notify_order);
 
-		// 장바구니는 여기서 비우지 않는다. 결제 화면에서 뒤로 가면 담아 둔 것을 잃는다.
-		// 결제가 끝나고 결과 화면에 닿았을 때 비운다 (markPaid 와 dispCommerceOrderResult)
-
 		$mid = (string)\Context::get('mid') ?: (self::getDefaultInstance()->mid ?? self::DEFAULT_MID);
 		$result_url = getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order_code);
 
-		// 결제 — 0원(전액 무료)이 아니면 zittme_pay 로
 		if ($payment_price > 0)
 		{
 			if (!self::isPayAvailable())
@@ -478,15 +510,77 @@ class Order extends Base
 			return;
 		}
 
-		// 0원 주문: 즉시 결제 완료 처리
 		OrderModel::markPaid($order_srl);
 		$this->add('order_code', $order_code);
 		$this->setRedirectUrl($result_url);
 	}
 
-	/**
-	 * 비회원 주문 조회.
-	 */
+	protected static function buildBundles(array $entries, ?object $seller, int $item_total, int $delivery_fee, int $discount_total, int $payment_price, string $fx_currency = ''): array
+	{
+		if (!\Zittme\Modules\Commerce\Models\Seller::isOpen())
+		{
+			return [(object)[
+				'market' => false,
+				'seller_srl' => $seller ? (int)$seller->seller_srl : 0,
+				'entries' => $entries,
+				'item_total' => $item_total,
+				'delivery_fee' => $delivery_fee,
+				'discount' => $discount_total,
+				'settle_amount' => $payment_price,
+				'commission' => 0,
+				'rate' => 0,
+			]];
+		}
+
+		$bundles = [];
+		$fee_sum = 0;
+		foreach (\Zittme\Modules\Commerce\Models\Seller::groupEntries($entries) as $seller_srl => $group)
+		{
+			$fee = \Zittme\Modules\Commerce\Models\Seller::groupShipFee((int)$seller_srl, $group);
+			if ($fx_currency !== '')
+			{
+				$fee = max(0, \Zittme\Modules\Commerce\Models\Money::convertMinor($fee, $fx_currency));
+			}
+			$rate = \Zittme\Modules\Commerce\Models\Seller::commissionRate(\Zittme\Modules\Commerce\Models\Seller::get((int)$seller_srl));
+			$group_total = 0;
+			$commission = 0;
+			foreach ($group as $entry)
+			{
+				$entry->commission = \Zittme\Modules\Commerce\Models\Seller::commissionOf((int)$entry->subtotal, $rate);
+				$group_total += (int)$entry->subtotal;
+				$commission += $entry->commission;
+			}
+			$fee_sum += $fee;
+			$bundles[] = (object)[
+				'market' => true,
+				'seller_srl' => (int)$seller_srl,
+				'entries' => $group,
+				'item_total' => $group_total,
+				'delivery_fee' => $fee,
+				'discount' => 0,
+				'settle_amount' => $group_total + $fee,
+				'commission' => $commission,
+				'rate' => $rate,
+			];
+		}
+		if (!count($bundles))
+		{
+			return $bundles;
+		}
+
+		$first = $bundles[0];
+		$first->operator_fee = max(0, $delivery_fee - $fee_sum);
+		$first->delivery_fee = max(0, $first->delivery_fee + ($delivery_fee - $fee_sum));
+		$first->discount = $discount_total;
+		$others = 0;
+		foreach (array_slice($bundles, 1) as $bundle)
+		{
+			$others += $bundle->settle_amount;
+		}
+		$first->settle_amount = $payment_price - $others;
+		return $bundles;
+	}
+
 	public function procCommerceGuestLookup()
 	{
 		$code = trim((string)\Context::get('order_code'));
@@ -506,9 +600,6 @@ class Order extends Base
 		$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order->order_code, 'gp', $raw));
 	}
 
-	/**
-	 * 구매확정 — 배송완료 주문을 구매자가 확정한다. 확정한 상품만 리뷰를 쓸 수 있다.
-	 */
 	public function procCommerceConfirmPurchase()
 	{
 		$code = trim((string)\Context::get('order_code'));
@@ -518,7 +609,6 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_order_not_found');
 		}
 
-		// 본인 확인 (회원 본인 / 비회원 비밀번호)
 		$logged_info = \Context::get('logged_info');
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 		if ((int)$order->member_srl > 0)
@@ -543,7 +633,6 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_confirm_not_allowed');
 		}
 
-		// 배송완료 상태의 하위주문만 확정으로 전이한다
 		$output = executeQuery('commerce.updateOrderSellersStatus', (object)[
 			'order_srl' => (int)$order->order_srl,
 			'status' => self::SELLER_CONFIRMED,
@@ -557,7 +646,6 @@ class Order extends Base
 		$this->setMessage('msg_shop_confirmed');
 		$mid = (string)\Context::get('mid') ?: (self::getDefaultInstance()->mid ?? self::DEFAULT_MID);
 
-		// 구매확정 후 리뷰 작성 유도: 단일 상품이면 상품 리뷰 폼으로, 여러 상품이면 주문 상세의 리뷰 안내로
 		$confirm_items = OrderModel::getItems((int)$order->order_srl);
 		$distinct = [];
 		foreach ($confirm_items as $ci)
@@ -567,16 +655,43 @@ class Order extends Base
 				$distinct[(int)$ci->item_srl] = true;
 			}
 		}
-		// 확정 후에는 주문 상세로 돌아가 확정 상태를 보여준다. 리뷰는 거기서 이어 쓴다
 		$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order->order_code, 'gp', (string)\Context::get('guest_password'), 'review', '1'));
 	}
 
-	/**
-	 * 구매자 클레임 — 결제대기/결제완료는 취소, 배송완료 후에는 반품·교환 신청.
-	 *
-	 * 결제대기(pending) 주문은 즉시 취소(돈이 안 나갔으므로 승인 불필요).
-	 * 그 외에는 클레임을 만들어 관리자가 승인·환불한다.
-	 */
+	public function procCommercePinReveal()
+	{
+		$code = trim((string)\Context::get('order_code'));
+		$order = $code !== '' ? OrderModel::getByCode($code) : null;
+		if (!$order || $order->status !== self::ORDER_PAID)
+		{
+			return new \BaseObject(-1, 'msg_shop_order_not_found');
+		}
+		$logged_info = \Context::get('logged_info');
+		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
+		if ((int)$order->member_srl > 0)
+		{
+			if ($member_srl !== (int)$order->member_srl)
+			{
+				return new \BaseObject(-1, 'msg_shop_not_yours');
+			}
+		}
+		else
+		{
+			$raw = (string)\Context::get('guest_password');
+			if ($raw === '' || empty($order->guest_password) || !\Zittme\Framework\Password::checkPassword($raw, $order->guest_password))
+			{
+				return new \BaseObject(-1, 'msg_shop_wrong_password');
+			}
+		}
+		$order_item_srl = (int)\Context::get('order_item_srl');
+		$pins = \Zittme\Modules\Commerce\Models\Pin::reveal($order_item_srl, (int)$order->order_srl);
+		if (!count($pins))
+		{
+			return new \BaseObject(-1, lang('commerce.pin_msg_none'));
+		}
+		$this->add('pins', $pins);
+	}
+
 	public function procCommerceClaim()
 	{
 		$code = trim((string)\Context::get('order_code'));
@@ -586,7 +701,6 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_order_not_found');
 		}
 
-		// 본인 확인 (회원 본인 / 비회원 비밀번호)
 		$logged_info = \Context::get('logged_info');
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 		if ((int)$order->member_srl > 0)
@@ -609,7 +723,6 @@ class Order extends Base
 		$mid = (string)\Context::get('mid') ?: (self::getDefaultInstance()->mid ?? self::DEFAULT_MID);
 		$result_url = getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order->order_code, 'gp', (string)\Context::get('guest_password'));
 
-		// 결제대기: 즉시 취소
 		if ($order->status === self::ORDER_PENDING)
 		{
 			OrderModel::cancelAndRestock((int)$order->order_srl, $member_srl, 'buyer cancel (pending)');
@@ -622,32 +735,55 @@ class Order extends Base
 		{
 			return new \BaseObject(-1, 'msg_shop_claim_not_allowed');
 		}
+		if (\Zittme\Modules\Commerce\Models\Pin::revealedCount((int)$order->order_srl) > 0)
+		{
+			return new \BaseObject(-1, lang('commerce.pin_msg_no_cancel'));
+		}
 
-		// 배송완료 후 신청 기한 검사 (반품·교환)
 		$claim_type = in_array(\Context::get('claim_type'), ['cancel', 'return', 'exchange'], true)
 			? (string)\Context::get('claim_type') : 'cancel';
-		$sellers = OrderModel::getSellerOrders((int)$order->order_srl);
-		// 배송 중부터는 취소가 아니라 반품으로 처리한다 (회수 물류 필요)
-		$seller_status = count($sellers) ? (string)$sellers[0]->status : '';
+		$all_sellers = OrderModel::getSellerOrders((int)$order->order_srl);
+		$want_os = (int)\Context::get('order_seller_srl');
+		$target_os = null;
+		foreach ($all_sellers as $one_os)
+		{
+			if ($want_os > 0 ? (int)$one_os->order_seller_srl === $want_os : count($all_sellers) === 1)
+			{
+				$target_os = $one_os;
+			}
+		}
+		if (!$target_os)
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		if (in_array($target_os->status, [self::SELLER_CONFIRMED, self::SELLER_CANCELLED, self::SELLER_REFUNDED], true))
+		{
+			return new \BaseObject(-1, 'msg_shop_claim_not_allowed');
+		}
+		$sellers = [$target_os];
+		$seller_status = (string)$target_os->status;
 		if ($claim_type === 'cancel' && in_array($seller_status, [self::SELLER_SHIPPING, self::SELLER_DELIVERED], true))
 		{
 			$claim_type = 'return';
 		}
-		$delivered = count($sellers) && $sellers[0]->status === self::SELLER_DELIVERED;
-		if ($delivered && !empty($sellers[0]->delivered_date))
+		$delivered = $target_os->status === self::SELLER_DELIVERED;
+		if ($delivered && !empty($target_os->delivered_date))
 		{
 			$claim_days = max(0, (int)(self::config()->claim_days ?? 7));
-			$deadline = date('YmdHis', strtotime(substr($sellers[0]->delivered_date, 0, 8)) + 86400 * ($claim_days + 1));
+			$deadline = date('YmdHis', strtotime(substr($target_os->delivered_date, 0, 8)) + 86400 * ($claim_days + 1));
 			if (self::now() > $deadline)
 			{
 				return new \BaseObject(-1, 'msg_shop_claim_deadline');
 			}
 		}
 
-		// 대상: 전체 품목 (품목 선택 취소는 관리자 승인 화면에서 조정)
 		$targets = [];
 		foreach (OrderModel::getItems((int)$order->order_srl) as $oi)
 		{
+			if ((int)($oi->order_seller_srl ?? 0) !== (int)$target_os->order_seller_srl)
+			{
+				continue;
+			}
 			if (($oi->claim_status ?? 'none') === 'none')
 			{
 				$targets[] = ['order_item_srl' => (int)$oi->order_item_srl, 'qty' => (int)$oi->qty];
@@ -674,7 +810,6 @@ class Order extends Base
 		OrderModel::log((int)$order->order_srl, 0, 'claim', '', 'requested', $member_srl, $claim_type);
 		OrderModel::notifyMail('claim', $order, '유형: ' . $claim_type . ' / 사유: ' . mb_substr(trim((string)\Context::get('reason')), 0, 200));
 
-		// 품목을 신청 상태로 표시 (중복 신청 방지)
 		foreach ($targets as $t)
 		{
 			\Zittme\Framework\DB::getInstance()->query(
@@ -687,12 +822,6 @@ class Order extends Base
 		$this->setRedirectUrl($result_url);
 	}
 
-	/**
-	 * 배송 국가 코드 정리. 값이 없거나 형식이 아니면 국내(KR)로 본다.
-	 *
-	 * @param string $country
-	 * @return string
-	 */
 	public static function filterCountry(string $country): string
 	{
 		$country = strtoupper(trim($country));
@@ -700,8 +829,6 @@ class Order extends Base
 		{
 			return AddressModel::baseCountry();
 		}
-		// 해외로 보내지 않는 곳이면 다른 나라 값이 들어와도 받지 않는다.
-		// 화면에서 감추는 것만으로는 값을 직접 보내는 것을 막지 못한다
 		if (!AddressModel::needsCountry() && !AddressModel::isDomestic($country))
 		{
 			return AddressModel::baseCountry();
@@ -709,12 +836,6 @@ class Order extends Base
 		return $country;
 	}
 
-	/**
-	 * 성인 인증 여부 — member/identity 본인인증 기록의 생년월일로 판정.
-	 *
-	 * @param int $member_srl
-	 * @return bool
-	 */
 	public static function isAdultVerified(int $member_srl): bool
 	{
 		if ($member_srl <= 0)

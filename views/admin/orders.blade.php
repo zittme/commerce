@@ -20,7 +20,6 @@
 		<span style="color:#8b95a1">~</span>
 		<input type="date" name="f_to" value="{{ $filters->to }}" />
 		<input type="text" name="f_keyword" placeholder="{{ lang('commerce.admin_orders_16') }}" value="{{ $filters->keyword }}" />
-		{{-- 만료 주문은 기록으로 남기되 평소에는 접어 둔다 --}}
 		<label class="zmi-expired-toggle"><input type="checkbox" name="f_expired" value="Y" @if ($filters->expired === 'Y') checked @endif /> {{ lang('commerce.adm_orders_show_expired') }}</label>
 		<button type="submit" class="rsva-btn">{{ lang('commerce.admin_orders_2') }}</button>
 	</form>
@@ -38,7 +37,6 @@
 		<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-primary" id="zmiPrint" data-url="{{ $zmi_url }}">{{ lang('commerce.admin_orders_5') }}</button>
 		<button type="button" class="rsva-btn rsva-btn-sm" id="zmiExport" data-url="{{ getUrl('', 'mid', '', 'module', 'commerce', 'act', 'dispCommerceAdminExportOrders', 'f_status', $filters->status, 'f_keyword', $filters->keyword, 'f_from', $filters->from, 'f_to', $filters->to) }}">{{ lang('commerce.admin_orders_6') }}</button>
 		@if ($is_super_admin)
-		{{-- 되돌릴 수 없으므로 최고관리자에게만 보인다. 결제된 주문은 서버에서 다시 걸러진다 --}}
 		<button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger" id="zmiDeleteOrders">{{ lang('commerce.adm_orders_delete') }}</button>
 		@endif
 		<span class="zmi-bulk-hint">{{ lang('commerce.admin_orders_7') }}</span>

@@ -4,44 +4,20 @@ namespace Zittme\Modules\Commerce\Models;
 
 use Zittme\Modules\Commerce\Controllers\Base;
 
-/**
- * 주문 — 상태 전이는 전부 조건부 UPDATE(멱등).
- *
- * 결제 트리거가 중복 도착해도 paid 처리는 한 번만 일어난다
- * (zittme_pay.updateOrderStatusIf 와 같은 패턴).
- */
 class Order
 {
-	/**
-	 * 주문 1건.
-	 *
-	 * @param int $order_srl
-	 * @return ?object
-	 */
 	public static function get(int $order_srl): ?object
 	{
 		$output = executeQuery('commerce.getOrder', (object)['order_srl' => $order_srl]);
 		return ($output->toBool() && is_object($output->data) && !empty($output->data->order_srl)) ? $output->data : null;
 	}
 
-	/**
-	 * 주문번호로 1건.
-	 *
-	 * @param string $code
-	 * @return ?object
-	 */
 	public static function getByCode(string $code): ?object
 	{
 		$output = executeQuery('commerce.getOrderByCode', (object)['order_code' => $code]);
 		return ($output->toBool() && is_object($output->data) && !empty($output->data->order_srl)) ? $output->data : null;
 	}
 
-	/**
-	 * 주문 품목 목록.
-	 *
-	 * @param int $order_srl
-	 * @return array
-	 */
 	public static function getItems(int $order_srl): array
 	{
 		$output = executeQuery('commerce.getOrderItems', (object)['order_srl' => $order_srl]);
@@ -51,9 +27,7 @@ class Order
 		}
 		$data = is_array($output->data) ? $output->data : [$output->data];
 		$rows = array_values(array_filter($data, function($row) { return !empty($row->order_item_srl); }));
-		// 다국어 코드가 스냅샷된 과거 주문도 화면에는 실값으로
 		Lang::textAll($rows, ['item_name', 'option_name']);
-		// 조합 옵션 이름은 지금 축 값에서 다시 만든다. 상품이나 옵션이 사라졌으면 스냅샷을 그대로 쓴다
 		foreach ($rows as $row)
 		{
 			if ((int)($row->option_srl ?? 0) <= 0 || (int)($row->item_srl ?? 0) <= 0)
@@ -77,12 +51,6 @@ class Order
 		return $rows;
 	}
 
-	/**
-	 * 판매자 하위주문 목록.
-	 *
-	 * @param int $order_srl
-	 * @return array
-	 */
 	public static function getSellerOrders(int $order_srl): array
 	{
 		$output = executeQuery('commerce.getOrderSellers', (object)['order_srl' => $order_srl]);
@@ -94,15 +62,6 @@ class Order
 		return array_values(array_filter($data, function($row) { return !empty($row->order_seller_srl); }));
 	}
 
-	/**
-	 * 주문 상태 전이 (조건부, 멱등).
-	 *
-	 * @param int $order_srl
-	 * @param array $from
-	 * @param string $to
-	 * @param array $extra
-	 * @return bool 실제로 바뀌었는가
-	 */
 	public static function transition(int $order_srl, array $from, string $to, array $extra = []): bool
 	{
 		$args = (object)array_merge([
@@ -119,13 +78,6 @@ class Order
 		return \DB::getInstance()->getAffectedRows() > 0;
 	}
 
-	/**
-	 * 구매자 노출용 상태 — paid 이후에는 배송 단계(하위주문 상태)를 우선 보여준다.
-	 *
-	 * @param object $order
-	 * @param ?array $sellers 이미 조회했으면 전달 (없으면 조회)
-	 * @return string pending|paid|preparing|shipping|delivered|confirmed|cancelled|failed|expired
-	 */
 	public static function displayStatus(object $order, ?array $sellers = null): string
 	{
 		if ($order->status !== Base::ORDER_PAID)
@@ -133,10 +85,32 @@ class Order
 			return (string)$order->status;
 		}
 		$sellers = $sellers ?? self::getSellerOrders((int)$order->order_srl);
-		$st = count($sellers) ? (string)$sellers[0]->status : '';
+		$cur = $sellers[0] ?? null;
+		$st = $cur ? (string)$cur->status : '';
 
-		// 배송완료 뒤 설정한 날이 지나면 확정으로 본다. 상태를 미리 바꿔 두지 않고 볼 때 계산한다
-		if ($st === Base::SELLER_DELIVERED && self::isAutoConfirmed($sellers[0] ?? null))
+		if (count($sellers))
+		{
+			$closed = array_filter($sellers, function ($s) { return in_array((string)$s->status, [Base::SELLER_REFUNDED, Base::SELLER_CANCELLED], true); });
+			$refunded = array_filter($sellers, function ($s) { return (string)$s->status === Base::SELLER_REFUNDED; });
+			if (count($closed) === count($sellers) && count($refunded))
+			{
+				return Base::SELLER_REFUNDED;
+			}
+			if (in_array($st, [Base::SELLER_REFUNDED, Base::SELLER_CANCELLED], true))
+			{
+				foreach ($sellers as $s)
+				{
+					if (!in_array((string)$s->status, [Base::SELLER_REFUNDED, Base::SELLER_CANCELLED], true))
+					{
+						$cur = $s;
+						$st = (string)$s->status;
+						break;
+					}
+				}
+			}
+		}
+
+		if ($st === Base::SELLER_DELIVERED && self::isAutoConfirmed($cur))
 		{
 			return Base::SELLER_CONFIRMED;
 		}
@@ -145,14 +119,6 @@ class Order
 			? $st : Base::ORDER_PAID;
 	}
 
-	/**
-	 * 배송완료 뒤 설정한 날이 지났는가. 설정이 0 이면 자동 확정을 쓰지 않는다.
-	 *
-	 * 구매확정은 하위주문 상태를 바꾸는 것뿐이라, 미리 돌려 둘 필요 없이 볼 때 계산하면 된다.
-	 *
-	 * @param ?object $seller 하위주문 (delivered_date 를 본다)
-	 * @return bool
-	 */
 	public static function isAutoConfirmed(?object $seller): bool
 	{
 		$days = max(0, (int)(Base::config()->auto_confirm_days ?? 0));
@@ -170,16 +136,6 @@ class Order
 		return $at > 0 && (time() - $at) >= $days * 86400;
 	}
 
-	/**
-	 * 알림센터로 보낸다. 메일과 달리 설정과 무관하게 나간다.
-	 *
-	 * 운영자는 처리할 일(신규 주문·클레임)을, 구매자는 자기 주문의 진행을 받는다.
-	 *
-	 * @param string $kind
-	 * @param object $order
-	 * @param string $memo
-	 * @return void
-	 */
 	protected static function notifyCenter(string $kind, object $order, string $memo = ''): void
 	{
 		$code = (string)$order->order_code;
@@ -213,23 +169,6 @@ class Order
 		}
 	}
 
-	/**
-	 * 주문 알림 메일 (실패해도 주문 흐름을 막지 않는다).
-	 *
-	 * kind: new_order|claim → 관리자(notify_admin=Y 일 때), received|paid → 구매자.
-	 * PG 콜백 안에서도 호출되므로 세션·mid 에 의존하지 않는다.
-	 *
-	 * @param string $kind
-	 * @param ?object $order
-	 * @param string $memo
-	 */
-	/**
-	 * 이 사건에 메일을 보낼지. 설정에 값이 없으면 보내는 것으로 본다.
-	 *
-	 * @param string $kind
-	 * @param bool $to_admin
-	 * @return bool
-	 */
 	protected static function notifyEnabled(string $kind, bool $to_admin): bool
 	{
 		$config = Config::getConfig();
@@ -241,13 +180,6 @@ class Order
 		return ($config->{$key} ?? 'Y') !== 'N';
 	}
 
-	/**
-	 * 관리자 알림을 받을 메일 주소. 직접 적은 것 + 지정한 회원그룹의 회원.
-	 *
-	 * 담당자가 여럿이거나 자주 바뀌는 곳을 위해 그룹으로도 받을 수 있게 한다.
-	 *
-	 * @return array
-	 */
 	public static function adminRecipients(): array
 	{
 		$config = Config::getConfig();
@@ -291,12 +223,6 @@ class Order
 		]);
 	}
 
-	/**
-	 * 미뤄 둔 알림·메일 발송. Deferred 가 응답 뒤에 부른다.
-	 *
-	 * @param object $args {kind, order_srl, memo}
-	 * @return void
-	 */
 	public static function notifyMailTask(object $args): void
 	{
 		$order = self::get((int)($args->order_srl ?? 0));
@@ -306,17 +232,8 @@ class Order
 		}
 	}
 
-	/**
-	 * 알림센터와 메일을 지금 보낸다.
-	 *
-	 * @param string $kind
-	 * @param object $order
-	 * @param string $memo
-	 * @return void
-	 */
 	protected static function notifyMailNow(string $kind, object $order, string $memo = ''): void
 	{
-		// 알림센터는 메일 설정과 무관하게 보낸다. 메일을 끈 사이트도 알림은 받는다
 		self::notifyCenter($kind, $order, $memo);
 		try
 		{
@@ -401,27 +318,15 @@ class Order
 		}
 		catch (\Throwable $e)
 		{
-			// 메일 실패는 무시 — 주문 처리가 우선이다
 		}
 	}
 
-	/**
-	 * 결제 완료 처리 (멱등).
-	 *
-	 * 전이에 이긴 요청만 하위주문 paid 전환·구매수 집계를 한다.
-	 * 재고는 주문 생성 시 이미 선점했으므로 여기서 다시 차감하지 않는다.
-	 *
-	 * @param int $order_srl
-	 * @return bool
-	 */
 	public static function markPaid(int $order_srl): bool
 	{
 		$won = self::transition($order_srl, [Base::ORDER_PENDING], Base::ORDER_PAID, ['paid_date' => Base::now()]);
 		$recovered = false;
 		if (!$won)
 		{
-			// 만료된 뒤에 입금이 확인된 경우: 돈은 받았으므로 주문을 되살린다.
-			// 만료 때 반환했던 재고를 다시 차감한다 (부족해도 주문은 살린다 — 운영자가 조정).
 			$won = self::transition($order_srl, [Base::ORDER_EXPIRED], Base::ORDER_PAID, ['paid_date' => Base::now()]);
 			if (!$won)
 			{
@@ -442,7 +347,6 @@ class Order
 				: Base::SELLER_PENDING,
 		]);
 
-		// 구매수 집계 (실패해도 치명적이지 않다)
 		foreach (self::getItems($order_srl) as $item)
 		{
 			if ((int)$item->item_srl > 0)
@@ -454,7 +358,6 @@ class Order
 			}
 		}
 
-		// 적립금 적립 + 구매 등급 재계산 (자체 원장 — 전이 승자만 도달하므로 이중 처리 없음)
 		$order = self::get($order_srl);
 		if ($order)
 		{
@@ -464,22 +367,25 @@ class Order
 		}
 
 		self::log($order_srl, 0, 'pay', $recovered ? Base::ORDER_EXPIRED : Base::ORDER_PENDING, Base::ORDER_PAID, 0, $recovered ? 'recovered from expired (deposit confirmed)' : '');
-		self::notifyMail('paid', $order);
+		$pin = Pin::assignForOrder($order_srl);
+		if ($pin['pin_only'] && $pin['short'] === 0)
+		{
+			foreach (self::getSellerOrders($order_srl) as $pin_os)
+			{
+				executeQuery('commerce.updateOrderSellerShipping', (object)[
+					'order_seller_srl' => (int)$pin_os->order_seller_srl,
+					'status' => Base::SELLER_DELIVERED,
+					'from_status_list' => Base::SELLER_PAID,
+					'shipping_company' => lang('commerce.pin_delivery'),
+					'shipped_date' => Base::now(),
+					'delivered_date' => Base::now(),
+				]);
+			}
+		}
+		self::notifyMail('paid', $order, $pin['assigned'] > 0 ? lang('commerce.pin_mail_note') : '');
 		return true;
 	}
 
-	/**
-	 * 주문한 상품을 장바구니에서 뺀다.
-	 *
-	 * 주문을 만들 때가 아니라 결제가 끝난 뒤에 부른다. 만들 때 비우면 결제 화면에서
-	 * 뒤로 갔을 때 담아 둔 것을 잃는다.
-	 *
-	 * PG 콜백 안에서도 불리므로 세션에 기대지 않는다. 비회원은 세션 키를 알 수 없어
-	 * 결과 화면에서 한 번 더 부른다.
-	 *
-	 * @param object $order
-	 * @return void
-	 */
 	public static function clearCartOf(object $order): void
 	{
 		$member_srl = (int)($order->member_srl ?? 0);
@@ -497,17 +403,6 @@ class Order
 		}
 	}
 
-	/**
-	 * 주문 전체 취소 + 재고 복구 (멱등).
-	 *
-	 * 전이에 이긴 요청만 재고를 되돌리므로 이중 복구가 없다.
-	 *
-	 * @param int $order_srl
-	 * @param int $actor_srl
-	 * @param string $memo
-	 * @param string $to cancelled | expired
-	 * @return bool
-	 */
 	public static function cancelAndRestock(int $order_srl, int $actor_srl = 0, string $memo = '', string $to = Base::ORDER_CANCELLED): bool
 	{
 		$won = self::transition(
@@ -532,7 +427,9 @@ class Order
 			Stock::release((int)$item->item_srl, (int)$item->option_srl, (int)$item->qty);
 		}
 
-		// 쿠폰 반환 (재사용 가능 상태로) + 적립금 정산 (사용분 환불·적립분 회수)
+		Timesale::releaseForOrder($order_srl);
+		Pin::releaseForOrder($order_srl);
+
 		Coupon::releaseByOrder($order_srl);
 		$order = self::get($order_srl);
 		if ($order)
@@ -545,13 +442,6 @@ class Order
 		return true;
 	}
 
-	/**
-	 * 주문 한 건을 딸린 자료까지 지운다. 결제된 주문은 지우지 않는다 —
-	 * 매출·재고 이력과 어긋나기 때문이다. 되돌릴 수 없으므로 부르는 쪽에서 권한을 확인한다.
-	 *
-	 * @param int $order_srl
-	 * @return bool 지웠으면 true
-	 */
 	public static function purge(int $order_srl): bool
 	{
 		$order = self::get($order_srl);
@@ -574,12 +464,6 @@ class Order
 		return true;
 	}
 
-	/**
-	 * 아직 결제가 끝나지 않은 이 회원의 주문 1건. 만료 시간이 지나지 않은 것만 본다.
-	 *
-	 * @param int $member_srl
-	 * @return ?object
-	 */
 	public static function findOpenPending(int $member_srl): ?object
 	{
 		if ($member_srl <= 0)
@@ -602,12 +486,6 @@ class Order
 		return $row;
 	}
 
-	/**
-	 * 결제 대기 주문이 자동 취소되는 시각 (YmdHis). 대기 주문이 아니면 빈 문자열.
-	 *
-	 * @param object $order
-	 * @return string
-	 */
 	public static function pendingDeadline(object $order): string
 	{
 		if (($order->status ?? '') !== Base::ORDER_PENDING || empty($order->regdate))
@@ -618,13 +496,6 @@ class Order
 		return date('YmdHis', ztime((string)$order->regdate) + 60 * $minutes);
 	}
 
-	/**
-	 * 결제를 이어서 할 주소. 처음 만든 결제 건이 아직 열려 있으면 그 화면으로 돌아간다.
-	 * 결제 건이 없거나 닫혔으면 빈 문자열 (이어서 결제할 수 없다).
-	 *
-	 * @param object $order
-	 * @return string
-	 */
 	public static function resumePayUrl(object $order): string
 	{
 		if (($order->status ?? '') !== Base::ORDER_PENDING || !class_exists('\Zittme\Modules\Zittme_pay\PayService'))
@@ -639,11 +510,6 @@ class Order
 		return \Zittme\Modules\Zittme_pay\PayService::getPayUrl((string)$pay->order_code);
 	}
 
-	/**
-	 * 만료된 결제 대기 주문 정리 (lazy — cron 불필요).
-	 *
-	 * @return int
-	 */
 	public static function expireStalePending(): int
 	{
 		$minutes = max(10, (int)(Base::config()->pending_minutes ?? 60));
@@ -668,18 +534,6 @@ class Order
 		return $count;
 	}
 
-	/**
-	 * 이력 기록.
-	 *
-	 * @param int $order_srl
-	 * @param int $order_seller_srl
-	 * @param string $action
-	 * @param string $before
-	 * @param string $after
-	 * @param int $actor_srl
-	 * @param string $memo
-	 * @return void
-	 */
 	public static function log(int $order_srl, int $order_seller_srl, string $action, string $before, string $after, int $actor_srl = 0, string $memo = ''): void
 	{
 		executeQuery('commerce.insertOrderLog', (object)[

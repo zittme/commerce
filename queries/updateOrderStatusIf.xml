@@ -1,5 +1,4 @@
 <query id="updateOrderStatusIf" action="update">
-	<!-- 상태 검사와 변경을 한 문장으로 처리한다. getAffectedRows 로 실제 반영 여부를 판정 -->
 	<tables>
 		<table name="commerce_order" />
 	</tables>

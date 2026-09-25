@@ -1,5 +1,4 @@
 <query id="getExpiredPending" action="select">
-	<!-- 결제 대기 만료 주문 — lazy 정리 대상, 소량씩 -->
 	<tables>
 		<table name="commerce_order" />
 	</tables>

@@ -1,4 +1,3 @@
-/* 쇼핑 프론트 관리 플로팅 — 모듈이 직접 싣는다 (스킨과 무관) */
 .shp-admin-fab { position: fixed; right: 24px; bottom: 24px; z-index: 990; display: inline-flex; align-items: center; gap: 7px; padding: 11px 18px; border: 0; border-radius: 999px; background: #1a1f2e; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.22); }
 .shp-admin-fab:hover { background: #2a3040; }
 .shp-admin-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 991; width: 360px; max-width: 92vw; background: #fff; box-shadow: -8px 0 32px rgba(0,0,0,.18); overflow-y: auto; padding: 18px 18px 28px; box-sizing: border-box; }
@@ -10,7 +9,6 @@
 .shp-admin-label { font-weight: 700; font-size: 13px !important; color: #333; margin-bottom: 8px !important; }
 .shp-adm-btn { display: inline-block; padding: 9px 14px; border: 1px solid #d5d8de; border-radius: 8px; background: #fff; font-size: 13.5px; cursor: pointer; }
 .shp-adm-btn:hover { background: #f4f6f9; }
-/* 배너 제목·문구의 다국어 문구 연결 */
 .shp-adm-lang { display: flex; gap: 6px; align-items: stretch; }
 .shp-adm-lang > input[type="text"] { flex: 1; min-width: 0; }
 .shp-adm-globe { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; padding: 0; border: 1px solid #d5d8de; border-radius: 8px; background: #fff; color: #8b95a1; cursor: pointer; }

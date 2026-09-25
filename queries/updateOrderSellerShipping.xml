@@ -1,5 +1,4 @@
 <query id="updateOrderSellerShipping" action="update">
-	<!-- 하위주문 배송 처리 (조건부 전이) -->
 	<tables>
 		<table name="commerce_order_seller" />
 	</tables>

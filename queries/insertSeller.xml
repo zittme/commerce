@@ -13,11 +13,16 @@
 		<column name="mailorder_no" var="mailorder_no" />
 		<column name="tel" var="tel" />
 		<column name="email" var="email" />
-		<column name="commission_rate" var="commission_rate" default="0" />
+		<column name="commission_rate" var="commission_rate" />
 		<column name="bank_name" var="bank_name" />
 		<column name="bank_account" var="bank_account" />
 		<column name="bank_holder" var="bank_holder" />
+		<column name="intro" var="intro" />
+		<column name="shop_id" var="shop_id" />
+		<column name="ship_fee" var="ship_fee" />
+		<column name="free_ship_over" var="free_ship_over" />
 		<column name="status" var="status" default="active" />
+		<column name="last_update" var="last_update" />
 		<column name="regdate" var="regdate" />
 	</columns>
 </query>

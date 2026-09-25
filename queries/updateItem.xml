@@ -33,6 +33,9 @@
 		<column name="is_recommend" var="is_recommend" />
 		<column name="is_new" var="is_new" />
 		<column name="badges" var="badges" />
+		<column name="is_pin" var="is_pin" />
+		<column name="pin_daily_limit" var="pin_daily_limit" />
+		<column name="brand_srl" var="brand_srl" />
 		<column name="list_order" var="list_order" />
 		<column name="last_update" var="last_update" />
 	</columns>

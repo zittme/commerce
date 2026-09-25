@@ -1,9 +1,7 @@
 @version(2)
 @load('css/shop.css')
 
-{{-- 쇼핑 홈 — 배너 슬라이더 + 추천/신상품/인기/할인 섹션 (설정 shop_main=home) --}}
 <div class="shp">
-	{{-- 쇼핑 홈: 타이틀 대신 섹션 바로가기 메뉴를 타이틀 크기로 노출한다 --}}
 	<div class="shp-top">
 		<nav class="shp-home-nav">
 			@if (($shop_config->category_layout ?? 'top') !== 'side' && count($shop_categories ?? []))
@@ -37,7 +35,6 @@
 	@if (($shop_config->category_layout ?? 'top') !== 'side' && count($shop_categories ?? []))
 	<div class="shp-catpanel" id="shpCatPanel" hidden>
 		@php
-			// 1차 카테고리를 열로 세우고 하위는 그 아래에 모은다
 			$shp_cat_cols = [];
 			$shp_cat_cur = -1;
 			foreach ($shop_categories as $shp_c) {
@@ -69,7 +66,6 @@
 	@endif
 
 
-	{{-- 배너 슬라이더 --}}
 	@if (count($home_banners))
 	<div class="shp-home-banner" id="shpHomeBanner">
 		<div class="shp-home-banner-track">
@@ -102,7 +98,6 @@
 	</div>
 	@endif
 
-	{{-- 메인 노출 기획전 아이콘 숏컷 (배너 바로 아래, 로고 필수) --}}
 	@php
 	$shp_main_promos = array_values(array_filter($home_promotions ?? [], function($pm) {
 		return ($pm->banner_data['main'] ?? 'N') === 'Y' && !empty($pm->banner_data['logo']);
@@ -125,7 +120,6 @@
 		@include('_sidecats')
 		@endif
 		<div class="shp-home-main">
-			{{-- 진행 중 기획전 카드 --}}
 			@if (count($home_promotions ?? []))
 			<section class="shp-home-section" id="shpPromos">
 				<div class="shp-home-section-head">
@@ -133,7 +127,7 @@
 				</div>
 				<div class="shp-promo-cards">
 					@foreach ($home_promotions as $shp_pm)
-					<a class="shp-promo-card" href="{{ getUrl('', 'mid', $mid, 'v', 'promo', 'p', $shp_pm->slug) }}" style="{{ $shp_pm->banner_data['bg_style'] ?? '' }}">
+					<a class="shp-promo-card align-{{ in_array($shp_pm->banner_data['align'] ?? 'left', ['center', 'right'], true) ? $shp_pm->banner_data['align'] : 'left' }}" href="{{ getUrl('', 'mid', $mid, 'v', 'promo', 'p', $shp_pm->slug) }}" style="{{ $shp_pm->banner_data['bg_style'] ?? '' }}">
 						<span class="shp-promo-card-copy {{ ($shp_pm->banner_data['shadow'] ?? 'Y') === 'N' ? 'no-shadow' : '' }}" style="color:{{ $shp_pm->banner_data['text_color'] ?? '#ffffff' }}">
 							<strong>{!! $shp_pm->banner_data['title_html'] ?? escape($shp_pm->title) !!}</strong>
 							@if (!empty($shp_pm->banner_data['text']))<span>{!! $shp_pm->banner_data['text_html'] ?? escape($shp_pm->banner_data['text']) !!}</span>@endif
@@ -156,7 +150,7 @@
 				</div>
 				<div class="shp-grid">
 					@foreach ($section->items as $it)
-					<a class="shp-card" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $it->item_srl) }}">
+					<a class="shp-card" href="{{ !empty($it->item_url) ? $it->item_url : getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $it->item_srl) }}">
 						<span class="shp-card-thumb" @if (!empty($it->thumb)) style="background-image:url('{{ escape($it->thumb) }}')" @endif>
 							@if (empty($it->thumb))<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 11l2.5 3 3.5-4.5L19 16H5z"/></svg>@endif
 						</span>
@@ -174,7 +168,9 @@
 					@endforeach
 								@if ($it->is_new === 'Y')<span class="shp-badge">NEW</span>@endif
 							</span>
-							<span class="shp-card-name">{{ $it->item_name }}</span>
+							@if (!empty($it->brand_name))<span class="shp-card-brand">{{ $it->brand_name }}</span>@endif
+							@if (!empty($it->seller_name) && ($shop_config->show_seller_on_card ?? 'Y') !== 'N')<span class="shp-card-seller">{{ $it->seller_name }}</span>@endif
+				<span class="shp-card-name">{{ $it->item_name }}</span>
 							@if (!empty($it->review_count))
 							<span class="shp-card-rating">
 								<svg width="12" height="12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2 2 9.3l6.9-1L12 2z"/></svg>
@@ -197,6 +193,7 @@
 								<strong>{{ shop_item_price($it, 'price') }}</strong>
 								@endif
 							</span>
+							{!! shop_timesale_badge($it) !!}
 						</span>
 					</a>
 					@endforeach
@@ -212,7 +209,6 @@
 
 	<script>
 	(function () {
-		// 배너 슬라이더: 5초 간격 페이드 전환
 		var wrap = document.getElementById('shpHomeBanner');
 		if (!wrap) return;
 		var items = wrap.querySelectorAll('.shp-home-banner-item');
@@ -246,7 +242,6 @@
 
 <script>
 (function () {
-	// 상단 카테고리 메뉴 펼치기
 	var btn = document.getElementById('shpCatBtn');
 	var panel = document.getElementById('shpCatPanel');
 	if (!btn || !panel) return;

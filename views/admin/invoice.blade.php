@@ -63,7 +63,6 @@
 				<h2>{{ lang('commerce.admin_invoice_9') }}</h2>
 				<table class="zmi-tbl">
 					<tbody>
-						{{-- 주문번호는 머리글 오른쪽에 크게 나온다. 여기 또 적지 않는다 --}}
 						<tr><th>{{ lang('commerce.admin_invoice_11') }}</th><td>{{ $zmi_status[$order->status] ?? $order->status }}</td></tr>
 						<tr><th>{{ lang('commerce.admin_invoice_12') }}</th><td>{{ $order->orderer_name }}</td></tr>
 						<tr><th>{{ lang('commerce.admin_invoice_13') }}</th><td>{{ $order->orderer_phone }}</td></tr>
@@ -112,7 +111,6 @@
 				{
 					$zmi_has_sku = $zmi_has_sku || trim((string)($zmi_sku_row->sku ?? '')) !== '';
 				}
-				// 상품명 줄이 표 전체를 가로지른다. 아래 줄의 칸 수와 맞춰야 어긋나지 않는다
 				$zmi_cols = 4 + ($zmi_has_sku ? 1 : 0) + ($show_tax ? 2 : 0);
 			@endphp
 			<thead>
@@ -130,7 +128,6 @@
 			</thead>
 			<tbody>
 				@foreach ($order_items as $i => $oi)
-				{{-- 상품명이 길면 한 줄짜리 표가 통째로 높아진다. 이름을 윗줄로 빼 상품마다 두 줄로 맞춘다 --}}
 				<tr class="zmi-item-name">
 					<td colspan="{{ $zmi_cols }}">
 						{{ $oi->item_name }}@if (($oi->tax_type ?? 'taxable') === 'free')<span class="zmi-tag">{{ lang('commerce.admin_invoice_28') }}</span>@endif
@@ -152,7 +149,6 @@
 			</tbody>
 		</table>
 
-		{{-- 항목마다 한 줄을 쓰면 장수가 늘어난다. 두 칸씩 접어 담고 결제 금액만 따로 둔다 --}}
 		<div class="zmi-sum">
 			<div class="zmi-sum-grid">
 				@if ($show_tax)
@@ -160,7 +156,6 @@
 				@if ($tax->free_supply > 0)
 				<div class="zmi-sum-cell"><span>{{ $tax->zero_rated ? lang('commerce.adm_supply_zero') : lang('commerce.adm_supply_free') }}</span><b>{{ shop_money_in($tax->free_supply, $order->currency ?? 'KRW') }}</b></div>
 				@endif
-				{{-- 배송비는 받은 금액 그대로 적는다. 공급가액으로 쪼개면 지정한 배송비와 달라 보인다 --}}
 				<div class="zmi-sum-cell"><span>{{ lang('commerce.admin_invoice_33') }}</span><b>{{ shop_money_in($order->delivery_fee_total, $order->currency ?? 'KRW') }}</b></div>
 				<div class="zmi-sum-cell"><span>{{ lang('commerce.admin_invoice_31') }}</span><b>{{ shop_money_in($tax->vat, $order->currency ?? 'KRW') }}</b></div>
 				@else
@@ -205,10 +200,6 @@
 
 
 <style>
-/*
- * 거래명세서 — 종이는 A4(210x297mm) 고정. 좁은 화면에서는 통째로 축소해 비율을 지킨다.
- * 칸마다 선을 두르지 않는다. 대신 덩어리는 제목·여백·바탕으로 확실히 나눈다.
- */
 .zmi-page {
 	--zmi-ink: #16202e;
 	--zmi-sub: #6b7684;
@@ -224,7 +215,6 @@
 .zmi-count { margin-right: auto; font-size: 13px; color: var(--zmi-sub); }
 .zmi-btn { padding: 9px 18px; border: 1px solid #dfe3e9; border-radius: 8px; background: #fff; color: var(--zmi-ink); font-family: inherit; font-size: 14px; cursor: pointer; }
 .zmi-btn:hover { border-color: #b9c0ca; }
-/* 관리자 화면의 button 규칙이 글자색을 덮어써서 파란 바탕에 검은 글자가 된다 */
 .zmi-page button.zmi-btn-primary,
 .zmi-page button.zmi-btn-primary:hover,
 .zmi-page button.zmi-btn-primary:focus { border-color: var(--zmi-accent); background: var(--zmi-accent); color: #fff; font-weight: 700; }
@@ -236,20 +226,17 @@
 	display: flex; flex-direction: column;
 }
 
-/* 머리 */
 .zmi-head { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding-bottom: 7px; margin-bottom: 4px; border-bottom: 2px solid var(--zmi-ink); }
 .zmi-head h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: 5px; }
 .zmi-code { text-align: right; font-size: 11.5px; color: var(--zmi-sub); line-height: 1.7; }
 .zmi-code b { display: block; font-size: 13px; font-weight: 700; color: var(--zmi-ink); letter-spacing: .4px; }
 
-/* 구획 제목 — 아래에 짧은 선을 두어 다음 덩어리가 시작됨을 보인다 */
 .zmi-sheet h2 {
 	margin: 15px 0 0; padding-bottom: 5px;
 	border-bottom: 1.5px solid var(--zmi-rule);
 	font-size: 12.5px; font-weight: 700; letter-spacing: .5px; line-height: 1.3;
 }
 
-/* 정보 표 — 라벨 칸에만 옅은 바탕. 값과 라벨이 한눈에 갈린다 */
 .zmi-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
 .zmi-tbl th, .zmi-tbl td { border: 0; border-bottom: 1px solid var(--zmi-line); padding: 5px 9px; text-align: left; vertical-align: top; line-height: 1.5; }
 .zmi-tbl th { width: 76px; background: var(--zmi-fill); font-weight: 600; color: var(--zmi-sub); white-space: nowrap; }
@@ -260,8 +247,6 @@
 .zmi-col { flex: 1; min-width: 0; }
 .zmi-col .zmi-tbl { margin-top: 8px; }
 
-/* 품목 — 머리줄에 바탕을 깔아 표가 시작되는 지점을 확실히 한다 */
-/* 폭을 정한 대로 쓴다. 남는 폭을 브라우저가 나눠 가지면 머리와 값이 어긋난다 */
 .zmi-items { margin-top: 8px; table-layout: auto; }
 .zmi-items .zmi-fit { width: 1%; min-width: 64px; white-space: nowrap; }
 .zmi-items tbody tr.zmi-item-num td.zmi-r, .zmi-items tbody tr.zmi-item-num td.zmi-c { white-space: nowrap; }
@@ -272,7 +257,6 @@
 .zmi-items thead th + th,
 .zmi-items tbody tr.zmi-item-num td + td { border-left: 1px solid var(--zmi-line); }
 
-/* 상품명 줄과 숫자 줄이 한 덩어리다. 사이 선을 지우고 상품 사이에만 선을 긋는다 */
 .zmi-items tbody tr.zmi-item-name td {
 	padding-top: 8px; padding-bottom: 2px;
 	border-bottom: 0;
@@ -283,10 +267,8 @@
 }
 .zmi-items tbody tr.zmi-item-name:first-child td { border-top: 0; }
 .zmi-items tbody tr.zmi-item-num td { padding-top: 2px; padding-bottom: 8px; border-bottom: 0; }
-/* 한 상품의 두 줄은 쪽을 넘길 때 갈라지면 안 된다 */
 .zmi-items tbody tr.zmi-item-name { break-after: avoid; page-break-after: avoid; }
 .zmi-items tbody tr:last-child td { border-bottom: 1.5px solid var(--zmi-rule) !important; }
-/* 번호 칸만 옅게. 상품명 줄은 한 칸이 전부라 이 규칙이 닿으면 이름까지 옅어진다 */
 .zmi-items tbody tr.zmi-item-num td:first-child { color: var(--zmi-sub); }
 .zmi-tag { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 3px; background: #e9edf2; font-size: 10px; font-weight: 600; color: var(--zmi-sub); vertical-align: middle; }
 .zmi-opt { display: block; margin-top: 2px; font-size: 10.5px; line-height: 1.4; color: var(--zmi-sub); }
@@ -296,14 +278,12 @@
 .zmi-c { text-align: center; }
 .zmi-r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-/* 합계 — 오른쪽에 붙는 정산 덩어리. 옅은 바탕으로 표와 분리한다 */
 .zmi-sum { width: 130mm; max-width: 100%; margin: 10px 0 0 auto; background: var(--zmi-fill); }
 .zmi-sum-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .zmi-sum-cell {
 	display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
 	padding: 5px 12px; border-bottom: 1px solid #dde2e8; font-size: 12px;
 }
-/* 홀수 개면 마지막 칸이 왼쪽에만 남는다. 오른쪽 빈자리에도 선을 이어 준다 */
 .zmi-sum-cell:nth-child(odd):last-child { grid-column: 1 / -1; }
 .zmi-sum-cell span { color: var(--zmi-sub); font-size: 11.5px; white-space: nowrap; }
 .zmi-sum-cell b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -317,7 +297,6 @@
 .zmi-memo { margin-top: 12px; padding: 8px 12px; background: var(--zmi-fill); border-left: 2.5px solid var(--zmi-rule); font-size: 11.5px; line-height: 1.7; color: var(--zmi-sub); }
 .zmi-memo b { color: var(--zmi-ink); }
 
-/* 꼬리 */
 .zmi-foot { margin-top: auto; padding-top: 10px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .zmi-note { flex: 1; min-width: 0; padding-top: 8px; border-top: 1px solid var(--zmi-line); font-size: 10.5px; color: var(--zmi-sub); line-height: 1.6; white-space: pre-line; }
 .zmi-logo { flex: 0 0 auto; max-width: 26mm; max-height: 9mm; width: auto; height: auto; object-fit: contain; opacity: .75; }

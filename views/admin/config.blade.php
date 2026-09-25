@@ -2,22 +2,68 @@
 @include('_langfield_assets')
 
 @php
-// 설정은 성격별로 별도 콘솔 페이지로 나뉜다. zmc_page(config_*)가 어느 구획인지 정한다
 $cfg_section_map = ['config' => 'general', 'config_shipping' => 'shipping', 'config_display' => 'display', 'config_rewards' => 'rewards', 'config_notify' => 'notify', 'config_policy' => 'policy'];
 $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 @endphp
-<div class="rsva">
+<div class="rsva cfg-page">
 	<style>
+	.cfg-page { max-width: 1320px; }
+	.cfg-page h4.cfg-sub { margin: 26px 0 2px; padding-top: 18px; border-top: 1px solid var(--zmc-line-strong, #d6d2c8); font-size: 14px; font-weight: 700; color: var(--zmc-ink, #232a3b); }
+	.cfg-page .rsva-panel > .rsva-form-grid { display: block; }
+	.cfg-page .rsva-panel > .rsva-form-grid > div { display: grid; grid-template-columns: 210px minmax(0, 400px) minmax(0, 1fr); align-items: center; gap: 4px 28px; padding: 14px 0; border-top: 1px solid var(--zmc-line, #e6e3dc); }
+	.cfg-page .rsva-panel > .rsva-form-grid > div > .cfg-guide, .cfg-page .rsva-panel > .rsva-form-grid > div > .zmc-help, .cfg-page .rsva-panel > .rsva-form-grid > div > .rsva-help { grid-column: 3; grid-row: 1 / span 3; align-self: center; display: block !important; margin: 0; padding-left: 16px; border-left: 2px solid var(--zmc-line, #e6e3dc); font-size: 12.5px; line-height: 1.65; color: var(--zmc-sub, #7a7f8c); }
+	.cfg-page .cfg-guide a { color: var(--zmc-brand, #26345c); }
+	.cfg-page .rsva-panel > .rsva-form-grid > div.cfg-wide { grid-template-columns: 210px minmax(0, 1fr); align-items: start; }
+	.cfg-page .rsva-panel > .rsva-form-grid > div.cfg-wide > label { padding-top: 6px; }
+	.cfg-page .cfg-wide-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; width: 100%; }
+	.cfg-page .cfg-guide-top { margin: 0; font-size: 12.5px; line-height: 1.65; color: var(--zmc-sub, #7a7f8c); }
+	.cfg-page #zmcZoneRows { width: 100%; }
+	.cfg-page .zmc-zone-row { display: grid !important; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1.4fr) 120px auto; gap: 8px; width: 100%; }
+	.cfg-page .zmc-zone-row > * { width: 100%; min-width: 0; box-sizing: border-box; }
+	.cfg-page .zmc-zone-row > .zmc-tier-wrap { grid-column: 1 / -1; }
+	.cfg-page .zmc-tier { display: grid !important; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+	.cfg-page .zmc-tier input { width: 100% !important; }
+	.cfg-live .rsva-panel > .rsva-form-grid > div > .cfg-guide, .cfg-live .rsva-panel > .rsva-form-grid > div > .zmc-help, .cfg-live .rsva-panel > .rsva-form-grid > div > .rsva-help { grid-column: 2; grid-row: auto; padding-left: 0; border-left: 0; }
+	.cfg-page .rsva-panel > .rsva-form-grid > div:first-child { border-top: 0; padding-top: 2px; }
+	.cfg-page .rsva-panel > .rsva-form-grid > div > label { grid-column: 1; margin: 0; font-size: 14px; font-weight: 600; color: var(--zmc-ink, #232a3b); }
+	.cfg-page .rsva-panel > .rsva-form-grid > div > :not(label) { grid-column: 2; }
+	.cfg-page .rsva-panel > .rsva-form-grid > div > input:not([type="checkbox"]):not([type="radio"]), .cfg-page .rsva-panel > .rsva-form-grid > div > select, .cfg-page .rsva-panel > .rsva-form-grid > div > textarea { width: 100%; }
+	.cfg-page .rsva-help, .cfg-page .zmc-help { font-size: 12.5px; color: var(--zmc-sub, #7a7f8c); }
+	.cfg-page form > .rsva-btn-primary { position: sticky; bottom: 16px; z-index: 5; padding: 10px 26px; box-shadow: 0 8px 20px -10px rgba(38,52,92,.6); }
+	@media (max-width: 1100px) { .cfg-page .rsva-panel > .rsva-form-grid > div { grid-template-columns: 200px minmax(0, 1fr); } .cfg-page .rsva-panel > .rsva-form-grid > div > .cfg-guide, .cfg-page .rsva-panel > .rsva-form-grid > div > .zmc-help { grid-column: 2; grid-row: auto; padding-left: 0; border-left: 0; } }
+	@media (max-width: 760px) { .cfg-page .rsva-panel > .rsva-form-grid > div { grid-template-columns: 1fr; } .cfg-page .rsva-panel > .rsva-form-grid > div > * { grid-column: 1 !important; } }
 	.zmc-cfg-bar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 	.zmc-cfg-help-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #6b7684; cursor: pointer; }
 	.rsva:not(.zmc-show-help) .zmc-help { display: none !important; }
 	</style>
+	@php
+	$cfg_guides = [];
+	foreach (['enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes', 'default_ship_fee', 'free_ship_over', 'claim_days', 'sweettracker_api_key', 'shop_main', 'category_layout', 'home_count', 'show_shop_nav', 'show_search', 'show_admin_fab', 'item_sticky', 'currency_code_prefix', 'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo', 'ship_guide', 'claim_guide', 'privacy_text', 'privacy_version', 'retention_days', 'notify_admin', 'notify_low_stock', 'biz_name', 'biz_ceo', 'biz_number', 'biz_tel', 'biz_address', 'biz_note', 'vat_rate'] as $cfg_gk)
+	{
+		$cfg_gt = lang('commerce.cfg_guide_' . $cfg_gk);
+		if (strpos($cfg_gt, 'cfg_guide_') === false) { $cfg_guides[$cfg_gk] = $cfg_gt; }
+	}
+	@endphp
+	<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		var guides = {!! json_encode($cfg_guides, JSON_UNESCAPED_UNICODE + JSON_HEX_TAG) !!};
+		Object.keys(guides).forEach(function (name) {
+			var el = document.querySelector('.cfg-page .rsva-form-grid > div [name="' + name + '"]');
+			var row = el && el.closest('.rsva-form-grid > div');
+			if (!row || row.querySelector('.cfg-guide, .zmc-help, .rsva-help')) return;
+			var p = document.createElement('p');
+			p.className = 'cfg-guide';
+			p.textContent = guides[name];
+			row.appendChild(p);
+		});
+	});
+	</script>
+
 	<div class="zmc-cfg-bar">
 		<label class="zmc-cfg-help-toggle"><input type="checkbox" id="zmcCfgHelp" /> {{ lang('commerce.cfg_show_help') }}</label>
 	</div>
 	<script>
 	(function () {
-		// 설명 문구는 기본 숨김. 토글 상태는 브라우저에 기억한다
 		var toggle = document.getElementById('zmcCfgHelp');
 		var wrap = toggle.closest('.rsva');
 		function apply(on) { wrap.classList.toggle('zmc-show-help', on); toggle.checked = on; }
@@ -46,11 +92,33 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<div><label>{{ lang('commerce.admin_config_12') }}</label><input type="number" name="pending_minutes" min="10" max="1440" value="{{ $shop_config->pending_minutes }}" /></div>
 			</div>
 		</div>
+		@php $cfg_mk_ready = Zittme\Modules\Commerce\Models\Seller::schemaReady(); @endphp
+		<div class="rsva-panel">
+			<h3>{{ lang('commerce.mk_cfg_title') }}</h3>
+			<p style="margin:-6px 0 14px;font-size:13px;color:var(--zmc-sub, #6b7684)">{{ lang('commerce.mk_cfg_desc') }}</p>
+			@if (!$cfg_mk_ready)<p style="margin:0 0 14px;font-size:13px;color:var(--zmc-bad, #c0392b)">{{ lang('commerce.mk_cfg_need_update') }}</p>@endif
+			<div class="rsva-form-grid">
+				<div><label>{{ lang('commerce.mk_cfg_commission') }}</label><input type="number" name="market_commission" min="0" max="100" step="0.01" value="{{ $shop_config->market_commission ?? 10 }}" /></div>
+				<div><label>{{ lang('commerce.sc_cfg_item_in_store') }}</label><select name="seller_item_in_store"><option value="Y" @if(($shop_config->seller_item_in_store ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->seller_item_in_store ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select></div>
+				<div><label>{{ lang('commerce.sc_cfg_item_review') }}</label><select name="market_item_review"><option value="N" @if(($shop_config->market_item_review ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->market_item_review ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></div>
+				<div><label>{{ lang('commerce.mk_cfg_apply') }}</label><select name="market_apply"><option value="N" @if(($shop_config->market_apply ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->market_apply ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></div>
+			</div>
+		</div>
 		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
 	</form>
 	@endif
 
 	@if ($cfg_section === 'shipping')
+	<div class="rsva-panel">
+		<h3>{{ lang('commerce.cfg_payment') }} {{ $pay_available ? '' : ': ' . lang('commerce.cfg_pay_missing') }}</h3>
+		<div class="cfg-pay-row">
+			<p style="margin:0;font-size:13px;color:#6b7684">{{ lang('commerce.admin_config_50') }}</p>
+			@if ($pay_available)
+			<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', 'admin', 'act', 'dispZittme_payAdminConfig') }}" target="zittmePayAdmin" onclick="var w = window.open(this.href, 'zittmePayAdmin', 'width=1200,height=860,scrollbars=yes,resizable=yes'); if (w) { w.focus(); return false; }">{{ lang('commerce.cfg_pay_open') }} <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 1h4v4M11 1L5.5 6.5M9.5 7.5V11h-8.5V2.5H5"/></svg></a>
+			@endif
+		</div>
+	</div>
+	<style>.cfg-pay-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; } .cfg-pay-row .rsva-btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }</style>
 	<form action="{{ getUrl('') }}" method="post">
 		<input type="hidden" name="module" value="admin" />
 		<input type="hidden" name="act" value="procCommerceAdminInsertConfig" />
@@ -60,25 +128,32 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<div><label>{{ lang('commerce.admin_config_14') }}</label><input type="number" name="default_ship_fee" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$shop_config->default_ship_fee) }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_15') }}</label><input type="number" name="free_ship_over" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$shop_config->free_ship_over) }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_19') }}</label><input type="number" name="claim_days" min="0" max="90" value="{{ $shop_config->claim_days }}" /></div>
-			</div>
-			<div style="margin-top:16px">
-				<label style="font-weight:700">{{ lang('commerce.admin_config_20') }}</label>
-				<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1;line-height:1.7">
+				<div>
+					<label>{{ lang('commerce.admin_config_20') }}</label>
+					<input type="text" name="sweettracker_api_key" value="{{ $shop_config->sweettracker_api_key ?? '' }}" placeholder="{{ lang('commerce.admin_config_103') }}" autocomplete="off" />
+				<p class="cfg-guide">
 					{{ lang('commerce.admin_config_21') }}
-					<a href="https://tracking.sweettracker.co.kr" target="_blank" rel="noopener" style="color:#2677e3">{{ lang('commerce.admin_config_22') }}</a>{{ lang('commerce.cfg_track_note1') }}
+					<a href="https://tracking.sweettracker.co.kr" target="_blank" rel="noopener" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_config_22') }}</a>{{ lang('commerce.cfg_track_note1') }}
 					{{ lang('commerce.cfg_track_note2') }}
 					{{ lang('commerce.cfg_track_note3') }} <b>{{ lang('commerce.admin_config_24') }}</b> {{ lang('commerce.admin_config_25') }}
 				</p>
-				<input type="text" name="sweettracker_api_key" value="{{ $shop_config->sweettracker_api_key ?? '' }}" placeholder="{{ lang('commerce.admin_config_103') }}" style="width:340px;max-width:100%" autocomplete="off" />
-			</div>
-			<div style="margin-top:16px">
-				<label style="font-weight:700">{{ lang('commerce.admin_config_26') }}</label>
-				<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1;line-height:1.7">
-					{{ lang('commerce.cfg_zone_note') }}
-				</p>
-				<div id="zmcZoneRows"></div>
-				<button type="button" class="rsva-btn rsva-btn-sm" id="zmcZoneAdd">{{ lang('commerce.admin_config_28') }}</button>
-				<input type="hidden" name="ship_extra_zones" id="zmcZonesJson" value="{{ $zmc_zones_display }}" />
+				</div>
+				<div class="cfg-wide">
+					<label>{{ lang('commerce.cfg_couriers') }}</label>
+					<div class="cfg-wide-body">
+						<p class="cfg-guide cfg-guide-top">{{ lang('commerce.cfg_couriers_note') }}</p>
+						<textarea name="couriers" rows="8" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:ui-monospace,Consolas,monospace;font-size:12.5px">{{ \Zittme\Modules\Commerce\Models\Courier::toLines(\Zittme\Modules\Commerce\Models\Courier::getList()) }}</textarea>
+					</div>
+				</div>
+				<div class="cfg-wide">
+					<label>{{ lang('commerce.admin_config_26') }}</label>
+					<div class="cfg-wide-body">
+						<p class="cfg-guide cfg-guide-top">{{ lang('commerce.cfg_zone_note') }}</p>
+						<div id="zmcZoneRows"></div>
+						<button type="button" class="rsva-btn rsva-btn-sm" id="zmcZoneAdd">{{ lang('commerce.admin_config_28') }}</button>
+						<input type="hidden" name="ship_extra_zones" id="zmcZonesJson" value="{{ $zmc_zones_display }}" />
+					</div>
+				</div>
 			</div>
 		</div>
 		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
@@ -86,7 +161,9 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 	@endif
 
 	@if ($cfg_section === 'display')
-	<form action="{{ getUrl('') }}" method="post">
+	<div class="cfg-live">
+	<div class="cfg-live-edit">
+	<form action="{{ getUrl('') }}" method="post" id="cfgLiveForm">
 		<input type="hidden" name="module" value="admin" />
 		<input type="hidden" name="act" value="procCommerceAdminInsertConfig" />
 		<div class="rsva-panel">
@@ -94,10 +171,12 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 			<div class="rsva-form-grid">
 				<div><label>{{ lang('commerce.admin_config_30') }}</label><select name="shop_main"><option value="list" @if(($shop_config->shop_main ?? 'list') !== 'home') selected @endif>{{ lang('commerce.admin_config_31') }}</option><option value="home" @if(($shop_config->shop_main ?? 'list') === 'home') selected @endif>{{ lang('commerce.admin_config_32') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_33') }}</label><select name="category_layout"><option value="top" @if(($shop_config->category_layout ?? 'top') !== 'side') selected @endif>{{ lang('commerce.admin_config_34') }}</option><option value="side" @if(($shop_config->category_layout ?? 'top') === 'side') selected @endif>{{ lang('commerce.admin_config_35') }}</option></select></div>
+				<div><label>{{ lang('commerce.cfg_item_image_size') }}</label><select name="item_image_size">@foreach (['S' => 'cfg_item_image_s', 'M' => 'cfg_item_image_m', 'L' => 'cfg_item_image_l'] as $cfg_isz => $cfg_isz_lang)<option value="{{ $cfg_isz }}" @if(($shop_config->item_image_size ?? 'M') === $cfg_isz) selected @endif>{{ lang('commerce.' . $cfg_isz_lang) }}</option>@endforeach</select></div>
 				<div><label>{{ lang('commerce.admin_config_36') }}</label><input type="number" name="home_count" min="4" max="24" value="{{ $shop_config->home_count ?? 8 }}" /></div>
 				<div><label>{{ lang('commerce.cfg_show_shop_nav') }}</label><select name="show_shop_nav"><option value="Y" @if(($shop_config->show_shop_nav ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="N" @if(($shop_config->show_shop_nav ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select><small class="rsva-help">{{ lang('commerce.cfg_show_hint') }}</small></div>
 				<div><label>{{ lang('commerce.cfg_show_search') }}</label><select name="show_search"><option value="Y" @if(($shop_config->show_search ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="N" @if(($shop_config->show_search ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select></div>
 				<div><label>{{ lang('commerce.cfg_show_admin_fab') }}</label><select name="show_admin_fab"><option value="Y" @if(($shop_config->show_admin_fab ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="N" @if(($shop_config->show_admin_fab ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select></div>
+				<div><label>{{ lang('commerce.sc_cfg_seller_on_card') }}</label><select name="show_seller_on_card"><option value="Y" @if(($shop_config->show_seller_on_card ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->show_seller_on_card ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_16') }}</label><select name="item_sticky"><option value="N" @if(($shop_config->item_sticky ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_17') }}</option><option value="Y" @if(($shop_config->item_sticky ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_18') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_104') }}</label><select name="currency_code_prefix"><option value="N" @if(($shop_config->currency_code_prefix ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_105') }}</option><option value="Y" @if(($shop_config->currency_code_prefix ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_106') }}</option></select></div>
 			</div>
@@ -116,7 +195,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<label style="font-weight:700">{{ lang('commerce.admin_config_41') }}</label>
 				<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_config_42') }}</p>
 				<style>
-				/* 배너 한 건 = 카드. 프론트 편집 패널과 같은 항목을 담는다 */
 				.zmc-banner-card { position: relative; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid #e5e8ee; border-radius: 12px; background: #fbfcfd; }
 				.zmc-banner-imgs { display: flex; flex-direction: column; gap: 10px; }
 				.zmc-banner-img { display: flex; gap: 10px; align-items: center; }
@@ -133,7 +211,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				.zmc-banner-head { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 2px; }
 				.zmc-banner-no { font-size: 13px; font-weight: 700; color: #4e5968; }
 				@media (max-width: 900px) { .zmc-banner-card { grid-template-columns: minmax(0, 1fr); } }
-				.zmc-pay-link { color: #2677e3; }
+				.zmc-pay-link { color: var(--zmc-brand, #2677e3); }
 				.zmc-hint { margin: 4px 0 8px; font-size: 12px; color: #8b95a1; line-height: 1.6; }
 				.zmc-logo-row { display: flex; align-items: center; gap: 12px; }
 				.zmc-logo-thumb { flex: 0 0 auto; width: 132px; height: 56px; border: 1px solid #e5e8ee; border-radius: 8px; background: #fff center/contain no-repeat; }
@@ -157,6 +235,75 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 		</div>
 		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
 	</form>
+	</div>
+	@php
+	$cfg_shop = \ModuleModel::getMidList((object)['module' => 'commerce'], ['mid']) ?: [];
+	$cfg_shop_mid = '';
+	foreach ($cfg_shop as $cfg_row) { $cfg_shop_mid = (string)$cfg_row->mid; break; }
+	@endphp
+	<aside class="cfg-live-view" aria-label="{{ lang('commerce.cfg_live_title') }}">
+		<div class="cfg-live-bar">
+			<b>{{ lang('commerce.cfg_live_title') }}</b>
+			<span class="cfg-live-state" id="cfgLiveState">{{ lang('commerce.cfg_live_hint') }}</span>
+			<div class="cfg-live-dev" role="group">
+				<button type="button" data-w="100%" class="is-on">PC</button>
+				<button type="button" data-w="390px">{{ lang('commerce.cfg_live_mobile') }}</button>
+			</div>
+		</div>
+		<div class="cfg-live-frame"><iframe id="cfgLiveFrame" title="{{ lang('commerce.cfg_live_title') }}" src="{{ getUrl('', 'mid', $cfg_shop_mid, 'zmc_preview', 'Y') }}"></iframe></div>
+	</aside>
+	</div>
+	<style>
+	.cfg-page.is-live { max-width: none; }
+	.cfg-live { display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: 20px; align-items: start; }
+	.cfg-live .rsva-panel > .rsva-form-grid > div { grid-template-columns: 170px minmax(0, 1fr); gap: 4px 18px; }
+	.cfg-live-view { position: sticky; top: 124px; display: flex; flex-direction: column; border: 1px solid var(--zmc-line, #e6e3dc); border-radius: var(--zmc-r, 6px); background: var(--zmc-surface, #fff); overflow: hidden; }
+	.cfg-live-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--zmc-line, #e6e3dc); font-size: 13px; }
+	.cfg-live-state { flex: 1; color: var(--zmc-sub, #7a7f8c); }
+	.cfg-live-state.is-busy { color: var(--zmc-warn, #a3690c); }
+	.cfg-live-dev { display: flex; border: 1px solid var(--zmc-line-strong, #d6d2c8); border-radius: var(--zmc-r-sm, 5px); overflow: hidden; }
+	.cfg-live-dev button { padding: 5px 12px; border: 0; background: var(--zmc-surface, #fff); font: inherit; font-size: 12.5px; color: var(--zmc-sub, #7a7f8c); cursor: pointer; }
+	.cfg-live-dev button.is-on { background: var(--zmc-brand, #26345c); color: var(--zmc-on-brand, #fff8e6); }
+	.cfg-live-frame { height: calc(100vh - 190px); min-height: 520px; background: var(--zmc-side, #efede8); display: flex; justify-content: center; }
+	.cfg-live-frame iframe { width: 100%; height: 100%; border: 0; background: #fff; transition: width .2s; }
+	@media (max-width: 1280px) { .cfg-live { grid-template-columns: 1fr; } .cfg-live-view { position: static; } }
+	@media (prefers-reduced-motion: reduce) { .cfg-live-frame iframe { transition: none; } }
+	</style>
+	<script>
+	(function () {
+		var form = document.getElementById('cfgLiveForm');
+		var frame = document.getElementById('cfgLiveFrame');
+		var state = document.getElementById('cfgLiveState');
+		if (!form || !frame) return;
+		document.querySelector('.cfg-page').classList.add('is-live');
+		var timer = null, scrollY = 0;
+		frame.addEventListener('load', function () { try { frame.contentWindow.scrollTo(0, scrollY); } catch (e) {} });
+		function send() {
+			form.dispatchEvent(new Event('submit', { cancelable: true }));
+			var fd = new FormData(form), data = {};
+			fd.forEach(function (v, k) { if (typeof v === 'string' && k !== 'act' && k !== 'module') { data[k] = v; } });
+			state.textContent = {!! json_encode(lang('commerce.cfg_live_busy')) !!};
+			state.classList.add('is-busy');
+			exec_json('commerce.procCommerceAdminPreviewConfig', data, function () {
+				try { scrollY = frame.contentWindow.scrollY; } catch (e) { scrollY = 0; }
+				frame.contentWindow.location.reload();
+				state.textContent = {!! json_encode(lang('commerce.cfg_live_ready')) !!};
+				state.classList.remove('is-busy');
+			}, function () { state.textContent = {!! json_encode(lang('commerce.cfg_live_fail')) !!}; });
+		}
+		function later() { clearTimeout(timer); timer = setTimeout(send, 700); }
+		form.addEventListener('input', later);
+		form.addEventListener('change', later);
+		form.addEventListener('click', function (e) { if (e.target.closest('button[type="button"]')) { later(); } });
+		document.querySelectorAll('.cfg-live-dev button').forEach(function (b) {
+			b.addEventListener('click', function () {
+				document.querySelectorAll('.cfg-live-dev button').forEach(function (x) { x.classList.toggle('is-on', x === b); });
+				frame.style.width = b.getAttribute('data-w');
+			});
+		});
+		send();
+	})();
+	</script>
 	@endif
 
 	@if ($cfg_section === 'rewards')
@@ -177,12 +324,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 	</form>
 	@endif
 
-	@if ($cfg_section === 'policy')
-	<div class="rsva-panel">
-		<h3>{{ lang('commerce.cfg_payment') }} {{ $pay_available ? '' : ': ' . lang('commerce.cfg_pay_missing') }}</h3>
-		<p style="margin:0;font-size:13px;color:#6b7684">{{ lang('commerce.admin_config_50') }}</p>
-	</div>
-	@endif
 
 	@if ($cfg_section === 'notify')
 	<form action="{{ getUrl('') }}" method="post">
@@ -220,18 +361,21 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				</div>
 			</div>
 
-			{{-- 사건마다 켜고 끈다. 값이 없으면 보내는 것으로 본다 --}}
-			<h4 style="margin:18px 0 8px;font-size:14px">{{ lang('commerce.shop_notify_events') }}</h4>
-			<div class="rsva-inline">
-				@foreach ([
-					'notify_admin_new_order' => 'shop_notify_new_order',
-					'notify_admin_claim' => 'shop_notify_claim',
-					'notify_buyer_received' => 'shop_notify_received',
-					'notify_buyer_paid' => 'shop_notify_paid',
-					'notify_buyer_shipping' => 'shop_notify_shipping',
-					'notify_buyer_delivered' => 'shop_notify_delivered',
-					'notify_buyer_claim_done' => 'shop_notify_claim_done',
-				] as $nk => $nlabel)
+			<h4 class="cfg-sub">{{ lang('commerce.shop_notify_to_admin') }}</h4>
+			<div class="rsva-form-grid">
+				@foreach (['notify_admin_new_order' => 'shop_notify_new_order', 'notify_admin_claim' => 'shop_notify_claim'] as $nk => $nlabel)
+				<div>
+					<label>{{ lang('commerce.' . $nlabel) }}</label>
+					<select name="{{ $nk }}">
+						<option value="Y" @if(($shop_config->$nk ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.shop_use_on') }}</option>
+						<option value="N" @if(($shop_config->$nk ?? 'Y') === 'N') selected @endif>{{ lang('commerce.shop_use_off') }}</option>
+					</select>
+				</div>
+				@endforeach
+			</div>
+			<h4 class="cfg-sub">{{ lang('commerce.shop_notify_to_buyer') }}</h4>
+			<div class="rsva-form-grid">
+				@foreach (['notify_buyer_received' => 'shop_notify_received', 'notify_buyer_paid' => 'shop_notify_paid', 'notify_buyer_shipping' => 'shop_notify_shipping', 'notify_buyer_delivered' => 'shop_notify_delivered', 'notify_buyer_claim_done' => 'shop_notify_claim_done'] as $nk => $nlabel)
 				<div>
 					<label>{{ lang('commerce.' . $nlabel) }}</label>
 					<select name="{{ $nk }}">
@@ -359,7 +503,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				</div>
 				<div>
 					<label>{{ lang('commerce.shop_currencies') }}</label>
-					{{-- 통화 선택은 짓미페이 기본 설정 한 곳에서만 한다 --}}
 					@php
 					// 출력식 안에서 HTML 을 조립하면 템플릿이 style 속성을 코드로 읽는다. 여기서 만든다
 					$cfg_pay_link = '<a href="' . escape(getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispZittme_payAdminConfig')) . '" class="zmc-pay-link">' . escape(lang('commerce.cfg_pay_settings')) . '</a>';
@@ -442,7 +585,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 
 	<script>
 	(function () {
-		// 홈 배너 편집: 행 단위 입력을 hidden JSON 으로 직렬화해서 저장한다
 		var rowsEl = document.getElementById('zmcBannerRows');
 		function renumberBanners() {
 			var labels = rowsEl.querySelectorAll('.zmc-banner-no');
@@ -454,7 +596,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 		var addBtn = document.getElementById('zmcBannerAdd');
 		if (!rowsEl || !jsonEl) return;
 
-		// 배너 이미지: 주소를 직접 적는 대신 파일을 골라 올린다 (프론트 편집 패널과 같은 방식)
 		function setBannerImage(row, key, url, touched) {
 			var cell = row.querySelector('[data-img=' + key + ']');
 			row.querySelector('[data-k=' + key + ']').value = url;
@@ -463,7 +604,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 			cell.querySelector('[data-pick]').textContent = url ? {!! json_encode(lang('commerce.cfg_change')) !!} : {!! json_encode(lang('commerce.cfg_pick')) !!};
 			thumb.style.backgroundImage = url ? 'url("' + url + '")' : '';
 			thumb.classList.toggle('is-empty', !url);
-			// 배경 이미지를 넣었는데 배경 종류가 그라디언트·단색이면 화면에 안 보인다 — 함께 맞춘다
 			if (touched && key === 'image' && row.zmcExtra) {
 				var sel = row.querySelector('[data-k=bg_type]');
 				if (url) { if (sel) sel.value = 'image'; }
@@ -510,7 +650,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 			});
 		}
 
-		// 저장값이 '$user_lang->코드' 면 코드를 물리고, 칸에는 실제 문구를 보여준다
 		var LANG_PREFIX = '$user_lang->';
 		function setLangValue(row, key, value) {
 			var input = row.querySelector('[data-k=' + key + ']');
@@ -548,7 +687,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					'<input type="hidden" data-k="' + key + '" />' +
 				'</div>';
 			}
-			// 제목·문구는 다국어 문구를 연결할 수 있다. 값 자체가 코어 규약이면 버튼이 그걸 물고 있는다.
 			function langCell(key, label) {
 				return '<div class="zmc-f"><label>' + label + '</label><span class="zlf-row-wrap">' +
 					'<input type="text" data-k="' + key + '" />' +
@@ -611,7 +749,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 			rowsEl.appendChild(row);
 			renumberBanners();
 			bindBannerImage(row, refreshBg);
-			// 버튼을 공용 다국어 패널에 잇는다 (실패해도 나머지 행은 그려져야 한다)
 			try {
 				if (window.zlfBind) {
 					row.querySelectorAll('[data-lf-open]').forEach(window.zlfBind);
@@ -643,7 +780,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					item.text_color = row.querySelector('[data-k=text_color]').value;
 					item.shadow = row.querySelector('[data-k=shadow]').checked ? 'Y' : 'N';
 					delete item.bg_type_before;
-					// 다국어를 연결했으면 코어 규약값으로, 아니면 입력한 글자 그대로
 					['title', 'text'].forEach(function (key) {
 						var code = row.querySelector('[data-k=' + key + '_code]').value.trim();
 						item[key] = code ? (LANG_PREFIX + code) : row.querySelector('[data-k=' + key + ']').value.trim();
@@ -657,11 +793,9 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 	</script>
 	<script>
 	(function () {
-		// 지역 추가 배송비 편집 (배너와 같은 방식) — 배송 페이지에서만 요소가 존재한다
 		var zoneRows = document.getElementById('zmcZoneRows');
 		var zonesJson = document.getElementById('zmcZonesJson');
 		var zoneAdd = document.getElementById('zmcZoneAdd');
-		// 국가와 시·도는 목록에서 고른다. 손으로 적게 하면 구매자가 고른 값과 어긋난다
 		var zoneCountries = {!! $zmc_country_json !!};
 		var zoneRegionData = {!! $zmc_region_json !!};
 		function zoneOptions(map, selected, placeholder) {
@@ -712,7 +846,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 
 			row.querySelector('[data-del]').addEventListener('click', function () { row.remove(); });
 
-			// 구매 금액 구간. 기준액을 넘긴 구간 중 가장 높은 것이 적용된다
 			var tierWrap = document.createElement('div');
 			tierWrap.className = 'zmc-tier-wrap';
 			var tierList = document.createElement('div');
@@ -768,7 +901,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 						var tfee = t.querySelector('[data-t=fee]').value.trim();
 						if (from !== '' && tfee !== '') zone.tiers.push({ from: from, fee: tfee });
 					});
-					// 국내는 시·도나 우편번호 중 하나는 있어야 하고, 해외는 국가만으로 성립한다
 					var hasRule = isKR ? (zone.region || zone.zips) : !!zoneCountry;
 					var hasFee = parseFloat(zone.fee) > 0 || zone.tiers.length > 0;
 					if (hasRule && hasFee) zones.push(zone);
@@ -779,7 +911,6 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 	})();
 	</script>
 	<script>
-	// 거래명세서 로고 — 배너와 같은 업로드 통로를 쓴다
 	(function () {
 		var pick = document.getElementById('zmcLogoPick');
 		var file = document.getElementById('zmcLogoFile');

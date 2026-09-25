@@ -28,7 +28,6 @@
 					<td class="zmc-name-cell">
 						<input type="hidden" name="module" value="admin" form="zmcCatForm{{ $c->category_srl }}" />
 						<input type="hidden" name="act" value="procCommerceAdminInsertCategory" form="zmcCatForm{{ $c->category_srl }}" />
-						{{-- 저장한 뒤 보던 자리로 돌아온다. 없으면 쪽수와 검색 조건이 날아간다 --}}
 						<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" form="zmcCatForm{{ $c->category_srl }}" />
 						<input type="hidden" name="category_srl" value="{{ $c->category_srl }}" form="zmcCatForm{{ $c->category_srl }}" />
 						<input type="hidden" name="parent_srl" value="{{ (int)$c->parent_srl }}" form="zmcCatForm{{ $c->category_srl }}" class="zmc-parent-field" />
@@ -115,7 +114,6 @@ jQuery(function ($) {
 	function rows() { return Array.prototype.slice.call(tbody.querySelectorAll('tr')); }
 	function depthOf(tr) { return parseInt(tr.getAttribute('data-depth'), 10) || 0; }
 
-	// 끌어 옮길 때 하위도 함께 따라가야 한다
 	function subtreeOf(tr) {
 		var all = rows();
 		var start = all.indexOf(tr);
@@ -127,7 +125,6 @@ jQuery(function ($) {
 		return group;
 	}
 
-	// 화면의 차례대로 상위·들여쓰기·버튼 상태를 다시 계산한다
 	function refresh() {
 		var stack = [];
 		rows().forEach(function (tr) {
@@ -141,7 +138,6 @@ jQuery(function ($) {
 			var pad = tr.querySelector('.zmc-indent');
 			if (pad) pad.style.width = (d * 22) + 'px';
 		});
-		// 들여쓰기 가능 여부: 바로 위 항목이 있고, 그 항목보다 깊어질 수 있을 때만
 		var all = rows();
 		all.forEach(function (tr, i) {
 			var prev = i > 0 ? all[i - 1] : null;
@@ -191,7 +187,7 @@ jQuery(function ($) {
 		var target = e.target.closest('tr');
 		if (!target || !dragging || target === dragging) return;
 		var group = subtreeOf(dragging);
-		if (group.indexOf(target) !== -1) { return; }   // 자기 하위로는 못 들어간다
+		if (group.indexOf(target) !== -1) { return; }
 
 		var all = rows();
 		var after = all.indexOf(target) > all.indexOf(dragging);
@@ -199,7 +195,6 @@ jQuery(function ($) {
 		group.forEach(function (row) { tbody.insertBefore(row, anchor); });
 		target.classList.remove('is-over');
 
-		// 옮긴 자리의 깊이에 맞춰 통째로 이동시킨다
 		var moved = rows();
 		var idx = moved.indexOf(dragging);
 		var prev = idx > 0 ? moved[idx - 1] : null;

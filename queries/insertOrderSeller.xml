@@ -8,8 +8,10 @@
 		<column name="seller_srl" var="seller_srl" notnull="notnull" />
 		<column name="item_total" var="item_total" default="0" />
 		<column name="delivery_fee" var="delivery_fee" default="0" />
+		<column name="operator_fee" var="operator_fee" />
 		<column name="discount" var="discount" default="0" />
 		<column name="settle_amount" var="settle_amount" default="0" />
+		<column name="commission" var="commission" />
 		<column name="status" var="status" default="pending" />
 		<column name="regdate" var="regdate" />
 	</columns>

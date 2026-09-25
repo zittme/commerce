@@ -1,7 +1,4 @@
-{{-- 다국어 입력 도우미 공통 자산 — 화면당 한 번만 넣는다 --}}
-{{-- 패널은 페이지에 하나만 두고 어떤 입력이든 옆의 버튼으로 불러 쓴다 (JS 로 만든 행에도 붙는다) --}}
 <style>
-/* 관리자 전역 button 규칙이 특이도로 덮으므로 크기·모양을 고정한다 */
 .zlf-btn { flex: 0 0 auto !important; display: inline-flex !important; align-items: center; justify-content: center; width: 36px !important; height: 36px !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; border: 1px solid #e5e8ee !important; border-radius: 8px !important; background: #fff !important; color: #8b95a1 !important; cursor: pointer; line-height: 1 !important; vertical-align: middle; box-shadow: none !important; align-self: stretch; }
 .zlf-btn svg { width: 16px !important; height: 16px !important; display: block; flex: none; }
 .zlf-btn:hover { border-color: #2677e3 !important; color: #2677e3 !important; }
@@ -61,8 +58,6 @@
 
 <script>
 jQuery(function ($) {
-	// 값 자체는 코어 규약대로 저장한다. 화면에는 코드 이름만 오간다 —
-	// 접두어를 HTML 에 내보내면 코어의 출력 치환에 걸려 값이 깨지기 때문이다.
 	var panel = document.getElementById('zlfPanel');
 	if (!panel) return;
 
@@ -70,7 +65,7 @@ jQuery(function ($) {
 	var searchEl = document.getElementById('zlfSearch');
 	var currentEl = document.getElementById('zlfCurrent');
 	var codeNameEl = document.getElementById('zlfCodeName');
-	var target = null;   // {input, hidden, button}
+	var target = null;
 
 	function close() {
 		panel.classList.remove('is-open');
@@ -187,7 +182,6 @@ jQuery(function ($) {
 		place(button);
 	}
 
-	// 버튼 하나를 입력칸에 잇는다. 동적으로 만든 행에서도 이걸 부르면 된다.
 	window.zlfBind = function (button) {
 		if (!button || button.zlfBound) return;
 		button.zlfBound = true;
@@ -207,7 +201,6 @@ jQuery(function ($) {
 		});
 	};
 
-	// 화면에 이미 있는 버튼들을 잇는다
 	document.querySelectorAll('[data-lf-open]').forEach(window.zlfBind);
 
 	document.addEventListener('click', function (e) {

@@ -1,0 +1,46 @@
+@version(2)
+<a class="shp-card" href="{{ !empty($it->item_url) ? $it->item_url : getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $it->item_srl) }}">
+	<span class="shp-card-thumb" @if (!empty($it->thumb)) style="background-image:url('{{ escape($it->thumb) }}')" @endif>
+		@if (empty($it->thumb))<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 11l2.5 3 3.5-4.5L19 16H5z"/></svg>@endif
+	</span>
+	@if ($it->status === 'soldout')<span class="shp-soldout-cover">{{ lang('commerce.shop_soldout') }}</span>@endif
+	<span class="shp-card-body">
+		<span class="shp-badges">
+			@if ($it->is_recommend === 'Y')<span class="shp-badge">{{ lang('commerce.shop_badge_recommend') }}</span>@endif
+@foreach ($it->badge_list ?? [] as $shp_bg)
+@php
+	$shp_bg_style = '';
+	if (!empty($shp_bg->bg_color)) { $shp_bg_style .= 'background:' . $shp_bg->bg_color . ';'; }
+	if (!empty($shp_bg->color)) { $shp_bg_style .= 'color:' . $shp_bg->color . ';'; }
+@endphp
+@if (trim((string)($shp_bg->title ?? "")) !== "")<span class="shp-badge" style="{{ $shp_bg_style }}">{{ $shp_bg->title }}</span>@endif
+@endforeach
+			@if ($it->is_new === 'Y')<span class="shp-badge">NEW</span>@endif
+		</span>
+		@if (!empty($it->brand_name))<span class="shp-card-brand">{{ $it->brand_name }}</span>@endif
+				<span class="shp-card-name">{{ $it->item_name }}</span>
+		@if (!empty($it->review_count))
+		<span class="shp-card-rating">
+			<svg width="12" height="12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2 2 9.3l6.9-1L12 2z"/></svg>
+			{{ $it->rating_avg }} <em>({{ number_format($it->review_count) }})</em>
+		</span>
+		@endif
+		<span class="shp-price">
+			@if (!empty($it->grade_price))
+			<s>{{ shop_item_price($it, 'effective') }}</s> <strong>{{ shop_item_price($it, 'grade') }}</strong>
+			<em class="shp-grade-tag">{{ lang('commerce.shop_grade') ?? '회원 등급' }}</em>
+			@elseif (shop_item_on_sale($it))
+			@php
+			$ss_base = isset($it->disp_price) ? (int)$it->disp_price : (int)($it->price ?? 0);
+			$ss_now = isset($it->disp_sale_price) ? (int)$it->disp_sale_price : (int)($it->sale_price ?? 0);
+			$ss_off = $ss_base > 0 ? (int)round(($ss_base - $ss_now) / $ss_base * 100) : 0;
+			@endphp
+			@if ($ss_off > 0)<em class="shp-off">{{ $ss_off }}%</em>@endif
+			<s>{{ shop_item_price($it, 'price') }}</s> <strong>{{ shop_item_price($it, 'sale') }}</strong>
+			@else
+			<strong>{{ shop_item_price($it, 'price') }}</strong>
+			@endif
+		</span>
+		{!! shop_timesale_badge($it) !!}
+	</span>
+</a>

@@ -1,0 +1,26 @@
+<query id="insertSettlement" action="insert">
+	<tables>
+		<table name="commerce_settlement" />
+	</tables>
+	<columns>
+		<column name="settlement_srl" var="settlement_srl" notnull="notnull" />
+		<column name="seller_srl" var="seller_srl" notnull="notnull" />
+		<column name="period_start" var="period_start" notnull="notnull" />
+		<column name="period_end" var="period_end" notnull="notnull" />
+		<column name="order_count" var="order_count" default="0" />
+		<column name="item_total" var="item_total" default="0" />
+		<column name="delivery_total" var="delivery_total" default="0" />
+		<column name="refund_total" var="refund_total" default="0" />
+		<column name="commission_total" var="commission_total" default="0" />
+		<column name="settle_amount" var="settle_amount" default="0" />
+		<column name="carry_in" var="carry_in" default="0" />
+		<column name="carry_out" var="carry_out" default="0" />
+		<column name="status" var="status" default="ready" />
+		<column name="bank_name" var="bank_name" />
+		<column name="bank_account" var="bank_account" />
+		<column name="bank_holder" var="bank_holder" />
+		<column name="memo" var="memo" />
+		<column name="created_by" var="created_by" default="0" />
+		<column name="regdate" var="regdate" />
+	</columns>
+</query>

@@ -68,7 +68,7 @@
 			<div><button type="submit" name="order_action" value="confirm" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_order_view_14') }}</button></div>
 			@endif
 			@if (in_array($os->status, ['paid', 'preparing']))
-			<div><label>{{ lang('commerce.admin_order_view_15') }}</label><input type="text" name="shipping_company" placeholder="{{ lang('commerce.admin_order_view_31') }}" style="width:130px" /></div>
+			<div><label>{{ lang('commerce.admin_order_view_15') }}</label><input type="text" name="shipping_company" list="zmcCourierList" placeholder="{{ lang('commerce.admin_order_view_31') }}" style="width:130px" /><datalist id="zmcCourierList">@foreach (\Zittme\Modules\Commerce\Models\Courier::names() as $ov_c)<option value="{{ $ov_c }}"></option>@endforeach</datalist></div>
 			<div><label>{{ lang('commerce.admin_order_view_16') }}</label><input type="text" name="shipping_invoice" style="width:160px" /></div>
 			<div><label style="display:inline-flex;align-items:center;gap:5px;font-weight:400"><input type="checkbox" name="direct_ship" value="Y" onchange="var f=this.form; f.shipping_company.disabled=this.checked; f.shipping_invoice.disabled=this.checked;" /> {{ lang('commerce.shop_ship_direct') }}</label></div>
 			<div><button type="submit" name="order_action" value="ship" class="rsva-btn">{{ lang('commerce.admin_order_view_17') }}</button></div>
@@ -127,7 +127,6 @@
 	</div>
 	@endif
 
-	{{-- 목록에서 넘어온 필터·페이지를 그대로 복원한다 --}}
 	<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminOrders', 'f_status', (string)Context::get('f_status'), 'f_ship', (string)Context::get('f_ship'), 'f_keyword', (string)Context::get('f_keyword'), 'f_from', (string)Context::get('f_from'), 'f_to', (string)Context::get('f_to'), 'page', (string)Context::get('page')) }}" class="rsva-btn">{{ lang('commerce.admin_order_view_29') }}</a>
 	<a href="{{ getUrl('', 'mid', '', 'module', 'commerce', 'act', 'dispCommerceAdminOrderInvoice', 'order_srl', $order->order_srl) }}" class="rsva-btn rsva-btn-primary" target="_blank" rel="noopener" data-zmc-keep>{{ lang('commerce.admin_order_view_30') }}</a>
 </div>

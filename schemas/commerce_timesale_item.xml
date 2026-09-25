@@ -1,0 +1,11 @@
+<table name="commerce_timesale_item">
+	<column name="ts_item_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="sale_srl" type="bigint" notnull="notnull" index="idx_sale_srl" />
+	<column name="item_srl" type="bigint" notnull="notnull" index="idx_item_srl" />
+	<column name="discount_type" type="varchar" size="10" notnull="notnull" default="percent" />
+	<column name="value" type="float" notnull="notnull" default="0" />
+	<column name="qty_limit" type="int" notnull="notnull" default="0" />
+	<column name="per_member" type="int" notnull="notnull" default="0" />
+	<column name="sold_qty" type="int" notnull="notnull" default="0" />
+	<column name="list_order" type="int" notnull="notnull" default="0" />
+</table>

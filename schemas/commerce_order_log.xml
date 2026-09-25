@@ -2,7 +2,6 @@
 	<column name="log_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />
 	<column name="order_seller_srl" type="bigint" notnull="notnull" default="0" />
-	<!-- create / pay / cancel / ship / deliver / claim / refund / memo / expire -->
 	<column name="action" type="varchar" size="40" notnull="notnull" />
 	<column name="before_status" type="varchar" size="20" />
 	<column name="after_status" type="varchar" size="20" />

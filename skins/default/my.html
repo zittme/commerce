@@ -143,6 +143,7 @@
 
 		<p class="shp-foot-links">
 			<a href="{{ getUrl('', 'act', 'dispMemberModifyInfo') }}">{{ $lang->shop_edit_profile }}</a>
+			@if (!empty($seller_apply_link))<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceSellerApply') }}">{{ $lang->mk_apply_title }}</a>@endif
 			<a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a>
 		</p>
 	@else

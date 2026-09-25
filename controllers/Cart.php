@@ -5,14 +5,8 @@ namespace Zittme\Modules\Commerce\Controllers;
 use Zittme\Modules\Commerce\Models\Cart as CartModel;
 use Zittme\Modules\Commerce\Models\Item as ItemModel;
 
-/**
- * 장바구니 (proc).
- */
 class Cart extends Base
 {
-	/**
-	 * 담기.
-	 */
 	public function procCommerceCartAdd()
 	{
 		$item_srl = (int)\Context::get('item_srl');
@@ -23,8 +17,6 @@ class Cart extends Base
 			return new \BaseObject(-1, 'msg_shop_no_item');
 		}
 
-		// 선택 행: 본품·추가옵션을 여러 줄로 한 번에 담는다 (option_srls[]/qtys[]).
-		// 구형 폼 호환: 배열이 없으면 단일 option_srl/qty 로 처리한다.
 		$rows = [];
 		$option_srls = \Context::get('option_srls');
 		$qtys = \Context::get('qtys');
@@ -41,15 +33,12 @@ class Cart extends Base
 			$rows[] = [max(0, (int)\Context::get('option_srl')), max(1, min(9999, (int)(\Context::get('qty') ?: 1)))];
 		}
 
-		// 같은 옵션 행은 수량 합산
 		$merged = [];
 		foreach ($rows as $row)
 		{
 			$merged[$row[0]] = ($merged[$row[0]] ?? 0) + $row[1];
 		}
 
-		// 고른 옵션은 소속을 검증한다. 본품은 option_srl 0 이지만,
-		// 기본 옵션(변형)이 있는 상품은 본품 단독으로는 담을 수 없다.
 		$valid_options = [];
 		$has_basic = false;
 		foreach (ItemModel::getOptions($item_srl, true) as $opt)
@@ -66,7 +55,6 @@ class Cart extends Base
 			{
 				return new \BaseObject(-1, 'msg_shop_need_option');
 			}
-			// 본품(option_srl 0)은 기본 옵션이 있어도 '선택 안 함'으로 담을 수 있다 — 자체 재고로 판매
 			if (!ItemModel::isQtyAllowed($item, $qty))
 			{
 				return new \BaseObject(-1, 'msg_shop_qty_not_allowed');
@@ -98,7 +86,6 @@ class Cart extends Base
 		$this->add('ship_fee', (int)$ship_fee);
 		$this->add('ship_fee_text', $ship_fee > 0 ? shop_money((int)$ship_fee) : '');
 
-		// 바로 구매: 담은 뒤 곧장 주문서로
 		if (\Context::get('direct') === 'Y')
 		{
 			$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceCheckout'));
@@ -109,15 +96,11 @@ class Cart extends Base
 		}
 	}
 
-	/**
-	 * 수량 변경.
-	 */
 	public function procCommerceCartUpdate()
 	{
 		$cart_srl = (int)\Context::get('cart_srl');
 		$qty = max(1, min(9999, (int)\Context::get('qty')));
 
-		// 소유 검증: 내 장바구니 행인지 확인
 		$mine = false;
 		foreach (CartModel::rows() as $row)
 		{
@@ -137,9 +120,6 @@ class Cart extends Base
 		$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceCart'));
 	}
 
-	/**
-	 * 삭제.
-	 */
 	public function procCommerceCartDelete()
 	{
 		$cart_srl = (int)\Context::get('cart_srl');

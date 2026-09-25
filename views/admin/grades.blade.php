@@ -8,7 +8,6 @@
 		<form action="{{ getUrl('') }}" method="post" class="rsva-inline">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminInsertGrade" />
-			{{-- 저장한 뒤 보던 자리로 돌아온다. 없으면 쪽수와 검색 조건이 날아간다 --}}
 			<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" />
 			<div style="min-width:160px"><label>{{ lang('commerce.admin_grades_5') }}</label><span class="zlf-row-wrap"><input type="text" name="title" required placeholder="{{ lang('commerce.admin_grades_26') }}" />@include('_langfield', ['lf_name' => 'title', 'lf_value' => '', 'lf_key' => 'gradenew'])</span></div>
 			<div><label>{{ lang('commerce.admin_grades_6') }}</label><input type="number" name="min_spend" min="0" value="0" style="width:140px" /></div>

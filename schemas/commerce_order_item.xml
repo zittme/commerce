@@ -1,5 +1,4 @@
 <table name="commerce_order_item">
-	<!-- 주문 상품 — 이름·가격·썸네일을 주문 시점 스냅샷으로 보존한다 -->
 	<column name="order_item_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="order_seller_srl" type="bigint" notnull="notnull" index="idx_order_seller_srl" />
 	<column name="order_srl" type="bigint" notnull="notnull" index="idx_order_srl" />
@@ -7,16 +6,16 @@
 	<column name="option_srl" type="bigint" notnull="notnull" default="0" />
 	<column name="item_name" type="varchar" size="250" notnull="notnull" />
 	<column name="option_name" type="varchar" size="250" />
-	<!-- 주문 시점 SKU 스냅샷 - 옵션 SKU 우선, 없으면 상품 코드 -->
 	<column name="sku" type="varchar" size="100" />
 	<column name="thumb" type="varchar" size="250" />
-	<!-- 단가(옵션가 포함) 스냅샷 -->
 	<column name="price" type="bigint" notnull="notnull" default="0" />
 	<column name="qty" type="int" notnull="notnull" default="1" />
 	<column name="subtotal" type="bigint" notnull="notnull" default="0" />
-	<!-- 주문 시점의 과세 구분 스냅샷 (taxable / free) -->
 	<column name="tax_type" type="varchar" size="10" notnull="notnull" default="taxable" />
-	<!-- none / requested / done -->
 	<column name="claim_status" type="varchar" size="10" notnull="notnull" default="none" />
+	<column name="timesale_item_srl" type="bigint" notnull="notnull" default="0" />
+	<column name="seller_srl" type="bigint" notnull="notnull" default="0" index="idx_seller_srl" />
+	<column name="commission_rate" type="decimal" size="6,2" notnull="notnull" default="0" />
+	<column name="commission" type="bigint" notnull="notnull" default="0" />
 	<column name="regdate" type="char" size="14" />
 </table>

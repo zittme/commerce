@@ -10,8 +10,14 @@
 		<condition operation="equal" column="category_srl" var="category_srl" pipe="and" />
 		<condition operation="in" column="category_srl" var="category_srl_list" pipe="and" />
 		<condition operation="equal" column="seller_srl" var="seller_srl" pipe="and" />
+		<condition operation="equal" column="seller_category_srl" var="seller_category_srl" pipe="and" />
+		<condition operation="equal" column="brand_srl" var="brand_srl" pipe="and" />
+		<condition operation="in" column="item_srl" var="item_srl_list" pipe="and" />
 		<condition operation="equal" column="is_recommend" var="is_recommend" pipe="and" />
-		<condition operation="like" column="item_name" var="search_keyword" pipe="and" />
+		<group pipe="and">
+			<condition operation="like" column="item_name" var="search_keyword" />
+			<condition operation="in" column="brand_srl" var="search_brand_srl_list" filter="number" pipe="or" />
+		</group>
 		<condition operation="like" column="item_code" var="search_code" pipe="and" />
 		<condition operation="more" column="regdate" var="regdate_from" pipe="and" />
 		<condition operation="less" column="regdate" var="regdate_to" pipe="and" />

@@ -1,5 +1,4 @@
 @version(2)
-{{-- 쇼핑 프론트 관리 플로팅 — 관리자에게만 보인다. 메인 형태·카테고리 배치·배너를 화면에서 바로 편집한다 --}}
 <button type="button" class="shp-admin-fab" id="shpAdminFab">
 	<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/></svg>
 	쇼핑 설정
@@ -63,7 +62,6 @@
 	var GLOBE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.3 2.6 2.3 14.4 0 17"/><path d="M12 3.5c-2.3 2.6-2.3 14.4 0 17"/></svg>';
 	var LANG_PREFIX = '$user_lang->';
 
-	// 다국어 문구 고르기 — 새 문구 만들기는 관리자 화면에서 한다
 	var langBox = null;
 	function closeLangBox() { if (langBox) { langBox.remove(); langBox = null; } }
 	function openLangBox(button, input, hidden) {
@@ -79,7 +77,6 @@
 			'<div data-body="pick"><input type="search" placeholder="문구 검색" /><ul><li class="is-empty">불러오는 중…</li></ul></div>' +
 			'<div data-body="new" hidden>' + fields + '<button type="button" class="shp-adm-langsave" data-save>저장하고 사용</button></div>' +
 			'<button type="button" data-clear>연결 해제</button>';
-		// 언어 이름은 textContent 로 넣어 값이 그대로 보이게 한다
 		Object.keys(LANGS).forEach(function (code) {
 			var row = langBox.querySelector('[data-lang-input="' + code + '"]').parentNode;
 			row.querySelector('span').textContent = LANGS[code];
@@ -161,7 +158,6 @@
 		if (langBox && !e.target.closest('.shp-adm-langbox') && !e.target.closest('[data-lang]')) closeLangBox();
 	});
 
-	// 저장값이 코어 규약이면 코드를 물리고 칸에는 실제 문구를 보여준다
 	function setLangField(row, key, value) {
 		var input = row.querySelector('[data-k=' + key + ']');
 		var hidden = row.querySelector('[data-k=' + key + '_code]');
@@ -178,7 +174,6 @@
 		});
 	}
 
-	// 파일 업로드: 관리자 전용 업로드 액션으로 보내고 URL 을 받아 채운다
 	function upload(input, cb) {
 		var f = input.files && input.files[0];
 		if (!f) return;

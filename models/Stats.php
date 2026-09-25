@@ -2,66 +2,28 @@
 
 namespace Zittme\Modules\Commerce\Models;
 
-/**
- * 매출 통계 집계.
- *
- * 기준
- *  - 매출은 결제완료 시각(paid_date) 기준으로 잡는다. 주문 접수일이 아니다.
- *  - 취소·환불 건은 매출에서 빼고 취소액으로 따로 센다 (취소 시각 기준).
- *  - 집계 쿼리는 XML 쿼리로 표현하기 어려운 GROUP BY·기간 버킷이라 DB 를 직접 쓴다.
- */
 class Stats
 {
-	/**
-	 * 기간 버킷 단위.
-	 */
 	public const UNITS = ['day' => '일', 'week' => '주', 'month' => '월', 'year' => '년'];
 
-	/**
-	 * 매출로 인정하는 주문 상태.
-	 */
 	protected const PAID = "'paid'";
 
-	/**
-	 * 결제금액을 기준 통화로 환산하는 SQL 식.
-	 *
-	 * 통계 원장은 기준 통화 기준이다. 기준 통화 주문은 그대로 더하고, 외화 병행 판매
-	 * 주문(기준 KRW 상점만 존재)은 결제 시점에 박제한 환율(exchange_rate)로 되돌린다.
-	 * 금액이 통화 최소단위 정수라 2자리 소수 통화는 100 으로 나눈다.
-	 *
-	 * @param string $col 금액 컬럼 (예: 'payment_price', 'o.payment_price', 'oi.subtotal')
-	 * @param string $alias 주문 테이블 별칭 ('' 이면 별칭 없음)
-	 * @return string
-	 */
 	protected static function krwExpr(string $col, string $alias = ''): string
 	{
 		$p = $alias !== '' ? $alias . '.' : '';
 		$base = preg_replace('/[^A-Z]/', '', Money::base()) ?: 'KRW';
-		// 주문에 박제한 exchange_rate 는 "1 주문통화당 기준 통화" 교차 환율이다.
-		// 최소단위 보정: 주문 통화 최소단위 → 값 (÷100), 기준 통화 값 → 최소단위 (×100)
 		$base_factor = Money::isZeroDecimal($base) ? 1 : 100;
 		return "(CASE WHEN {$p}currency IS NULL OR {$p}currency = '' OR {$p}currency = '{$base}' THEN {$col}"
 			. " ELSE ROUND({$col} * CAST(NULLIF({$p}exchange_rate, '') AS DECIMAL(16,4)) * {$base_factor}"
 			. " / (CASE WHEN {$p}currency IN ('KRW', 'JPY', 'TWD', 'HUF', 'VND') THEN 1 ELSE 100 END)) END)";
 	}
 
-	/**
-	 * @return \Zittme\Framework\Helpers\DBHelper|\Zittme\Framework\DB
-	 */
 	protected static function db()
 	{
-		// 통계는 관리 대시보드 첫 화면에서 돌므로, 컬럼이 없는 구버전 DB 를 먼저 치유한다
 		\Zittme\Modules\Commerce\Controllers\Base::ensureCurrencySchema();
 		return \Zittme\Framework\DB::getInstance();
 	}
 
-	/**
-	 * YYYYMMDD 를 경계값(시작 000000 / 끝 235959)으로 만든다.
-	 *
-	 * @param string $date
-	 * @param bool $end
-	 * @return string
-	 */
 	public static function bound(string $date, bool $end = false): string
 	{
 		$date = preg_replace('/[^0-9]/', '', $date);
@@ -69,13 +31,6 @@ class Stats
 		return $date . ($end ? '235959' : '000000');
 	}
 
-	/**
-	 * 기간 요약 — 매출·주문수·평균 주문금액·취소액.
-	 *
-	 * @param string $from YYYYMMDD
-	 * @param string $to YYYYMMDD
-	 * @return object
-	 */
 	public static function summary(string $from, string $to): object
 	{
 		$f = self::bound($from);
@@ -105,14 +60,6 @@ class Stats
 		];
 	}
 
-	/**
-	 * 기간 버킷별 매출 추이.
-	 *
-	 * @param string $from YYYYMMDD
-	 * @param string $to YYYYMMDD
-	 * @param string $unit day|week|month|year
-	 * @return array<int, object> [{bucket, label, orders, sales}]
-	 */
 	public static function series(string $from, string $to, string $unit = 'day'): array
 	{
 		if (!isset(self::UNITS[$unit]))
@@ -150,13 +97,6 @@ class Stats
 		return $rows;
 	}
 
-	/**
-	 * 버킷 값을 사람이 읽는 표기로.
-	 *
-	 * @param string $bucket
-	 * @param string $unit
-	 * @return string
-	 */
 	public static function label(string $bucket, string $unit): string
 	{
 		if ($unit === 'day' && strlen($bucket) === 8)
@@ -174,14 +114,6 @@ class Stats
 		return $bucket;
 	}
 
-	/**
-	 * 상품별 판매 집계.
-	 *
-	 * @param string $from
-	 * @param string $to
-	 * @param int $limit
-	 * @return array<int, object> [{item_srl, item_name, qty, sales, orders}]
-	 */
 	public static function byItem(string $from, string $to, int $limit = 100): array
 	{
 		$limit = max(1, min(1000, $limit));
@@ -209,17 +141,8 @@ class Stats
 		return $rows;
 	}
 
-	/**
-	 * 배송지 시·도별 집계. 주소 첫 낱말로 판정한다.
-	 *
-	 * @param string $from
-	 * @param string $to
-	 * @return array<int, object> [{region, orders, sales}]
-	 */
 	public static function byRegion(string $from, string $to): array
 	{
-		// 구매자가 고른 행정구역(state)이 있으면 그것을 쓴다. 주소 첫 낱말은
-		// 국내 옛 주문과 목록이 없는 나라를 위한 대비책이다
 		$stmt = self::db()->query(
 			'SELECT a.country AS country, a.state AS state,
 			        SUBSTRING_INDEX(TRIM(a.address1), " ", 1) AS head,
@@ -231,7 +154,6 @@ class Stats
 			'paid', self::bound($from), self::bound($to, true)
 		);
 
-		// 서울 / 서울시 / 서울특별시 가 따로 잡히지 않도록 표기를 하나로 모은다
 		$merged = [];
 		while ($row = $stmt->fetchObject())
 		{
@@ -249,16 +171,6 @@ class Stats
 		return $rows;
 	}
 
-	/**
-	 * 집계에 쓸 지역 이름.
-	 *
-	 * 해외는 나라 이름을 앞에 붙인다. 같은 이름의 주가 여러 나라에 있어 섞이면 못 가린다.
-	 *
-	 * @param string $country
-	 * @param string $state
-	 * @param string $head 주소 첫 낱말 (대비책)
-	 * @return string
-	 */
 	protected static function regionLabel(string $country, string $state, string $head): string
 	{
 		$country = strtoupper(trim($country)) ?: 'KR';
@@ -277,15 +189,6 @@ class Stats
 		return self::normalizeRegion($head);
 	}
 
-	/**
-	 * 시·도 표기 정규화.
-	 *
-	 * @param string $region
-	 * @return string
-	 */
-	/**
-	 * 국내 시·도. 화면의 선택 목록과 통계 집계가 같은 값을 쓰도록 한곳에 둔다.
-	 */
 	public const KR_REGIONS = [
 		'서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종',
 		'강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
@@ -318,11 +221,6 @@ class Stats
 		return $region;
 	}
 
-	/**
-	 * 대시보드용 한 묶음 — 오늘·이번 달 실적과 처리 대기 건수.
-	 *
-	 * @return object
-	 */
 	public static function dashboard(): object
 	{
 		$today = date('Ymd');

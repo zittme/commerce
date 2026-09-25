@@ -1,0 +1,11 @@
+<table name="commerce_staff">
+	<column name="member_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="role" type="varchar" size="10" notnull="notnull" default="manager" />
+	<column name="perms" type="text" />
+	<column name="status" type="varchar" size="10" notnull="notnull" default="active" index="idx_status" />
+	<column name="memo" type="varchar" size="250" />
+	<column name="added_by" type="bigint" notnull="notnull" default="0" />
+	<column name="regdate" type="char" size="14" />
+	<column name="last_update" type="char" size="14" />
+	<column name="last_seen" type="char" size="14" />
+</table>

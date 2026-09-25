@@ -25,7 +25,6 @@
 		</form>
 		<p style="margin:0 0 10px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.admin_stock_3') }}</p>
 
-		{{-- 재고 부족만 모아 보기. 여기서 바로 입고까지 끝낼 수 있다 --}}
 		@if (count($stock_low_rows))
 		<div class="zmi-low">
 			<div class="zmi-low-head">
@@ -62,7 +61,6 @@
 			@endforeach
 		</div>
 		@endif
-		{{-- 행 인라인 조정: 셀 입력은 form 속성으로 행별 폼(테이블 밖)에 연결한다 --}}
 		@foreach ($stock_items as $si)
 		<form id="stAdj{{ $si->item_srl }}_0" action="./" method="post">
 			<input type="hidden" name="module" value="commerce" />
@@ -137,7 +135,6 @@
 			</tbody>
 		</table>
 
-		{{-- 알림 기준은 여러 줄을 한 번에 저장한다. 줄마다 폼을 두면 화면이 계속 다시 그려진다 --}}
 		<form action="{{ getUrl('') }}" method="post" id="zmiLowForm" style="margin-top:12px">
 			<input type="hidden" name="module" value="admin" />
 			<input type="hidden" name="act" value="procCommerceAdminSaveLowStock" />
@@ -201,7 +198,6 @@
 	});
 })();
 (function () {
-	// 알림 기준 칸들을 모아 한 번에 보낸다
 	var form = document.getElementById('zmiLowForm');
 	if (!form) { return; }
 	form.addEventListener('submit', function () {

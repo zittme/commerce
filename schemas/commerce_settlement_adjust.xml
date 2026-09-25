@@ -1,0 +1,10 @@
+<table name="commerce_settlement_adjust">
+	<column name="adjust_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="settlement_srl" type="bigint" notnull="notnull" unique="unique_settlement_os" />
+	<column name="order_seller_srl" type="bigint" notnull="notnull" unique="unique_settlement_os" />
+	<column name="seller_srl" type="bigint" notnull="notnull" default="0" />
+	<column name="refund" type="bigint" notnull="notnull" default="0" />
+	<column name="refund_commission" type="bigint" notnull="notnull" default="0" />
+	<column name="amount" type="bigint" notnull="notnull" default="0" />
+	<column name="regdate" type="char" size="14" />
+</table>

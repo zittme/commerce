@@ -1,5 +1,4 @@
 <table name="commerce_address">
-	<!-- 회원 배송지 주소록 -->
 	<column name="address_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
 	<column name="member_srl" type="bigint" notnull="notnull" index="idx_member_srl" />
 	<column name="title" type="varchar" size="60" />

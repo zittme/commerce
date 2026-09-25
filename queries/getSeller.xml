@@ -1,0 +1,11 @@
+<query id="getSeller" action="select">
+	<tables>
+		<table name="commerce_seller" />
+	</tables>
+	<columns>
+		<column name="*" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="seller_srl" var="seller_srl" filter="number" required="true" />
+	</conditions>
+</query>

@@ -4,26 +4,15 @@ namespace Zittme\Modules\Commerce\Controllers;
 
 use Zittme\Modules\Commerce\Models\Address as AddressModel;
 use Zittme\Modules\Commerce\Models\Badge as BadgeModel;
+use Zittme\Modules\Commerce\Models\Brand as BrandModel;
 use Zittme\Modules\Commerce\Models\Cart as CartModel;
 use Zittme\Modules\Commerce\Models\Item as ItemModel;
 use Zittme\Modules\Commerce\Models\Lang as LangModel;
 use Zittme\Modules\Commerce\Models\Money as MoneyModel;
 use Zittme\Modules\Commerce\Models\Order as OrderModel;
 
-/**
- * 프론트 화면.
- */
 class Front extends Base
 {
-	/**
-	 * 스킨이 쓸 통화 값과 뱃지를 미리 담는다.
-	 *
-	 * 스킨에서 모델을 직접 부르면 컴파일 단계에서 네임스페이스 구분자가 유실돼
-	 * 클래스를 못 찾는 오류가 난다. 화면에 필요한 값은 전부 여기서 만들어 넘긴다.
-	 *
-	 * @param array<int, object> $items 뱃지를 붙일 상품 목록 (없으면 통화 값만)
-	 * @return void
-	 */
 	protected function setShopContext(array $items = []): void
 	{
 		$base = MoneyModel::base();
@@ -32,30 +21,39 @@ class Front extends Base
 		\Context::set('shp_base_currency', $base);
 		\Context::set('shp_base_zero', MoneyModel::isZeroDecimal($base));
 		\Context::set('shp_unit_label', MoneyModel::unitLabel());
-		// KRW 접미사 '원' 은 한국어 화면에서만 쓴다. 스킨의 JS 합계도 같은 기준을 따른다
 		\Context::set('shp_won_suffix', MoneyModel::useWonSuffix());
 		\Context::set('shp_currency', $now);
 		\Context::set('shp_currency_zero', MoneyModel::isZeroDecimal($now));
 		\Context::set('shp_currency_symbol', MoneyModel::symbol($now));
 		\Context::set('shp_currency_rate', MoneyModel::rate($now) ?: 1);
 
-		// 통화 알약에 쓸 목록 — 기준 통화이거나 환율이 있는 것만 고른다
 		$choices = [];
 		foreach (MoneyModel::currencies() as $code)
 		{
 			if ($code === $base || MoneyModel::rate($code) > 0)
 			{
-				// 알약은 '기호 코드' 로 적는다. 기호에 이미 코드가 들어간 통화는 겹치지 않게 한다
 				$symbol = trim(MoneyModel::symbol($code));
 				$choices[$code] = strpos($symbol, $code) === false ? trim($symbol . ' ' . $code) : $symbol;
 			}
 		}
 		\Context::set('shp_currency_choices', $choices);
 
+		\Zittme\Modules\Commerce\Models\Seller::attachNames($items, (string)($this->module_info->mid ?? ''));
+
 		$badge_map = BadgeModel::getMap(true);
 		\Context::set('shop_badge_map', $badge_map);
 
-		// 등급 할인이 걸린 회원에게는 할인된 값을 함께 담아 화면이 그 값을 보여 주게 한다
+		$brand_mid = (string)($this->module_info->mid ?? '');
+		BrandModel::attach($items, $brand_mid);
+		$shop_brands = BrandModel::getList(true);
+		$brand_counts = BrandModel::itemCounts();
+		foreach ($shop_brands as $sb)
+		{
+			$sb->url = BrandModel::url($sb, $brand_mid);
+			$sb->item_count = $brand_counts[(int)$sb->brand_srl] ?? 0;
+		}
+		\Context::set('shop_brands', $shop_brands);
+
 		$logged = \Context::get('logged_info');
 		$grade_discount = (int)($logged->member_srl ?? 0) > 0
 			? \Zittme\Modules\Commerce\Models\Grade::discountFor((int)$logged->member_srl)
@@ -71,8 +69,6 @@ class Front extends Base
 			// badges 는 번호 문자열 컬럼이다. 덮어쓰면 다음 호출에서 형이 어긋난다
 			$shop_item->badge_list = BadgeModel::ofItem($shop_item, $badge_map);
 
-			// 표시 통화의 값으로 찍는다. 등록가가 있으면 등록가, 없으면 설정에 따라 환산가 —
-			// 주문서·결제와 같은 규칙이라야 상세에서 본 금액과 결제 금액이 어긋나지 않는다
 			$disp = ItemModel::displayPrices($shop_item, $now);
 			$shop_item->disp_currency = $now;
 			$shop_item->disp_price = $disp['price'];
@@ -83,20 +79,13 @@ class Front extends Base
 			$graded = ($shop_item->grade_discount ?? 'Y') === 'N'
 				? $disp['effective']
 				: \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn($disp['effective'], $grade_discount, $now);
-			// 등급 할인이 실제로 값을 낮췄을 때만 표시를 바꾼다
 			$shop_item->grade_price = $graded < $disp['effective'] ? $graded : 0;
 		}
 	}
 
-	/**
-	 * 스킨 경로.
-	 *
-	 * @return string
-	 */
 	protected function getSkinPath(): string
 	{
 		$skin = (string)($this->module_info->skin ?? '');
-		// 기본 스킨 위임이면 사이트 기본 디자인 값을 따른다 (테마 적용이 여길 바꾼다)
 		if ($skin === '' || $skin === '/USE_DEFAULT/')
 		{
 			$skin = (string)(\ModuleModel::getModuleDefaultSkin('commerce', 'P') ?: 'default');
@@ -114,11 +103,6 @@ class Front extends Base
 		return rtrim($path, '/') . '/';
 	}
 
-	/**
-	 * 노출용 카테고리.
-	 *
-	 * @return array
-	 */
 	protected static function getActiveCategories(): array
 	{
 		$output = executeQuery('commerce.getCategoryList', (object)['is_active' => 'Y']);
@@ -129,7 +113,6 @@ class Front extends Base
 		$data = is_array($output->data) ? $output->data : [$output->data];
 		$data = array_values(array_filter($data, function($row) { return !empty($row->category_srl); }));
 
-		// 트리 순서(상위 → 하위)로 정렬하고 depth 를 붙인다
 		$children = [];
 		foreach ($data as $row)
 		{
@@ -145,7 +128,6 @@ class Front extends Base
 			}
 		};
 		$walk(0, 0);
-		// 고아 카테고리(비활성 상위의 하위)는 최상위 취급으로 뒤에 붙인다
 		foreach ($data as $row)
 		{
 			if (!in_array($row, $sorted, true))
@@ -154,16 +136,9 @@ class Front extends Base
 				$sorted[] = $row;
 			}
 		}
-		// 다국어 문구를 연결한 이름은 스킨이 escape 로 찍기 전에 미리 바꿔 둔다
 		return LangModel::textAll($sorted, ['title']);
 	}
 
-	/**
-	 * 지정 카테고리와 모든 하위 카테고리의 srl 목록.
-	 *
-	 * @param int $srl
-	 * @return array<int>
-	 */
 	protected static function categoryWithDescendants(int $srl): array
 	{
 		$ids = [$srl];
@@ -183,18 +158,9 @@ class Front extends Base
 		return $ids;
 	}
 
-	/**
-	 * 프론트 관리 플로팅 패널을 화면 끝에 붙인다.
-	 *
-	 * 이 패널은 모듈 기능이므로 스킨이 들고 있으면 안 된다 — 스킨 제작자가
-	 * 매번 옮겨 담아야 하기 때문이다. 모듈이 자기 템플릿·CSS 로 직접 싣는다.
-	 *
-	 * @return void
-	 */
 	protected static function injectAdminPanel(): void
 	{
-		$logged_info = \Context::get('logged_info');
-		if (!$logged_info || $logged_info->is_admin !== 'Y')
+		if (!\Zittme\Modules\Commerce\Models\Staff::isStaff())
 		{
 			return;
 		}
@@ -206,21 +172,26 @@ class Front extends Base
 		$module_path = './modules/commerce/';
 		\Context::loadFile([$module_path . 'tpl/css/adminpanel.css', 'all']);
 
-		$template = new \Zittme\Framework\Template($module_path . 'tpl', 'adminpanel');
+		$template = new \Zittme\Framework\Template($module_path . 'tpl', \Zittme\Modules\Commerce\Models\Staff::can('display') ? 'adminpanel' : 'studiolink');
 		\Context::addHtmlFooter($template->compile());
 	}
 
-	/**
-	 * 이스케이프하되 <br> 태그만 살린다 (배너 제목·문구용).
-	 */
+	protected static function applyImageSize(): void
+	{
+		$size = (string)(self::config()->item_image_size ?? 'M');
+		if ($size !== 'S' && $size !== 'L')
+		{
+			return;
+		}
+		\Context::addBodyClass('shp-img-' . strtolower($size));
+		\Context::loadFile(['./modules/commerce/tpl/css/imagesize.css', 'all']);
+	}
+
 	public static function escapeAllowBr(string $text): string
 	{
 		return str_ireplace(['&lt;br&gt;', '&lt;br /&gt;', '&lt;br/&gt;'], '<br />', escape($text, false));
 	}
 
-	/**
-	 * 기획전 전용 페이지.
-	 */
 	public function dispPromotion()
 	{
 		self::assertShopEnabled();
@@ -231,6 +202,20 @@ class Front extends Base
 		if (!$promo || (($promo->status ?? 'Y') !== 'Y' && !$is_admin))
 		{
 			throw new \Zittme\Framework\Exceptions\TargetNotFound;
+		}
+
+		$promo_draft = \Zittme\Modules\Commerce\Models\Promotion::previewDraft((int)$promo->promo_srl);
+		if ($promo_draft)
+		{
+			$promo = clone $promo;
+			foreach ((array)($promo_draft['values'] ?? []) as $key => $value)
+			{
+				$promo->{$key} = in_array($key, ['title', 'description'], true) ? LangModel::text((string)$value) : $value;
+			}
+			if ($promo->title === '')
+			{
+				$promo->title = lang('commerce.pm_default_title');
+			}
 		}
 
 		$now = self::now();
@@ -247,6 +232,10 @@ class Front extends Base
 		$items = $state === 'upcoming' && !$is_admin
 			? []
 			: \Zittme\Modules\Commerce\Models\Promotion::itemsOf((int)$promo->promo_srl);
+		if ($promo_draft && is_array($promo_draft['items'] ?? null))
+		{
+			$items = \Zittme\Modules\Commerce\Models\Promotion::itemsBySrls($promo_draft['items']);
+		}
 		self::attachReviewStats($items);
 
 		\Context::set('promo', $promo);
@@ -257,18 +246,13 @@ class Front extends Base
 		\Context::set('shop_config', self::config());
 		$this->setShopContext($items);
 		\Context::setBrowserTitle($promo->title);
+		self::applyImageSize();
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('promo');
 	}
 
-	/**
-	 * 상품 카드에 리뷰 수·평균 평점을 붙인다 (목록·홈 공용).
-	 *
-	 * @param array $items
-	 */
 	protected static function attachReviewStats(array $items): void
 	{
-		// 상품 카드가 지나는 공통 길목 — 다국어 문구를 여기서 한 번에 바꿔 둔다
 		LangModel::textAll($items, ['item_name', 'summary']);
 
 		$srls = [];
@@ -302,60 +286,105 @@ class Front extends Base
 		}
 		catch (\Throwable $e)
 		{
-			// 통계 실패는 목록 노출을 막지 않는다
 		}
 	}
 
-	/**
-	 * 상품 목록 — 정렬·필터·품절 정책.
-	 */
 	public function dispCommerceList()
 	{
 		self::assertShopEnabled();
-		// 기획전 페이지 (?v=promo&p=슬러그)
 		if (\Context::get('v') === 'promo')
 		{
 			return $this->dispPromotion();
 		}
+		if (\Context::get('v') === 'store')
+		{
+			return $this->dispCommerceStore();
+		}
 
-		// 쇼핑 홈 모드: 필터 없이 진입하면 배너·섹션 구성 홈을 보여준다 (v=list 로 목록 강제)
 		$config = self::config();
 		if (($config->shop_main ?? 'list') === 'home'
 			&& \Context::get('v') !== 'list'
-			&& !\Context::get('category') && trim((string)\Context::get('q')) === ''
+			&& !\Context::get('category') && !\Context::get('seller') && trim((string)\Context::get('q')) === ''
 			&& !\Context::get('sort') && (int)\Context::get('page') <= 1)
 		{
 			return $this->dispShopHome();
 		}
 
 		$args = new \stdClass;
-		// 노출 상태: 판매중 + 품절(설정에 따라). 숨김·중지는 절대 노출하지 않는다
 		$args->status_list = 'sale,soldout';
 
 		$category_srl = (int)\Context::get('category');
 		if ($category_srl > 0)
 		{
-			// 상위 카테고리 선택 시 하위 카테고리 상품도 함께 보여준다
 			$args->category_srl_list = implode(',', self::categoryWithDescendants($category_srl));
 		}
 		$keyword = trim((string)\Context::get('q'));
 		if ($keyword !== '')
 		{
 			$args->search_keyword = '%' . $keyword . '%';
+			$args->search_brand_srl_list = BrandModel::searchSrls($keyword, true) ?: null;
 		}
 
-		// 섹션 페이지: f=recommend|new|popular|sale. 할인은 컬럼 비교라 넉넉히 받아 PHP 에서 거른다
-		$filter = in_array(\Context::get('f'), ['recommend', 'new', 'popular', 'sale'], true) ? (string)\Context::get('f') : '';
+		$brand = BrandModel::find((string)\Context::get('brand'));
+		$brand_draft = $brand ? BrandModel::previewDraft((int)$brand->brand_srl) : null;
+		if ($brand_draft)
+		{
+			$brand = clone $brand;
+			foreach ((array)($brand_draft['values'] ?? []) as $key => $value)
+			{
+				$brand->{$key} = $key === 'name' ? (LangModel::text((string)$value) ?: $brand->name) : $value;
+			}
+			$brand->is_visible = 'Y';
+		}
+		if ($brand && ($brand->is_visible ?? 'Y') !== 'N')
+		{
+			$args->brand_srl = (int)$brand->brand_srl;
+			if ($brand_draft && is_array($brand_draft['items'] ?? null))
+			{
+				unset($args->brand_srl);
+				$args->item_srl_list = count($brand_draft['items']) ? implode(',', $brand_draft['items']) : '0';
+			}
+			$brand->url = BrandModel::url($brand, (string)($this->module_info->mid ?? ''));
+			\Context::setBrowserTitle($brand->name);
+		}
+		else
+		{
+			$brand = null;
+		}
+		\Context::set('current_brand', $brand);
+
+		$current_seller = null;
+		$seller_srl = (int)\Context::get('seller');
+		if ($seller_srl > 0)
+		{
+			$current_seller = \Zittme\Modules\Commerce\Models\Seller::publicInfo($seller_srl);
+			if ($current_seller && $current_seller->active)
+			{
+				$args->seller_srl = $seller_srl;
+				\Context::setBrowserTitle($current_seller->shop_name);
+			}
+			else
+			{
+				$current_seller = null;
+			}
+		}
+		\Context::set('current_seller', $current_seller);
+
+		$filter = in_array(\Context::get('f'), ['recommend', 'new', 'popular', 'sale', 'timesale'], true) ? (string)\Context::get('f') : '';
 		if ($filter === 'recommend')
 		{
 			$args->is_recommend = 'Y';
+		}
+		elseif ($filter === 'timesale')
+		{
+			$ts_srls = \Zittme\Modules\Commerce\Models\Timesale::openItemSrls();
+			$args->item_srl_list = count($ts_srls) ? implode(',', $ts_srls) : '0';
 		}
 		elseif ($filter === 'sale')
 		{
 			$args->list_count = 200;
 		}
 
-		// 정렬: new(기본) / popular / price_low / price_high — 인기 상품 페이지는 판매량순이 기본
 		$sort = (string)\Context::get('sort');
 		if ($sort === '' && $filter === 'popular')
 		{
@@ -381,7 +410,6 @@ class Front extends Base
 				$args->order_type = 'desc';
 				break;
 			default:
-				// 기본은 판매자가 정한 진열 순서. 목록에서 끌어 옮긴 순서가 그대로 보인다
 				$sort = 'display';
 				$args->sort_index = 'list_order';
 				$args->order_type = 'asc';
@@ -393,7 +421,6 @@ class Front extends Base
 		$output = executeQuery('commerce.getItemList', $args);
 		$items = ($output->toBool() && !empty($output->data)) ? (is_array($output->data) ? $output->data : [$output->data]) : [];
 
-		// 판매기간 밖 상품은 노출에서 제외
 		$now = self::now();
 		$items = array_values(array_filter($items, function($it) use ($now) {
 			if (!empty($it->sale_start) && $now < $it->sale_start) return false;
@@ -422,20 +449,16 @@ class Front extends Base
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', self::config());
 		self::injectAdminPanel();
+		self::applyImageSize();
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('list');
 	}
 
-	/**
-	 * 쇼핑 홈 — 배너 슬라이더 + 추천/신상품/인기/할인 섹션.
-	 * 섹션 데이터는 판매중 상품 풀에서 뽑는다 (별도 집계 테이블 없이 v1).
-	 */
 	protected function dispShopHome()
 	{
 		$config = self::config();
 		$count = max(4, min(24, (int)($config->home_count ?? 8)));
 
-		// 판매기간 안의 판매중 상품 풀
 		$output = executeQuery('commerce.getItemList', (object)[
 			'status_list' => 'sale,soldout',
 			'sort_index' => 'item_srl',
@@ -452,6 +475,12 @@ class Front extends Base
 		}));
 
 		$sections = [];
+		$ts_srls = \Zittme\Modules\Commerce\Models\Timesale::openItemSrls();
+		if (count($ts_srls))
+		{
+			$rows = array_values(array_filter($pool, function($it) use ($ts_srls) { return in_array((int)$it->item_srl, $ts_srls, true); }));
+			if (count($rows)) { $sections[] = (object)['key' => 'timesale', 'title' => lang('commerce.shop_home_timesale'), 'items' => array_slice($rows, 0, $count)]; }
+		}
 		if (($config->home_show_recommend ?? 'Y') === 'Y')
 		{
 			$rows = array_values(array_filter($pool, function($it) { return ($it->is_recommend ?? 'N') === 'Y'; }));
@@ -481,7 +510,6 @@ class Front extends Base
 			self::attachReviewStats($section->items);
 		}
 
-		// 진행 중 기획전 카드 (홈 섹션 + 상단 메뉴)
 		$home_promotions = [];
 		foreach (\Zittme\Modules\Commerce\Models\Promotion::activeList() as $promo)
 		{
@@ -493,7 +521,6 @@ class Front extends Base
 
 		$banners = json_decode((string)($config->home_banners ?? '[]'), true);
 		$banners = is_array($banners) ? array_values(array_filter($banners, 'is_array')) : [];
-		// 제목·문구에 다국어 문구를 연결했으면 실제 값으로 바꿔 둔다
 		foreach ($banners as &$bn_lang)
 		{
 			$bn_lang['title'] = LangModel::text($bn_lang['title'] ?? '');
@@ -501,7 +528,6 @@ class Front extends Base
 		}
 		unset($bn_lang);
 
-		// 배경 스타일은 여기서 계산해서 스킨은 출력만 하게 한다 (bg_type: gradient|color|image)
 		foreach ($banners as $i => $bn)
 		{
 			$type = $bn['bg_type'] ?? (!empty($bn['image']) ? 'image' : 'gradient');
@@ -519,11 +545,8 @@ class Front extends Base
 			{
 				$bn['bg_style'] = 'background:linear-gradient(120deg,' . $c1 . ',' . $c2 . ')';
 			}
-			// 글자 색·그림자: 연한 배경에서도 읽히게 배너별로 지정할 수 있다
 			$bn['text_color'] = (isset($bn['text_color']) && preg_match('/^#[0-9a-fA-F]+$/', (string)$bn['text_color'])) ? $bn['text_color'] : '#ffffff';
 			$bn['shadow'] = ($bn['shadow'] ?? 'Y') === 'N' ? 'N' : 'Y';
-			// 제목·문구에 <br> 만 허용 (그 외 태그는 이스케이프)
-			// 제목·문구는 다국어 코드를 담을 수 있다. 화면에 내기 전에 현재 언어로 푼다
 			$bn['title'] = LangModel::text((string)($bn['title'] ?? ''));
 			$bn['text'] = LangModel::text((string)($bn['text'] ?? ''));
 			$bn['title_html'] = self::escapeAllowBr((string)$bn['title']);
@@ -534,7 +557,6 @@ class Front extends Base
 		\Context::set('home_banners', $banners);
 		\Context::set('home_sections', $sections);
 		\Context::set('shop_categories', self::getActiveCategories());
-		// 홈은 섹션마다 상품이 들어 있다
 		$home_items = [];
 		foreach ($sections as $home_section)
 		{
@@ -547,24 +569,27 @@ class Front extends Base
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', $config);
 		self::injectAdminPanel();
+		self::applyImageSize();
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('home');
 	}
 
-	/**
-	 * 상품 상세.
-	 */
 	public function dispCommerceItem()
 	{
 		self::assertShopEnabled();
 		$item_srl = (int)\Context::get('item_srl');
 		$item = ItemModel::get($item_srl);
-		if (!$item || in_array($item->status, ['hidden', 'stop'], true))
+		if (!$item || in_array($item->status, ['hidden', 'stop', 'review'], true))
 		{
 			return new \BaseObject(-1, 'msg_shop_no_item');
 		}
+		$store_seller = \Zittme\Modules\Commerce\Models\Shop::itemsInStore() ? \Zittme\Modules\Commerce\Models\Shop::sellerForItem($item) : null;
+		if ($store_seller && !\Context::get('zmc_store_frame'))
+		{
+			\Context::redirect(\Zittme\Modules\Commerce\Models\Shop::itemUrl((string)$store_seller->shop_id, $item_srl, (string)($this->module_info->mid ?? ''), true), 301);
+			return;
+		}
 
-		// 조회수 (원자 증가)
 		\Zittme\Framework\DB::getInstance()->query(
 			'UPDATE commerce_item SET view_count = view_count + 1 WHERE item_srl = ?', $item_srl
 		);
@@ -572,7 +597,6 @@ class Front extends Base
 		$logged_info = \Context::get('logged_info');
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 
-		// 브레드크럼: 전체 > 상위 카테고리 > 하위 카테고리
 		$breadcrumb = [];
 		if (!empty($item->category_srl))
 		{
@@ -591,7 +615,6 @@ class Front extends Base
 		}
 		\Context::set('breadcrumb', $breadcrumb);
 
-		// 리뷰·문의
 		$reviews_output = executeQuery('commerce.getReviewList', (object)['item_srl' => $item_srl, 'list_count' => 20]);
 		$reviews = ($reviews_output->toBool() && !empty($reviews_output->data)) ? (is_array($reviews_output->data) ? $reviews_output->data : [$reviews_output->data]) : [];
 		$inquiries_output = executeQuery('commerce.getInquiryList', (object)['item_srl' => $item_srl, 'list_count' => 20]);
@@ -601,23 +624,27 @@ class Front extends Base
 		\Context::set('inquiries', array_values(array_filter($inquiries, function($r) { return !empty($r->inquiry_srl); })));
 		\Context::set('is_logged', $member_srl > 0);
 		\Context::set('is_shop_admin', $is_admin);
-		// 관리자도 예외 없이 구매확정한 상품만 리뷰 가능
-		// 리뷰를 아직 안 쓴 확정 주문이 하나라도 있으면 작성 가능 (주문건 단위)
 		\Context::set('can_review', Review::canReviewNow($member_srl, $item_srl));
 
-		// 적립 혜택 표기용 적립률 (등급 적립률 > 기본 설정)
 		\Context::set('credit_rate', \Zittme\Modules\Commerce\Models\Grade::creditRateFor($member_srl));
 
 		LangModel::textAll([$item], ['item_name', 'summary']);
 		\Context::set('item', $item);
+		$item_seller = \Zittme\Modules\Commerce\Models\Seller::publicInfo((int)($item->seller_srl ?? 0));
+		if ($item_seller)
+		{
+			// 입점 판매자 본문은 저장할 때 거르지만, 그 전에 저장된 본문도 있어 내보낼 때 한 번 더 거른다
+			$item->content = \Zittme\Framework\Filters\HTMLFilter::clean((string)($item->content ?? ''), false, true);
+			$item_seller->store_url = $item_seller->shop_id !== ''
+				? \Zittme\Modules\Commerce\Models\Shop::url($item_seller->shop_id, (string)($this->module_info->mid ?? ''))
+				: getUrl('', 'mid', (string)($this->module_info->mid ?? ''), 'v', 'list', 'seller', $item_seller->seller_srl);
+		}
+		\Context::set('item_seller', $item_seller);
 		$this->setItemSeo($item);
 		$shop_options = ItemModel::getOptions($item_srl, true);
-		// 조합형 옵션 축 — 스킨이 모델을 직접 부르지 않도록 여기서 풀어 넘긴다.
-		// 방식을 직접 입력으로 되돌린 상품은 축 정의가 남아 있어도 쓰지 않는다.
 		$shop_axes = ($item->option_mode ?? 'single') === 'combo'
 			? \Zittme\Modules\Commerce\Models\Combo::axes($item->option_axes ?? '')
 			: [];
-		// 구매 화면 대조는 자리 번호로 한다 (표시 글자는 언어마다 달라진다)
 		foreach ($shop_options as $shop_option)
 		{
 			$shop_option->combo_key = empty($shop_option->combo)
@@ -638,8 +665,6 @@ class Front extends Base
 				$shop_axis_item->value = LangModel::text($shop_axis_item->value);
 			}
 		}
-		// 조합 옵션 이름은 축 값에서 다시 만든다. 저장된 이름은 조합을 만든 시점의
-		// 글자라, 뒤늦게 축에 다국어 코드를 연결해도 그대로 남는다.
 		foreach ($shop_options as $shop_option)
 		{
 			if (empty($shop_option->combo_key))
@@ -656,7 +681,6 @@ class Front extends Base
 		\Context::set('shop_axes', $shop_axes);
 		\Context::set('purchasable', ItemModel::isPurchasable($item));
 		\Context::set('effective_price', ItemModel::effectivePrice($item));
-		// 상세의 금액은 표시 통화 값으로 찍는다. 옵션 추가금도 같은 통화라야 합계가 맞는다
 		$item_disp_currency = MoneyModel::current();
 		$item_disp = ItemModel::displayPrices($item, $item_disp_currency);
 		\Context::set('disp_currency', $item_disp_currency);
@@ -714,12 +738,12 @@ class Front extends Base
 		}
 
 		\Context::addOpenGraphData('og:type', 'product');
-		\Context::setCanonicalURL(getNotEncodedFullUrl('', 'mid', $this->mid, 'act', 'dispCommerceItem', 'item_srl', (int)$item->item_srl));
+		$frame = \Context::get('zmc_store_frame');
+		\Context::setCanonicalURL($frame
+			? \Zittme\Modules\Commerce\Models\Shop::itemUrl((string)$frame->shop_id, (int)$item->item_srl, (string)$this->mid, true)
+			: getNotEncodedFullUrl('', 'mid', $this->mid, 'act', 'dispCommerceItem', 'item_srl', (int)$item->item_srl));
 	}
 
-	/**
-	 * 상품 상세의 구조화 데이터. 코어가 head 에 한 번에 출력한다.
-	 */
 	protected function addItemStructuredData(object $item, int $price_minor, string $currency, array $reviews = []): void
 	{
 		if (!method_exists('\Context', 'addStructuredData'))
@@ -771,14 +795,14 @@ class Front extends Base
 		]);
 	}
 
-	/**
-	 * 장바구니.
-	 */
 	public function dispCommerceCart()
 	{
 		self::assertShopEnabled();
 		$resolved = CartModel::resolve();
 		\Context::set('cart', $resolved);
+		\Zittme\Modules\Commerce\Models\Seller::attachNames(array_map(function ($e) { return $e->item; }, (array)($resolved->items ?? [])), (string)($this->module_info->mid ?? ''));
+		$last_store = $_SESSION['commerce_last_store'] ?? null;
+		\Context::set('shop_continue_url', (is_array($last_store) && time() - (int)($last_store['time'] ?? 0) < 7200) ? (string)$last_store['url'] : '');
 		\Context::set('ship_fee', CartModel::calcShipFee($resolved));
 		\Context::set('shop_config', self::config());
 		$this->setTemplatePath($this->getSkinPath());
@@ -786,9 +810,6 @@ class Front extends Base
 		$this->setTemplateFile('cart');
 	}
 
-	/**
-	 * 주문서.
-	 */
 	public function dispCommerceCheckout()
 	{
 		self::assertShopEnabled();
@@ -796,7 +817,6 @@ class Front extends Base
 		$valid = array_values(array_filter($resolved->items, function($e) { return !$e->blocked; }));
 		if (!count($valid))
 		{
-			// 결제 화면을 닫았다 돌아온 경우. 빈 장바구니 대신 진행 중이던 주문으로 안내한다
 			$pending = self::findPendingOrder();
 			if ($pending)
 			{
@@ -810,8 +830,14 @@ class Front extends Base
 
 		$logged_info = \Context::get('logged_info');
 		$ship_fee = CartModel::calcShipFee($resolved);
+		if (CartModel::isPinOnly($resolved))
+		{
+			\Context::set('checkout_pin_only', true);
+			$pin_title = json_encode(lang('commerce.pin_checkout_title'), \JSON_UNESCAPED_UNICODE);
+			$pin_text = json_encode(lang('commerce.pin_checkout_text'), \JSON_UNESCAPED_UNICODE);
+			\Context::addHtmlFooter('<script>(function(){var a=document.querySelector(\'input[name="address1"]\');if(!a)return;var box=a.closest(".shp-box")||a.closest("fieldset")||a.parentNode.parentNode;box.querySelectorAll("[required]").forEach(function(e){e.removeAttribute("required");});box.hidden=true;box.style.display="none";var n=document.createElement("div");n.className=box.className;var h=document.createElement("h3");h.textContent=' . $pin_title . ';var p=document.createElement("p");p.style.cssText="margin:0;font-size:14px;line-height:1.7;color:#4e5968";p.textContent=' . $pin_text . ';n.appendChild(h);n.appendChild(p);box.parentNode.insertBefore(n,box);})();</script>');
+		}
 
-		// 결제가 끝나지 않은 주문이 있으면 새로 만들기 전에 그 주문부터 안내한다
 		OrderModel::expireStalePending();
 		$open_pending = OrderModel::findOpenPending(($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0);
 		if ($open_pending)
@@ -821,18 +847,14 @@ class Front extends Base
 		}
 		\Context::set('pending_order', $open_pending);
 
-		// 회원 보유 쿠폰 (지금 주문에 적용 가능한 것만)
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 
-		// 저장된 배송지 (회원)
 		$my_addresses = [];
 		if ($member_srl > 0)
 		{
 			$addr_output = executeQuery('commerce.getAddressList', (object)['member_srl' => $member_srl]);
 			if ($addr_output->toBool() && !empty($addr_output->data))
 			{
-				// 해외로 보내지 않는 곳이면 다른 나라 배송지는 고를 수 없다.
-				// 목록에 두면 골랐을 때 입력 칸이 통째로 바뀌어 버린다
 				$only_base = !AddressModel::needsCountry();
 				foreach (is_array($addr_output->data) ? $addr_output->data : [$addr_output->data] as $addr)
 				{
@@ -840,7 +862,6 @@ class Front extends Base
 					{
 						continue;
 					}
-					// 나라 칸이 비어 있으면 그 칸이 생기기 전에 저장된 한국 배송지다
 					$addr_country = strtoupper(trim((string)($addr->country ?? ''))) ?: 'KR';
 					if ($only_base && $addr_country !== AddressModel::baseCountry())
 					{
@@ -854,9 +875,6 @@ class Front extends Base
 		\Context::set('my_coupons', \Zittme\Modules\Commerce\Models\Coupon::listUsableForMember($member_srl, $resolved->item_total));
 		\Context::set('credit_balance', \Zittme\Modules\Commerce\Models\Credit::balanceOf($member_srl));
 
-		// 표시 통화 — 기준 통화가 기본이다. 기준이 KRW 인 상점의 외화 병행 표시일 때만
-		// 주문 생성(procCommerceOrder)과 같은 규칙으로 금액을 재계산한다.
-		// 병행 통화에서는 쿠폰·적립금을 쓸 수 없어 화면에서 숨긴다.
 		$base_currency = \Zittme\Modules\Commerce\Models\Money::base();
 		$fx_currency = \Zittme\Modules\Commerce\Models\Money::current();
 		$fx_rate = \Zittme\Modules\Commerce\Models\Money::rate($fx_currency);
@@ -875,7 +893,6 @@ class Front extends Base
 					$fx_ok = false;
 					break;
 				}
-				// 등급 할인은 기준 통화로 매겨 둔 값이라, 통화를 바꾸면 다시 매겨야 한다
 				$fx_graded = ($entry->item->grade_discount ?? 'Y') === 'N'
 					? $fx_unit + $fx_add
 					: \Zittme\Modules\Commerce\Models\Grade::applyDiscountIn($fx_unit + $fx_add, $fx_discount, $fx_currency);
@@ -893,7 +910,6 @@ class Front extends Base
 			}
 			else
 			{
-				// 병행 통화로 팔 수 없는 상품이 있으면 이 주문서는 기준 통화로 되돌린다
 				$fx_currency = $base_currency;
 			}
 		}
@@ -902,13 +918,13 @@ class Front extends Base
 			$fx_currency = $base_currency;
 		}
 		\Context::set('shp_currency', $fx_currency);
-		// 주문서는 통화를 다시 정하므로 기호도 그 통화로 맞춘다
 		\Context::set('shp_currency_symbol', \Zittme\Modules\Commerce\Models\Money::symbol($fx_currency));
 		\Context::set('shp_base_currency', $base_currency);
 		\Context::set('shp_fx_rate', $fx_currency === $base_currency ? 1 : $fx_rate);
 		\Context::set('shp_fx_zero_decimal', \Zittme\Modules\Commerce\Models\Money::isZeroDecimal($fx_currency));
 
 		\Context::set('cart', $resolved);
+		\Zittme\Modules\Commerce\Models\Seller::attachNames(array_map(function ($e) { return $e->item; }, (array)($resolved->items ?? [])), (string)($this->module_info->mid ?? ''));
 		\Context::set('ship_fee', $ship_fee);
 		\Context::set('payment_price', $resolved->item_total + $ship_fee);
 		\Context::set('is_member', $logged_info && $logged_info->member_srl ? true : false);
@@ -923,7 +939,6 @@ class Front extends Base
 		\Context::set('shop_use_credit', self::config()->use_credit !== 'N');
 		\Context::set('shop_countries', AddressModel::countries());
 
-		// 행정구역은 목록에서 골라야 배송비 규칙과 어긋나지 않는다. 목록이 있는 나라만 넘긴다
 		$region_data = [];
 		foreach (array_keys(\Zittme\Modules\Commerce\Models\Region::REGIONS) as $region_country)
 		{
@@ -938,17 +953,6 @@ class Front extends Base
 		$this->setTemplateFile('checkout');
 	}
 
-	/**
-	 * 주문 결과·상세.
-	 */
-	/**
-	 * 지금 사람이 결제를 마치지 않고 남겨 둔 주문. 없으면 null.
-	 *
-	 * 결제 화면에서 뒤로 가거나 창을 닫으면 주문은 결제 대기로 남는다.
-	 * 빈 장바구니를 보여 주는 대신 그 주문으로 안내한다.
-	 *
-	 * @return ?object
-	 */
 	protected static function findPendingOrder(): ?object
 	{
 		$logged_info = \Context::get('logged_info');
@@ -958,7 +962,6 @@ class Front extends Base
 			return null;
 		}
 
-		// 만료되기 전에 만든 것만 본다. 이미 지난 것은 되살릴 수 없다
 		$minutes = max(10, (int)(self::config()->pending_minutes ?? 60));
 		$stmt = \Zittme\Framework\DB::getInstance()->query(
 			'SELECT order_srl, order_code FROM commerce_order'
@@ -974,15 +977,6 @@ class Front extends Base
 		return ($row && !empty($row->order_code)) ? $row : null;
 	}
 
-	/**
-	 * 주문한 상품을 지금 사람의 장바구니에서 뺀다.
-	 *
-	 * 회원은 결제완료 시점(Order::clearCartOf)에 이미 빠진다. 비회원은 세션 키를
-	 * PG 콜백에서 알 수 없어 결과 화면인 여기서 뺀다.
-	 *
-	 * @param object $order
-	 * @return void
-	 */
 	protected static function clearOrderedFromCart(object $order): void
 	{
 		$owner = CartModel::owner();
@@ -1028,7 +1022,6 @@ class Front extends Base
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 		$is_admin = $logged_info && $logged_info->is_admin === 'Y';
 
-		// 접근 제어: 관리자 / 본인 / 비회원(비밀번호) / 결제 복귀 직후 5분
 		$authorized = $is_admin;
 		if (!$authorized && (int)$order->member_srl > 0)
 		{
@@ -1056,8 +1049,6 @@ class Front extends Base
 
 		\Zittme\Modules\Commerce\Models\Tracking::syncShipping();
 
-		// 여기까지 왔으면 결제 화면을 지나온 것이다. 이제 장바구니를 비운다.
-		// 주문을 만들 때 비우면 결제 화면에서 뒤로 갔을 때 담아 둔 것을 잃는다
 		self::clearOrderedFromCart($order);
 
 		\Context::set('order', $order);
@@ -1065,8 +1056,11 @@ class Front extends Base
 		\Context::set('resume_pay_url', OrderModel::resumePayUrl($order));
 		\Context::set('order_items', OrderModel::getItems((int)$order->order_srl));
 		$order_sellers = OrderModel::getSellerOrders((int)$order->order_srl);
+		foreach ($order_sellers as $track_os)
+		{
+			$track_os->tracking_url = empty($track_os->shipping_invoice) ? '' : \Zittme\Modules\Commerce\Models\Courier::trackUrl((string)$track_os->shipping_company, (string)$track_os->shipping_invoice);
+		}
 
-		// 배송 조회: 저장된 조회 결과(이력 포함)를 보여준다 — 페이지 열람이 API 호출을 유발하지 않는다
 		$tracking_info = null;
 		foreach ($order_sellers as $track_os)
 		{
@@ -1078,23 +1072,41 @@ class Front extends Base
 		}
 		\Context::set('tracking_info', $tracking_info);
 
-		// 구매확정 주문: 이 주문에서 아직 리뷰를 안 쓴 상품 (리뷰는 주문건 단위)
 		$unreviewed = [];
 		if ($member_srl > 0 && OrderModel::displayStatus($order, $order_sellers) === 'confirmed')
 		{
 			$unreviewed = \Zittme\Modules\Commerce\Controllers\Review::unreviewedItems($member_srl, (int)$order->order_srl);
 		}
 		\Context::set('unreviewed_items', $unreviewed);
+		foreach ($order_sellers as $label_os)
+		{
+			$label_info = \Zittme\Modules\Commerce\Models\Seller::publicInfo((int)$label_os->seller_srl);
+			$label_os->shop_label = $label_info ? $label_info->shop_name : lang('commerce.mk_direct');
+			$label_os->claimable = !in_array($label_os->status, [self::SELLER_CONFIRMED, self::SELLER_CANCELLED, self::SELLER_REFUNDED, self::SELLER_PENDING], true);
+		}
 		\Context::set('order_sellers', $order_sellers);
+		$claimable_sellers = array_values(array_filter($order_sellers, function ($os) { return !empty($os->claimable); }));
+		$claim_blocked_reason = '';
+		if ($order->status === self::ORDER_PAID && !count($claimable_sellers))
+		{
+			$all_confirmed = count($order_sellers) > 0;
+			foreach ($order_sellers as $os_check)
+			{
+				if ($os_check->status !== self::SELLER_CONFIRMED)
+				{
+					$all_confirmed = false;
+				}
+			}
+			$claim_blocked_reason = lang($all_confirmed ? 'commerce.sc_claim_blocked_confirmed' : 'commerce.sc_claim_blocked_none');
+		}
+		\Context::set('claimable_sellers', $claimable_sellers);
+		\Context::set('claim_blocked_reason', $claim_blocked_reason);
 		\Context::set('display_status', OrderModel::displayStatus($order, $order_sellers));
 		\Context::set('shop_config', self::config());
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('result');
 	}
 
-	/**
-	 * 내 주문 (회원) / 비회원 조회 폼.
-	 */
 	public function dispCommerceMyOrders()
 	{
 		self::assertShopEnabled();
@@ -1102,8 +1114,6 @@ class Front extends Base
 		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
 
 		\Zittme\Modules\Commerce\Models\Tracking::syncShipping();
-		// 만료된 결제 대기 주문을 여기서도 정리한다. 관리자 화면에만 맡기면
-		// 아무도 들어가지 않는 동안 재고가 계속 잡혀 있다
 		OrderModel::expireStalePending();
 
 		$orders = [];
@@ -1117,7 +1127,6 @@ class Front extends Base
 					if (!empty($row->order_srl))
 					{
 						$row->display_status = OrderModel::displayStatus($row);
-						// 리뷰 작성 버튼: 이 주문건에 아직 리뷰 안 쓴 상품이 있을 때만
 						$row->needs_review = $row->display_status === 'confirmed'
 							&& count(\Zittme\Modules\Commerce\Controllers\Review::unreviewedItems($member_srl, (int)$row->order_srl)) > 0;
 						$row->pending_deadline = OrderModel::pendingDeadline($row);
@@ -1134,15 +1143,13 @@ class Front extends Base
 		\Context::set('credit_logs', $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Credit::getLogs($member_srl, 30) : []);
 		\Context::set('my_grade', $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Grade::getForMember($member_srl) : null);
 		\Context::set('my_coupons', $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Coupon::listUsableForMember($member_srl, 0) : []);
+		\Context::set('seller_apply_link', $member_srl > 0 && \Zittme\Modules\Commerce\Models\Seller::isOpen()
+			&& ((self::config()->market_apply ?? 'N') === 'Y' || \Zittme\Modules\Commerce\Models\Seller::getByMember($member_srl)));
 		\Context::set('shop_config', self::config());
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('my');
 	}
 
-	/**
-	 * 회원 등급 안내. 관리자가 등록한 등급 표(기준 누적 금액, 할인, 적립률, 승급 쿠폰)와
-	 * 로그인한 회원의 현재 등급, 다음 등급까지 남은 금액을 보여준다.
-	 */
 	public function dispCommerceGrades()
 	{
 		self::assertShopEnabled();
@@ -1209,5 +1216,339 @@ class Front extends Base
 		}
 		$this->setTemplatePath($skin_path);
 		$this->setTemplateFile('grades');
+	}
+
+	protected function setStoreFrame(object $seller, array $design, string $mid, bool $is_preview): object
+	{
+		$shop_id = (string)$seller->shop_id;
+		$cats = \Zittme\Modules\Commerce\Models\Shop::categories((int)$seller->seller_srl);
+		foreach ($cats as $c)
+		{
+			$c->url = \Zittme\Modules\Commerce\Models\Shop::url($shop_id, $mid, ['cat' => (int)$c->category_srl]);
+		}
+		$store = (object)[
+			'seller_srl' => (int)$seller->seller_srl,
+			'shop_id' => $shop_id,
+			'shop_name' => (string)$seller->shop_name,
+			'intro' => (string)($seller->intro ?? ''),
+			'logo' => $design['logo'] ?? '',
+			'cover' => $design['cover'] ?? '',
+			'url' => \Zittme\Modules\Commerce\Models\Shop::url($shop_id, $mid),
+			'all_url' => \Zittme\Modules\Commerce\Models\Shop::url($shop_id, $mid, ['sort' => 'display']),
+		];
+		\Context::set('store', $store);
+		\Context::set('store_info', \Zittme\Modules\Commerce\Models\Seller::publicInfo((int)$seller->seller_srl));
+		\Context::set('store_design', $design);
+		\Context::set('store_color', $design['color']);
+		\Context::set('store_cats', $cats);
+		\Context::set('store_preview', $is_preview);
+		return $store;
+	}
+
+	protected function dispStoreItem(object $seller, array $design, string $mid, bool $is_preview)
+	{
+		$item_srl = (int)\Context::get('item');
+		$item = ItemModel::get($item_srl);
+		if (!$item || (int)$item->seller_srl !== (int)$seller->seller_srl)
+		{
+			throw new \Zittme\Framework\Exceptions\TargetNotFound;
+		}
+		$store = $this->setStoreFrame($seller, $design, $mid, $is_preview);
+		\Context::set('zmc_store_frame', $store);
+		$_SESSION['commerce_last_store'] = ['url' => $store->url, 'time' => time()];
+		\Context::set('store_cat', null);
+		\Context::set('store_q', '');
+		\Context::set('store_sort', '');
+		\Context::set('store_browsing', true);
+		\Context::set('item_srl', $item_srl);
+		$output = $this->dispCommerceItem();
+		if ($output instanceof \BaseObject && !$output->toBool())
+		{
+			return $output;
+		}
+		$seller_info = \Context::get('item_seller');
+		\Context::set('store_item_seller', $seller_info);
+		\Context::set('item_seller', null);
+		\Context::set('store_item_url', \Zittme\Modules\Commerce\Models\Shop::itemUrl($store->shop_id, $item_srl, $mid));
+
+		$skin_path = $this->getSkinPath();
+		if (!is_file($skin_path . '_storeframe_item.html'))
+		{
+			$skin_path = $this->module_path . 'skins/default/';
+		}
+		$this->setTemplatePath($skin_path);
+		$this->setTemplateFile('_storeframe_item');
+	}
+
+	public function dispCommerceStore()
+	{
+		self::assertShopEnabled();
+		if (!\Zittme\Modules\Commerce\Models\Seller::isOpen())
+		{
+			throw new \Zittme\Framework\Exceptions\TargetNotFound;
+		}
+		$found = \Zittme\Modules\Commerce\Models\Shop::find((string)\Context::get('shop'));
+		if (!$found || $found->seller->status !== 'approved')
+		{
+			throw new \Zittme\Framework\Exceptions\TargetNotFound;
+		}
+		$seller = $found->seller;
+		$seller_srl = (int)$seller->seller_srl;
+		$mid = (string)($this->module_info->mid ?? '');
+		if ($found->moved)
+		{
+			$keep = [];
+			foreach (['cat', 'sort', 'page', 'item'] as $key)
+			{
+				$value = (string)\Context::get($key);
+				if ($value !== '' && preg_match('/^[a-z0-9_]{1,20}$/', $value))
+				{
+					$keep[$key] = $value;
+				}
+			}
+			\Context::redirect(htmlspecialchars_decode(\Zittme\Modules\Commerce\Models\Shop::url((string)$seller->shop_id, $mid, $keep)), 301);
+			return;
+		}
+
+		$design = \Zittme\Modules\Commerce\Models\Shop::design($seller);
+		$me = \Zittme\Modules\Commerce\Models\Staff::seller();
+		$is_preview = \Context::get('preview') && $me && (int)$me->seller_srl === $seller_srl;
+		if ($is_preview)
+		{
+			$draft = \Zittme\Modules\Commerce\Models\Shop::draft($seller_srl);
+			if ($draft)
+			{
+				$design = $draft;
+			}
+			\Context::addMetaTag('robots', 'noindex');
+		}
+		if ((int)\Context::get('item') > 0)
+		{
+			return $this->dispStoreItem($seller, $design, $mid, $is_preview);
+		}
+		$count = (int)$design['count'];
+
+		$now = self::now();
+		$in_period = function ($it) use ($now) {
+			if (empty($it->item_srl)) return false;
+			if (!empty($it->sale_start) && $now < $it->sale_start) return false;
+			if (!empty($it->sale_end) && $now > $it->sale_end) return false;
+			return true;
+		};
+		$fetch = function (array $extra) use ($seller_srl, $in_period) {
+			$output = executeQuery('commerce.getItemList', (object)($extra + ['seller_srl' => $seller_srl, 'status_list' => 'sale,soldout']));
+			$rows = ($output->toBool() && !empty($output->data)) ? (is_array($output->data) ? $output->data : [$output->data]) : [];
+			return (object)['items' => array_values(array_filter($rows, $in_period)), 'nav' => $output->page_navigation ?? null];
+		};
+
+		$cats = \Zittme\Modules\Commerce\Models\Shop::categories($seller_srl);
+		$cat_srl = (int)\Context::get('cat');
+		$current_cat = null;
+		foreach ($cats as $c)
+		{
+			$c->url = \Zittme\Modules\Commerce\Models\Shop::url((string)$seller->shop_id, $mid, ['cat' => (int)$c->category_srl]);
+			if ((int)$c->category_srl === $cat_srl)
+			{
+				$current_cat = $c;
+			}
+		}
+		$keyword = mb_substr(trim((string)\Context::get('q')), 0, 50);
+		$sort = in_array(\Context::get('sort'), ['display', 'new', 'popular', 'price_low', 'price_high'], true) ? (string)\Context::get('sort') : '';
+		$browsing = $current_cat || $keyword !== '' || $sort !== '' || (int)\Context::get('page') > 1;
+
+		$all_items = [];
+		$sections = [];
+		if (!$browsing)
+		{
+			foreach ($design['sections'] as $sec)
+			{
+				if (empty($sec['on']))
+				{
+					continue;
+				}
+				$key = $sec['key'];
+				$block = (object)['key' => $key, 'title' => lang('commerce.sc_sec_' . $key), 'items' => [], 'groups' => []];
+				if ($key === 'featured')
+				{
+					if (!count($design['featured']))
+					{
+						continue;
+					}
+					$rows = $fetch(['item_srl_list' => implode(',', $design['featured']), 'list_count' => 50])->items;
+					$order = array_flip($design['featured']);
+					usort($rows, function ($a, $b) use ($order) { return ($order[(int)$a->item_srl] ?? 99) <=> ($order[(int)$b->item_srl] ?? 99); });
+					$block->items = $rows;
+				}
+				elseif ($key === 'new')
+				{
+					$block->items = $fetch(['sort_index' => 'item_srl', 'order_type' => 'desc', 'list_count' => $count])->items;
+				}
+				elseif ($key === 'cats')
+				{
+					foreach (array_slice($cats, 0, 6) as $c)
+					{
+						$rows = $fetch(['seller_category_srl' => (int)$c->category_srl, 'list_count' => $count])->items;
+						if (count($rows))
+						{
+							$block->groups[] = (object)['title' => $c->title, 'url' => $c->url, 'items' => $rows];
+						}
+					}
+					if (!count($block->groups))
+					{
+						continue;
+					}
+				}
+				elseif ($key === 'notice' && trim($design['notice']) === '')
+				{
+					continue;
+				}
+				elseif ($key === 'banner' && !count($design['banners']))
+				{
+					continue;
+				}
+				$sections[] = $block;
+			}
+		}
+
+		$args = ['page' => max(1, (int)\Context::get('page')), 'list_count' => 24];
+		if ($current_cat)
+		{
+			$args['seller_category_srl'] = (int)$current_cat->category_srl;
+		}
+		if ($keyword !== '')
+		{
+			$args['search_keyword'] = $keyword;
+		}
+		switch ($sort)
+		{
+			case 'popular': $args['sort_index'] = 'buy_count'; $args['order_type'] = 'desc'; break;
+			case 'price_low': $args['sort_index'] = 'effective_price'; $args['order_type'] = 'asc'; break;
+			case 'price_high': $args['sort_index'] = 'effective_price'; $args['order_type'] = 'desc'; break;
+			case 'new': $args['sort_index'] = 'item_srl'; $args['order_type'] = 'desc'; break;
+			default: $args['sort_index'] = 'list_order'; $args['order_type'] = 'asc';
+		}
+		$listing = $fetch($args);
+
+		$every = $listing->items;
+		foreach ($sections as $block)
+		{
+			$every = array_merge($every, $block->items);
+			foreach ($block->groups as $g)
+			{
+				$every = array_merge($every, $g->items);
+			}
+		}
+		LangModel::textAll($every, ['item_name']);
+		self::attachReviewStats($every);
+		$this->setShopContext($every);
+
+		$store = (object)[
+			'seller_srl' => $seller_srl,
+			'shop_id' => (string)$seller->shop_id,
+			'shop_name' => (string)$seller->shop_name,
+			'intro' => (string)($seller->intro ?? ''),
+			'logo' => $design['logo'] ?? '',
+			'cover' => $design['cover'] ?? '',
+			'url' => \Zittme\Modules\Commerce\Models\Shop::url((string)$seller->shop_id, $mid),
+		];
+		\Context::setBrowserTitle($store->shop_name);
+		\Context::set('store', $store);
+		\Context::set('store_info', \Zittme\Modules\Commerce\Models\Seller::publicInfo($seller_srl));
+		\Context::set('store_design', $design);
+		\Context::set('store_sections', $sections);
+		\Context::set('store_cats', $cats);
+		\Context::set('store_cat', $current_cat);
+		\Context::set('store_q', $keyword);
+		\Context::set('store_sort', $sort);
+		\Context::set('store_browsing', $browsing);
+		\Context::set('store_items', $listing->items);
+		\Context::set('page_navigation', $listing->nav);
+		\Context::set('store_preview', $is_preview);
+		\Context::set('store_color', $design['color']);
+		$_SESSION['commerce_last_store'] = ['url' => $store->url, 'time' => time()];
+		\Context::set('cart_count', count(CartModel::rows()));
+		\Context::set('shop_config', self::config());
+		self::injectAdminPanel();
+
+		$skin_path = $this->getSkinPath();
+		if (!is_file($skin_path . 'store.html'))
+		{
+			$skin_path = $this->module_path . 'skins/default/';
+		}
+		$this->setTemplatePath($skin_path);
+		$this->setTemplateFile('store');
+	}
+
+	public function dispCommerceSellerApply()
+	{
+		self::assertShopEnabled();
+		if (!\Zittme\Modules\Commerce\Models\Seller::isOpen())
+		{
+			throw new \Zittme\Framework\Exceptions\TargetNotFound;
+		}
+		$logged_info = \Context::get('logged_info');
+		$member_srl = is_object($logged_info) ? (int)$logged_info->member_srl : 0;
+		$mine = $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Seller::getByMember($member_srl) : null;
+		if ($mine)
+		{
+			$mine->regdate_text = $mine->regdate ? zdate($mine->regdate, 'Y.m.d') : '';
+		}
+		\Context::set('is_member', $member_srl > 0);
+		\Context::set('my_seller', $mine);
+		\Context::set('apply_open', (self::config()->market_apply ?? 'N') === 'Y');
+		\Context::set('apply_rate', (float)(self::config()->market_commission ?? 0));
+		\Context::set('console_url', getNotEncodedUrl('', 'mid', '', 'act', 'dispCommerceSellerCenter'));
+		\Context::set('shop_config', self::config());
+		$skin_path = $this->getSkinPath();
+		if (!is_file($skin_path . 'seller_apply.html'))
+		{
+			$skin_path = $this->module_path . 'skins/default/';
+		}
+		$this->setTemplatePath($skin_path);
+		$this->setTemplateFile('seller_apply');
+	}
+
+	public function procCommerceSellerApply()
+	{
+		if (!\Zittme\Modules\Commerce\Models\Seller::isOpen() || (self::config()->market_apply ?? 'N') !== 'Y')
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$logged_info = \Context::get('logged_info');
+		$member_srl = is_object($logged_info) ? (int)$logged_info->member_srl : 0;
+		if ($member_srl <= 0)
+		{
+			return new \BaseObject(-1, 'msg_shop_login_required');
+		}
+		$old = \Zittme\Modules\Commerce\Models\Seller::getByMember($member_srl);
+		if ($old && $old->status !== 'rejected')
+		{
+			return new \BaseObject(-1, lang('commerce.mk_msg_already'));
+		}
+		if (\Context::get('agree') !== 'Y')
+		{
+			return new \BaseObject(-1, lang('commerce.mk_msg_need_agree'));
+		}
+		$data = \Zittme\Modules\Commerce\Models\Seller::filterInput();
+		$missing = \Zittme\Modules\Commerce\Models\Seller::missingField($data);
+		if ($missing !== '')
+		{
+			return new \BaseObject(-1, sprintf(lang('commerce.mk_msg_missing'), lang('commerce.mk_f_' . $missing)));
+		}
+		if (\Zittme\Modules\Commerce\Models\Seller::operatorSrl() <= 0)
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$id_error = \Zittme\Modules\Commerce\Models\Shop::idError((string)($data->shop_id ?? ''), $old ? (int)$old->seller_srl : 0);
+		if ($id_error !== '')
+		{
+			return new \BaseObject(-1, lang('commerce.' . $id_error));
+		}
+		if (!\Zittme\Modules\Commerce\Models\Seller::apply($member_srl, $data))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$this->setMessage(lang('commerce.mk_msg_applied'));
+		$this->setRedirectUrl(getNotEncodedUrl('', 'mid', (string)\Context::get('mid'), 'act', 'dispCommerceSellerApply'));
 	}
 }

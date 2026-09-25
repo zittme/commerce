@@ -1,5 +1,4 @@
 <query id="countCouponUses" action="select">
-	<!-- 회원별 사용(또는 발급) 횟수 -->
 	<tables>
 		<table name="commerce_coupon_issue" />
 	</tables>

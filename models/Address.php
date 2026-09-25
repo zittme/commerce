@@ -2,24 +2,10 @@
 
 namespace Zittme\Modules\Commerce\Models;
 
-/**
- * 배송지 입력 방식과 표기.
- *
- * 한국형은 우편번호 검색으로 도로명·지번 주소를 채우고, 해외형은 주/도·도시를
- * 직접 입력한다. 주문서·주소록·거래명세서·CSV 가 모두 여기를 거쳐 같은 규칙을 쓴다.
- */
 class Address
 {
-	/**
-	 * 입력 방식. kr = 한국형만, intl = 해외형만, both = 국가에 따라 전환.
-	 */
 	public const MODES = ['kr', 'intl', 'both'];
 
-	/**
-	 * 설정에 저장된 입력 방식.
-	 *
-	 * @return string
-	 */
 	public static function mode(): string
 	{
 		$config = Config::getConfig();
@@ -27,23 +13,12 @@ class Address
 		return in_array($mode, self::MODES, true) ? $mode : 'kr';
 	}
 
-	/**
-	 * 국가 선택을 화면에 내보내야 하는가.
-	 *
-	 * @return bool
-	 */
 	public static function needsCountry(): bool
 	{
 		$config = Config::getConfig();
-		// 해외로 보내지 않으면 고를 나라가 하나뿐이다. 입력 방식과는 무관하다
 		return ($config->allow_overseas ?? 'N') === 'Y';
 	}
 
-	/**
-	 * 받는 사람 연락처에 국가번호 칸을 둘지.
-	 *
-	 * @return bool
-	 */
 	public static function needsPhoneCode(): bool
 	{
 		$config = Config::getConfig();
@@ -59,12 +34,6 @@ class Address
 		return ($config->allow_overseas ?? 'N') === 'Y';
 	}
 
-	/**
-	 * 주·도를 반드시 고르게 할지. 그 나라에 주·도 목록이 없으면 막지 않는다.
-	 *
-	 * @param string $country
-	 * @return bool
-	 */
 	public static function requiresState(string $country = ''): bool
 	{
 		$config = Config::getConfig();
@@ -75,11 +44,6 @@ class Address
 		return Region::has(strtoupper(trim($country)) ?: self::baseCountry());
 	}
 
-	/**
-	 * 쇼핑몰이 자리한 나라. 설정이 없으면 KR 로 본다 (기존 설치본은 그대로 동작한다).
-	 *
-	 * @return string
-	 */
 	public static function baseCountry(): string
 	{
 		$config = Config::getConfig();
@@ -87,24 +51,12 @@ class Address
 		return preg_match('/^[A-Z]{2}$/', $country) ? $country : 'KR';
 	}
 
-	/**
-	 * 배송지가 쇼핑몰과 같은 나라인가.
-	 *
-	 * @param string $country
-	 * @return bool
-	 */
 	public static function isDomestic(string $country): bool
 	{
 		$country = strtoupper(trim($country));
 		return $country === '' || $country === self::baseCountry();
 	}
 
-	/**
-	 * 이 국가를 해외형으로 입력받아야 하는가.
-	 *
-	 * @param string $country
-	 * @return bool
-	 */
 	public static function isOverseasInput(string $country): bool
 	{
 		$mode = self::mode();
@@ -119,15 +71,6 @@ class Address
 		return !self::isDomestic($country);
 	}
 
-	/**
-	 * 배송지 한 줄 표기.
-	 *
-	 * 국내는 우편번호를 앞에 두고, 해외는 좁은 단위에서 넓은 단위로 적는 현지 관례를 따른다.
-	 *
-	 * @param object|array $address
-	 * @param bool $with_country 해외 주소에 국가명을 붙일지
-	 * @return string
-	 */
 	public static function format($address, bool $with_country = true): string
 	{
 		$get = function($key) use ($address) {
@@ -154,14 +97,12 @@ class Address
 			$parts[] = $get('address1');
 			$parts[] = $get('address2');
 			$parts[] = $get('city');
-			// 저장된 값은 MX-CMX 같은 코드다. 사람이 읽는 이름으로 바꿔 적는다
 			$state = $get('state');
 			if ($state !== '')
 			{
 				$parts[] = Region::name($state);
 			}
 			$parts[] = $get('zipcode');
-			// 같은 나라 안에서 오가는 주문에는 나라 이름을 적지 않는다
 			if ($with_country && !$domestic)
 			{
 				$parts[] = self::countryName($country);
@@ -171,12 +112,6 @@ class Address
 		return implode(' ', array_filter($parts, function($part) { return $part !== ''; }));
 	}
 
-	/**
-	 * 연락처 표기. 국가번호가 따로 있으면 앞에 붙인다.
-	 *
-	 * @param object|array $address
-	 * @return string
-	 */
 	public static function formatPhone($address): string
 	{
 		$get = function($key) use ($address) {
@@ -195,17 +130,11 @@ class Address
 		return $cc . ' ' . ltrim($phone, '0');
 	}
 
-	/**
-	 * 배송 가능 국가 코드. 자주 쓰는 순으로 둔다.
-	 */
 	public const COUNTRY_CODES = [
 		'KR', 'US', 'JP', 'CN', 'TW', 'HK', 'SG', 'VN', 'TH', 'MY', 'ID', 'PH', 'IN',
 		'AU', 'NZ', 'CA', 'GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'RU', 'AE', 'MN', 'TR', 'BR', 'MX',
 	];
 
-	/**
-	 * 언어별 국가명. 없는 언어는 영어를 쓴다.
-	 */
 	protected const COUNTRY_NAMES = [
 		'en' => [
 			'KR' => 'South Korea', 'US' => 'United States', 'JP' => 'Japan', 'CN' => 'China',
@@ -254,11 +183,6 @@ class Address
 		],
 	];
 
-	/**
-	 * 배송 가능 국가 목록 — 현재 언어의 이름으로.
-	 *
-	 * @return array 코드 => 이름
-	 */
 	public static function countries(): array
 	{
 		$lang_type = (string)(\Context::getLangType() ?: 'ko');
@@ -273,12 +197,6 @@ class Address
 		return $list;
 	}
 
-	/**
-	 * 국가명. 목록에 없으면 코드를 그대로 돌려준다.
-	 *
-	 * @param string $code
-	 * @return string
-	 */
 	public static function countryName(string $code): string
 	{
 		$code = strtoupper(trim($code));

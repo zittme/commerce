@@ -13,6 +13,7 @@
 				@if ($item->is_adult === 'Y')<span class="shp-badge is-adult">{{ $lang->shop_adult_item }}</span>@endif
 				@if ($item->tax_type === 'free')<span class="shp-badge">{{ $lang->shop_tax_free }}</span>@endif
 			</div>
+			@if (!empty($item->brand_name))<a class="shp-detail-brand" href="{{ $item->brand_url }}">@if (!empty($item->brand_logo))<img src="{{ $item->brand_logo }}" alt="" />@endif{{ $item->brand_name }}</a>@endif
 			<h1>{{ $item->item_name }}</h1>
 			@if (!empty($item->summary))
 			<p class="shp-detail-summary">{{ $item->summary }}</p>
@@ -29,7 +30,6 @@
 					@endforeach
 				</dl>
 				@endif
-			{{-- 아래 합계 계산도 위 표시가와 같은 값을 써야 한다. 등급가가 있으면 그것이 기준가다 --}}
 			@php $shp_buy_price = !empty($item->grade_price) ? (int)$item->grade_price : (int)($disp_effective_price ?? $effective_price); @endphp
 			<p class="shp-detail-price">
 				@if (!empty($item->grade_price))
@@ -47,8 +47,8 @@
 				{{ shop_item_price($item, 'price') }}
 				@endif
 			</p>
+			{!! shop_timesale_badge($item, 'detail') !!}
 
-			{{-- 배송 정보 (네이버식 표기) --}}
 			@php
 			$shp_ship_type = $item->ship_fee_type ?? 'default';
 			$shp_ship_fee = $shp_ship_type === 'fixed' ? (int)$item->ship_fee : (int)($shop_config->default_ship_fee ?? 0);
@@ -113,9 +113,7 @@
 				@if (count($shp_basic_opts))
 				<div class="shp-row">
 					<label>{{ $lang->shop_option ?? '옵션' }}<button type="button" class="shp-opt-tip" data-tip="{{ $lang->shop_option_help }}" aria-label="{{ $lang->shop_option }}"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/><rect x="7.3" y="7" width="1.4" height="4.4" rx="0.7" fill="currentColor"/><rect x="7.3" y="4.2" width="1.4" height="1.6" rx="0.7" fill="currentColor"/></svg></button></label>
-					{{-- 기본 옵션: 상품 자체가 바뀐다. 고르면 아래 선택 목록에 행으로 쌓인다 --}}
 					<select class="shp-opt-add" data-opt-type="basic">
-						{{-- 기본값이 '선택 안 함' = 본품 — 자체 재고로 판매한다 --}}
 						<option value="0" data-price-add="0" data-label="" @if ($shp_base_soldout) disabled @endif>
 							{{ $lang->shop_option_base ?? '옵션을 선택해주세요.' }}
 							@if ($shp_base_soldout)- {{ $lang->shop_soldout }}@endif
@@ -134,9 +132,7 @@
 				@if (count($shp_extra_opts))
 				<div class="shp-row">
 					<label>{{ $lang->shop_add_option ?? '추가상품' }}<button type="button" class="shp-opt-tip" data-tip="{{ $lang->shop_add_option_help }}" aria-label="추가상품 안내"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/><rect x="7.3" y="7" width="1.4" height="4.4" rx="0.7" fill="currentColor"/><rect x="7.3" y="4.2" width="1.4" height="1.6" rx="0.7" fill="currentColor"/></svg></button></label>
-					{{-- 추가 옵션: 상품과 별개의 추가 상품. 추가금이 곧 그 상품의 가격이다 --}}
 					<select class="shp-opt-add" data-opt-type="extra">
-						{{-- 추가 옵션: 고르지 않으면 추가 상품이 없는 것 --}}
 						<option value="">{{ $lang->shop_select_option ?? '옵션을 선택해주세요' }}</option>
 						@foreach ($shp_extra_opts as $opt)
 						<option value="{{ $opt->option_srl }}" data-price-add="{{ (int)($opt->disp_price_add ?? $opt->price_add) }}" data-label="{{ $opt->option_label }}" @if((int)$opt->stock <= 0) disabled @endif>
@@ -149,7 +145,6 @@
 				</div>
 				@endif
 
-				{{-- 선택 요약: 선택 행 목록 + 수량 스테퍼 + 실시간 합계 --}}
 				<div class="shp-select-box" id="shpSelectBox"
 					data-base-price="{{ $shp_buy_price }}"
 					data-item-name="{{ $item->item_name }}"

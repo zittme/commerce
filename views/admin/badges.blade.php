@@ -25,7 +25,6 @@
 					<td>
 						<input type="hidden" name="module" value="admin" form="zmcBadgeForm{{ $b->badge_srl }}" />
 						<input type="hidden" name="act" value="procCommerceAdminInsertBadge" form="zmcBadgeForm{{ $b->badge_srl }}" />
-						{{-- 저장한 뒤 보던 자리로 돌아온다. 없으면 쪽수와 검색 조건이 날아간다 --}}
 						<input type="hidden" name="success_return_url" value="{{ $_SERVER['REQUEST_URI'] ?? '' }}" form="zmcBadgeForm{{ $b->badge_srl }}" />
 						<input type="hidden" name="badge_srl" value="{{ $b->badge_srl }}" form="zmcBadgeForm{{ $b->badge_srl }}" />
 						<input type="text" name="title" value="{{ $b->title }}" maxlength="30" required form="zmcBadgeForm{{ $b->badge_srl }}" style="min-width:160px" />@include('_langfield', ['lf_name' => 'title', 'lf_value' => $b->title, 'lf_key' => $b->badge_srl, 'lf_form' => 'zmcBadgeForm' . $b->badge_srl])

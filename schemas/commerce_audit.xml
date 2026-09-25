@@ -1,0 +1,17 @@
+<table name="commerce_audit">
+	<column name="log_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="member_srl" type="bigint" notnull="notnull" default="0" index="idx_member_srl" />
+	<column name="actor" type="varchar" size="120" />
+	<column name="role" type="varchar" size="10" />
+	<column name="kind" type="varchar" size="10" notnull="notnull" default="change" index="idx_kind" />
+	<column name="act" type="varchar" size="80" notnull="notnull" index="idx_act" />
+	<column name="target_type" type="varchar" size="20" />
+	<column name="target_srl" type="bigint" notnull="notnull" default="0" index="idx_target" />
+	<column name="summary" type="varchar" size="250" />
+	<column name="detail" type="text" />
+	<column name="result" type="varchar" size="10" notnull="notnull" default="ok" />
+	<column name="alert" type="varchar" size="40" />
+	<column name="ipaddress" type="varchar" size="60" />
+	<column name="user_agent" type="varchar" size="250" />
+	<column name="regdate" type="char" size="14" index="idx_regdate" />
+</table>

@@ -4,24 +4,12 @@ namespace Zittme\Modules\Commerce\Models;
 
 use Zittme\Modules\Commerce\Controllers\Base;
 
-/**
- * 배송 조회 — 스윗트래커(스마트택배) API.
- *
- * 송장이 등록된 하위주문을 주기적으로 조회해 배송 준비 → 배송 중 → 배송 완료를
- * 자동 전이시킨다. API 키가 없으면 아무 것도 하지 않는다.
- */
 class Tracking
 {
-	/**
-	 * 스윗트래커 배송 단계: 1 접수, 2 집화, 3 배송중, 4 지점도착, 5 배송출발, 6 배송완료
-	 */
 	public const LEVEL_NAMES = [
 		1 => '접수', 2 => '집화 완료', 3 => '배송 중', 4 => '지점 도착', 5 => '배송 출발', 6 => '배송 완료',
 	];
 
-	/**
-	 * 택배사명 → 스윗트래커 택배사 코드. 숫자 코드를 직접 입력한 경우 그대로 쓴다.
-	 */
 	protected const COURIER_CODES = [
 		'CJ' => '04', '대한통운' => '04', '씨제이' => '04',
 		'한진' => '05',
@@ -35,9 +23,6 @@ class Tracking
 		'CU' => '46', '편의점' => '24', 'GS' => '24',
 	];
 
-	/**
-	 * 택배사명에서 코드 추정.
-	 */
 	public static function courierCode(string $company): string
 	{
 		$company = trim($company);
@@ -49,6 +34,11 @@ class Tracking
 		{
 			return str_pad($company, 2, '0', \STR_PAD_LEFT);
 		}
+		$courier = Courier::find($company);
+		if ($courier && $courier['code'] !== '')
+		{
+			return $courier['code'];
+		}
 		foreach (self::COURIER_CODES as $keyword => $code)
 		{
 			if (stripos($company, $keyword) !== false)
@@ -59,11 +49,6 @@ class Tracking
 		return '';
 	}
 
-	/**
-	 * 단건 조회. 실패하면 null.
-	 *
-	 * @return ?object {level:int, complete:bool, status_name:string, where:string, time:string}
-	 */
 	public static function fetch(string $company, string $invoice): ?object
 	{
 		$key = trim((string)(Config::getConfig()->sweettracker_api_key ?? ''));
@@ -83,7 +68,6 @@ class Tracking
 			$data = json_decode((string)$response->getBody(), true);
 			if (!is_array($data) || !empty($data['code']))
 			{
-				// code 필드가 있으면 오류 응답 (104 유효하지 않은 키 등)
 				return null;
 			}
 			$level = (int)($data['level'] ?? 0);
@@ -113,9 +97,6 @@ class Tracking
 		}
 	}
 
-	/**
-	 * 저장된 조회 결과 (details 는 배열로 풀어서 돌려준다).
-	 */
 	public static function getForSeller(int $order_seller_srl): ?object
 	{
 		$output = executeQuery('commerce.getTracking', (object)['order_seller_srl' => $order_seller_srl]);
@@ -129,9 +110,6 @@ class Tracking
 		return $row;
 	}
 
-	/**
-	 * 조회 결과 저장 (upsert).
-	 */
 	protected static function store(int $order_seller_srl, int $order_srl, string $company, string $invoice, object $info): void
 	{
 		$existing = self::getForSeller($order_seller_srl);
@@ -159,14 +137,6 @@ class Tracking
 		}
 	}
 
-	/**
-	 * 송장 있는 배송 준비/배송 중 하위주문을 훑어 조회 결과를 저장하고 자동 전이한다.
-	 *
-	 * 요금제 한도(동일 송장 일 최대 10~20회, 월 송장 수) 보호:
-	 * - 전역 10분 스로틀 + 호출당 최대 20건
-	 * - 같은 송장은 2시간에 1번만 조회 (하루 최대 12회)
-	 * - 배송 완료로 저장된 송장은 다시 조회하지 않는다
-	 */
 	public static function syncShipping(): void
 	{
 		$config = Config::getConfig();
@@ -191,7 +161,6 @@ class Tracking
 			);
 			foreach ($stmt as $row)
 			{
-				// 같은 송장은 2시간에 1번만, 완료된 송장은 다시 조회하지 않는다
 				$saved = self::getForSeller((int)$row->order_seller_srl);
 				if ($saved)
 				{
@@ -211,7 +180,12 @@ class Tracking
 					continue;
 				}
 				self::store((int)$row->order_seller_srl, (int)$row->order_srl, (string)$row->shipping_company, (string)$row->shipping_invoice, $info);
-				if ($info->complete)
+				// 같은 송장을 다른 묶음에도 적었으면 자동 배송완료로 넘기지 않는다 (남의 송장 재사용으로 정산을 앞당기는 길)
+				$dup = \Zittme\Framework\DB::getInstance()->query(
+					'SELECT COUNT(*) AS cnt FROM commerce_order_seller WHERE shipping_company = ? AND shipping_invoice = ? AND order_seller_srl <> ?',
+					[(string)$row->shipping_company, (string)$row->shipping_invoice, (int)$row->order_seller_srl]
+				)->fetchAll();
+				if ($info->complete && (int)($dup[0]->cnt ?? 0) === 0)
 				{
 					$output = executeQuery('commerce.updateOrderSellerShipping', (object)[
 						'order_seller_srl' => (int)$row->order_seller_srl,
@@ -241,7 +215,6 @@ class Tracking
 		}
 		catch (\Throwable $e)
 		{
-			// 조회 실패는 무시 — 다음 주기에 다시 시도
 		}
 	}
 }

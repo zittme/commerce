@@ -1,5 +1,4 @@
 <query id="updateOrderSellersStatus" action="update">
-	<!-- 주문의 모든 하위주문 상태 일괄 전이 (조건부) -->
 	<tables>
 		<table name="commerce_order_seller" />
 	</tables>

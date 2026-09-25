@@ -4,25 +4,15 @@ namespace Zittme\Modules\Commerce\Models;
 
 use Zittme\Modules\Commerce\Controllers\Base;
 
-/**
- * 기획전(특별전) — 상품 묶음 + 전용 페이지.
- */
 class Promotion
 {
-	/**
-	 * 전체 목록 (콘솔용, 숨김 포함).
-	 */
 	public static function listAll(): array
 	{
 		$output = executeQueryArray('commerce.getPromotionList', (object)['sort_index' => 'promo_srl', 'order_type' => 'desc']);
 		$rows = ($output->toBool() && !empty($output->data)) ? $output->data : [];
-		// 다국어 문구를 연결한 이름·소개문은 미리 바꿔 둔다 (원본은 title_raw / description_raw)
 		return Lang::textAll($rows, ['title', 'description']);
 	}
 
-	/**
-	 * 진행 중 목록 (노출 Y + 기간 내).
-	 */
 	public static function activeList(): array
 	{
 		$now = Base::now();
@@ -34,9 +24,6 @@ class Promotion
 		}));
 	}
 
-	/**
-	 * 단건 (srl 또는 slug).
-	 */
 	public static function get(int $promo_srl = 0, string $slug = ''): ?object
 	{
 		foreach (self::listAll() as $p)
@@ -49,9 +36,6 @@ class Promotion
 		return null;
 	}
 
-	/**
-	 * 기획전에 담긴 상품 (순서대로, 상품 정보 조인).
-	 */
 	public static function itemsOf(int $promo_srl, bool $only_visible = true): array
 	{
 		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
@@ -68,17 +52,53 @@ class Promotion
 		return ($stmt && $stmt->execute([$promo_srl])) ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
 	}
 
-	/**
-	 * 기획전에 담긴 상품 srl 목록.
-	 */
+	public static function previewDraft(int $promo_srl): ?array
+	{
+		$draft = $_SESSION['commerce_promo_preview'] ?? null;
+		$logged = \Context::get('logged_info');
+		if (\Context::get('zmc_preview') !== 'Y' || !is_array($draft) || !$logged || !Staff::can('promos'))
+		{
+			return null;
+		}
+		if ((int)($draft['srl'] ?? 0) !== $promo_srl || time() - (int)($draft['time'] ?? 0) >= 3600)
+		{
+			return null;
+		}
+		return $draft;
+	}
+
+	public static function itemsBySrls(array $item_srls): array
+	{
+		$item_srls = array_values(array_unique(array_filter(array_map('intval', $item_srls))));
+		if (!count($item_srls))
+		{
+			return [];
+		}
+		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
+		$sql = 'SELECT * FROM `' . $prefix . 'commerce_item` WHERE item_srl IN (' . implode(',', array_fill(0, count($item_srls), '?')) . ") AND status IN ('sale', 'soldout')";
+		$stmt = \Zittme\Framework\DB::getInstance()->getHandle()->prepare($sql);
+		$rows = ($stmt && $stmt->execute($item_srls)) ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
+		$by = [];
+		foreach ($rows as $row)
+		{
+			$by[(int)$row->item_srl] = $row;
+		}
+		$out = [];
+		foreach ($item_srls as $srl)
+		{
+			if (isset($by[$srl]))
+			{
+				$out[] = $by[$srl];
+			}
+		}
+		return $out;
+	}
+
 	public static function itemSrlsOf(int $promo_srl): array
 	{
 		return array_map(function($it) { return (int)$it->item_srl; }, self::itemsOf($promo_srl, false));
 	}
 
-	/**
-	 * 매핑 동기화 — 주어진 순서대로 전체 교체.
-	 */
 	public static function syncItems(int $promo_srl, array $item_srls): void
 	{
 		executeQuery('commerce.deletePromotionItems', (object)['promo_srl' => $promo_srl]);
@@ -95,9 +115,6 @@ class Promotion
 		}
 	}
 
-	/**
-	 * 상품이 속한 기획전 srl 목록.
-	 */
 	public static function promoSrlsOfItem(int $item_srl): array
 	{
 		$prefix = (string)(\Zittme\Framework\Config::get('db.master.prefix') ?? '');
@@ -111,9 +128,6 @@ class Promotion
 		return array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
 	}
 
-	/**
-	 * 상품 기준 담기/빼기 (상품 편집 화면의 체크박스용). 담으면 맨 뒤 순서.
-	 */
 	public static function setItemMembership(int $item_srl, int $promo_srl, bool $on): void
 	{
 		$current = self::promoSrlsOfItem($item_srl);
@@ -137,9 +151,6 @@ class Promotion
 		}
 	}
 
-	/**
-	 * 배너 JSON 파싱 + 배경 스타일 계산 (홈 배너와 같은 규칙).
-	 */
 	public static function bannerOf(?object $promo): array
 	{
 		$bn = json_decode((string)($promo->banner ?? ''), true);
@@ -162,7 +173,6 @@ class Promotion
 		$bn['text_color'] = (isset($bn['text_color']) && preg_match('/^#[0-9a-fA-F]+$/', (string)$bn['text_color'])) ? $bn['text_color'] : '#ffffff';
 		$bn['shadow'] = ($bn['shadow'] ?? 'Y') === 'N' ? 'N' : 'Y';
 		$bn['title_html'] = \Zittme\Modules\Commerce\Controllers\Front::escapeAllowBr((string)($promo->title ?? ''));
-		// 배너 문구도 다국어 코드를 담을 수 있다. 화면에 내기 전에 현재 언어로 푼다
 		$bn['text'] = Lang::text((string)($bn['text'] ?? ''));
 		$bn['text_html'] = \Zittme\Modules\Commerce\Controllers\Front::escapeAllowBr((string)$bn['text']);
 		return $bn;

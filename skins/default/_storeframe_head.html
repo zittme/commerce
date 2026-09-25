@@ -1,0 +1,37 @@
+@version(2)
+@php
+	$stf_head = (($store_design['head'] ?? 'banner') === 'simple') ? 'simple' : 'banner';
+@endphp
+	@if ($store_preview)
+	<p class="st-preview-note">{{ $lang->sc_preview_note }}</p>
+	@endif
+
+	<header class="st-head st-head-{{ $stf_head }} {{ $stf_head === 'banner' && $store->cover !== '' ? 'has-cover' : '' }}" @if ($stf_head === 'banner' && $store->cover !== '') style="background-image:url('{{ escape($store->cover) }}')" @endif>
+		<div class="st-head-inner">
+			<span class="st-logo">
+				@if ($store->logo !== '')<img src="{{ escape($store->logo) }}" alt="" />@else{{ mb_substr($store->shop_name, 0, 1) }}@endif
+			</span>
+			<div class="st-head-text">
+				<h1><a href="{{ $store->url }}">{{ $store->shop_name }}</a></h1>
+				@if ($store->intro !== '')<p>{!! nl2br(escape($store->intro)) !!}</p>@endif
+			</div>
+		</div>
+	</header>
+
+	<nav class="st-nav">
+		<div class="st-nav-links">
+			<a href="{{ $store->url }}" class="{{ !$store_browsing ? 'is-on' : '' }}">{{ $lang->sc_store_home }}</a>
+			<a href="{{ $store->all_url ?? getUrl('', 'mid', $mid, 'act', 'dispCommerceStore', 'shop', $store->shop_id, 'sort', 'display') }}" class="{{ $store_browsing && empty($zmc_store_frame) && !$store_cat && $store_q === '' ? 'is-on' : '' }}">{{ $lang->shop_all_items }}</a>
+			@foreach ($store_cats as $stf_c)
+			<a href="{{ $stf_c->url }}" class="{{ $store_cat && (int)$store_cat->category_srl === (int)$stf_c->category_srl ? 'is-on' : '' }}">{{ $stf_c->title }}</a>
+			@endforeach
+		</div>
+		<form class="st-search" action="{{ getUrl('') }}" method="get">
+			<input type="hidden" name="mid" value="{{ $mid }}" />
+			<input type="hidden" name="act" value="dispCommerceStore" />
+			<input type="hidden" name="shop" value="{{ $store->shop_id }}" />
+			<input type="search" name="q" value="{{ $store_q }}" placeholder="{{ $lang->sc_store_search }}" />
+			<button type="submit">{{ $lang->sc_search }}</button>
+		</form>
+	</nav>
+

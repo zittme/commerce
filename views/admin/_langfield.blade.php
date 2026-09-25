@@ -1,6 +1,3 @@
-{{-- 다국어 입력 도우미 버튼 — 패널은 _langfield_assets 의 것을 함께 쓴다 --}}
-{{-- 쓰는 쪽에서 lf_name(폼 필드 이름), lf_value(현재 저장값), lf_form(선택) 을 넘긴다 --}}
-{{-- 폼에는 <필드>_langcode 가 함께 실려 가고, 서버가 이 값이 있으면 코어 규약의 접두어를 붙여 저장한다 --}}
 @php
 	$lf_code = Zittme\Modules\Commerce\Models\Lang::codeOf($lf_value ?? '');
 	$lf_display = $lf_code !== '' ? Zittme\Modules\Commerce\Models\Lang::display($lf_code) : '';

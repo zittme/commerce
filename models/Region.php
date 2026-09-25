@@ -2,23 +2,8 @@
 
 namespace Zittme\Modules\Commerce\Models;
 
-/**
- * 국가별 행정구역 — 배송지 입력과 지역 추가 배송비가 함께 쓴다.
- *
- * 운영자와 구매자가 같은 목록에서 같은 코드를 고르게 하려고 둔다. 이름을 손으로
- * 적게 하면 표기가 갈려(Mexico / México / CDMX) 조용히 어긋난다.
- *
- * 이름은 언어 파일이 아니라 여기에 둔다. 대부분 번역할 것이 없는 고유명사이고,
- * 언어 파일로 빼면 나라를 하나 추가할 때마다 12개 파일을 건드려야 한다.
- * 현재 언어의 이름이 없으면 영문으로 떨어진다.
- *
- * 목록이 없는 나라는 행정구역을 자유 입력으로 받고 배송비 판정에는 쓰지 않는다.
- */
 class Region
 {
-	/**
-	 * 코드 => [언어 => 이름]. 영문(en)은 반드시 넣는다 (기본값이 된다).
-	 */
 	public const REGIONS = [
 		'KR' => [
 			'KR-11' => ['ko' => '서울', 'en' => 'Seoul'],
@@ -664,23 +649,11 @@ class Region
 		],
 	];
 
-	/**
-	 * 행정구역 목록이 있는 국가인지.
-	 *
-	 * @param string $country
-	 * @return bool
-	 */
 	public static function has(string $country): bool
 	{
 		return isset(self::REGIONS[strtoupper(trim($country))]);
 	}
 
-	/**
-	 * 국가의 행정구역 목록 (코드 => 현재 언어 이름).
-	 *
-	 * @param string $country
-	 * @return array<string, string>
-	 */
 	public static function listOf(string $country): array
 	{
 		$rows = self::REGIONS[strtoupper(trim($country))] ?? [];
@@ -693,12 +666,6 @@ class Region
 		return $out;
 	}
 
-	/**
-	 * 코드 하나의 이름. 목록에 없으면 코드를 그대로 돌려준다.
-	 *
-	 * @param string $code
-	 * @return string
-	 */
 	public static function name(string $code): string
 	{
 		$code = trim($code);
@@ -712,12 +679,6 @@ class Region
 		return $names[$lang] ?? $names['en'] ?? $code;
 	}
 
-	/**
-	 * 검색용 자료. 한 줄에 코드와 모든 언어 이름을 담아 어느 표기로도 찾게 한다.
-	 *
-	 * @param string $country
-	 * @return array<int, array{code: string, name: string, keywords: string}>
-	 */
 	public static function searchData(string $country): array
 	{
 		$rows = self::REGIONS[strtoupper(trim($country))] ?? [];
@@ -725,7 +686,6 @@ class Region
 		$out = [];
 		foreach ($rows as $code => $names)
 		{
-			// alt 는 검색어일 뿐이라 이름으로 고르지 않는다 (강세 부호 없이 쳐도 찾히게 하는 값)
 			$out[] = [
 				'code' => $code,
 				'name' => $names[$lang] ?? $names['en'] ?? $code,

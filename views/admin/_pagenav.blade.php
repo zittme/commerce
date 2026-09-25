@@ -1,10 +1,8 @@
-{{-- 목록 공용 페이지 네비게이션. pn(PageHandler)과 pn_param(페이지 쿼리 이름, 기본 'page')을 받는다 --}}
 @php
 $pn_param = $pn_param ?? 'page';
 $pn_pages = [];
 if (!empty($pn) && (int)$pn->total_page > 1)
 {
-	// getNextPage()는 현재 페이지 주변 묶음을 돌려주는 반복자다
 	while ($pn_no = $pn->getNextPage())
 	{
 		$pn_pages[] = $pn_no;

@@ -1,0 +1,12 @@
+<table name="commerce_timesale">
+	<column name="sale_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="title" type="varchar" size="120" notnull="notnull" />
+	<column name="mode" type="varchar" size="10" notnull="notnull" default="once" />
+	<column name="start_date" type="char" size="14" notnull="notnull" />
+	<column name="end_date" type="char" size="14" notnull="notnull" index="idx_end_date" />
+	<column name="daily_start" type="char" size="4" />
+	<column name="daily_end" type="char" size="4" />
+	<column name="status" type="char" size="1" notnull="notnull" default="Y" />
+	<column name="regdate" type="char" size="14" />
+	<column name="last_update" type="char" size="14" />
+</table>

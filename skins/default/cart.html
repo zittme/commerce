@@ -7,7 +7,7 @@
 
 	@if (empty($cart->items))
 	<p class="shp-empty">{{ $lang->shop_cart_empty }}</p>
-	<p class="shp-foot-links"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a></p>
+	<p class="shp-foot-links"><a href="{{ !empty($shop_continue_url) ? $shop_continue_url : getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a></p>
 	@else
 	<div class="shp-2col">
 		<div class="shp-2col-main">
@@ -15,9 +15,9 @@
 				@foreach ($cart->items as $entry)
 				@php $shp_row_thumb = !empty($entry->item->thumb) ? "background-image:url('" . $entry->item->thumb . "');" : ''; @endphp
 				<div class="shp-cart-item {{ $entry->blocked ? 'is-blocked' : '' }}">
-					<a class="shp-cart-thumb" style="{{ $shp_row_thumb }}" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $entry->item->item_srl) }}" aria-label="{{ $entry->item->item_name }}"></a>
+					<a class="shp-cart-thumb" style="{{ $shp_row_thumb }}" href="{{ (!empty($entry->item->item_url) ? $entry->item->item_url : getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $entry->item->item_srl)) }}" aria-label="{{ $entry->item->item_name }}"></a>
 					<div class="shp-cart-info">
-						<a class="shp-cart-name" href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $entry->item->item_srl) }}">{{ $entry->item->item_name }}</a>
+						<a class="shp-cart-name" href="{{ (!empty($entry->item->item_url) ? $entry->item->item_url : getUrl('', 'mid', $mid, 'act', 'dispCommerceItem', 'item_srl', $entry->item->item_srl)) }}">{{ $entry->item->item_name }}</a>
 						@if ($entry->option)<div class="shp-cart-option">{{ $entry->option->option_label }}</div>@endif
 						@if (!empty($entry->changed))<div class="shp-cart-blocked">{{ $lang->shop_cart_changed }}</div>
 						@elseif ($entry->blocked)<div class="shp-cart-blocked">{{ $lang->shop_cart_blocked }}</div>@endif
@@ -46,7 +46,7 @@
 				</div>
 				@endforeach
 			</div>
-			<p class="shp-foot-links" style="text-align:left"><a href="{{ getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a></p>
+			<p class="shp-foot-links" style="text-align:left"><a href="{{ !empty($shop_continue_url) ? $shop_continue_url : getUrl('', 'mid', $mid, 'act', 'dispCommerceList') }}">{{ $lang->shop_back_list }}</a></p>
 		</div>
 
 		<aside class="shp-2col-aside">
@@ -63,7 +63,6 @@
 
 	<script>
 	(function () {
-		// 수량 스테퍼: 누르면 바로 저장한다
 		document.querySelectorAll('.shp-cart-qty').forEach(function (form) {
 			var input = form.querySelector('.shp-qty');
 			form.querySelectorAll('.shp-step').forEach(function (btn) {
