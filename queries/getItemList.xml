@@ -17,6 +17,7 @@
 		<group pipe="and">
 			<condition operation="like" column="item_name" var="search_keyword" />
 			<condition operation="in" column="brand_srl" var="search_brand_srl_list" filter="number" pipe="or" />
+			<condition operation="in" column="seller_srl" var="search_seller_srl_list" filter="number" pipe="or" />
 		</group>
 		<condition operation="like" column="item_code" var="search_code" pipe="and" />
 		<condition operation="more" column="regdate" var="regdate_from" pipe="and" />

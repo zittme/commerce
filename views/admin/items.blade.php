@@ -25,9 +25,9 @@ $il_edit = getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerc
 .il-tags span { padding: 0 6px; border-radius: 3px; background: var(--zmc-side, #efede8); font-size: 11px; font-weight: 700; color: var(--zmc-ink-2, #3c4458); line-height: 18px; }
 .il-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .il-more { position: relative; }
-.il-more > button { width: 30px; height: 30px; border: 1px solid transparent; border-radius: var(--zmc-r-sm, 5px); background: transparent; color: var(--zmc-sub, #7a7f8c); font-size: 18px; line-height: 1; cursor: pointer; }
+.il-more > button { width: 30px; height: 30px; border: 1px solid transparent; border-radius: var(--zmc-r-sm, 5px); background: transparent; color: var(--zmc-ink-2, #3c4458); font-size: 18px; line-height: 1; cursor: pointer; }
 .il-more > button:hover, .il-more.is-open > button { border-color: var(--zmc-line-strong, #d6d2c8); background: var(--zmc-surface, #fff); color: var(--zmc-ink, #232a3b); }
-.il-menu { display: none; position: absolute; right: 0; top: 34px; z-index: 20; min-width: 130px; padding: 4px; border: 1px solid var(--zmc-line-strong, #d6d2c8); border-radius: var(--zmc-r, 6px); background: var(--zmc-surface, #fff); box-shadow: 0 10px 24px -12px rgba(40,30,20,.35); }
+.il-menu { display: none; position: fixed; top: 0; left: 0; z-index: 300; min-width: 130px; padding: 4px; border: 1px solid var(--zmc-line-strong, #d6d2c8); border-radius: var(--zmc-r, 6px); background: var(--zmc-surface, #fff); box-shadow: 0 10px 24px -12px rgba(40,30,20,.35); }
 .il-more.is-open .il-menu { display: block; }
 .il-menu a, .il-menu button { display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 4px; background: none; text-align: left; font-size: 13.5px; color: var(--zmc-ink, #232a3b) !important; text-decoration: none !important; cursor: pointer; font-family: inherit; }
 .il-menu a:hover, .il-menu button:hover { background: var(--zmc-hover, #e9e6df); }
@@ -152,11 +152,32 @@ $il_edit = getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerc
 			if (link) location.href = link.href;
 		});
 	}
+	function place(more) {
+		var btn = more.querySelector('button');
+		var menu = more.querySelector('.il-menu');
+		if (!btn || !menu) return;
+		var r = btn.getBoundingClientRect();
+		var h = menu.offsetHeight;
+		var gap = 4;
+		var below = window.innerHeight - r.bottom;
+		var top = (below < h + gap + 8 && r.top > h + gap + 8) ? r.top - h - gap : r.bottom + gap;
+		menu.style.top = Math.max(8, top) + 'px';
+		menu.style.left = Math.max(8, Math.min(r.right - menu.offsetWidth, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+	}
+	function closeAll(except) {
+		document.querySelectorAll('.il-more.is-open').forEach(function (m) { if (m !== except) m.classList.remove('is-open'); });
+	}
 	document.addEventListener('click', function (e) {
 		var more = e.target.closest('.il-more');
-		document.querySelectorAll('.il-more.is-open').forEach(function (m) { if (m !== more) m.classList.remove('is-open'); });
-		if (more && e.target.closest('.il-more > button')) more.classList.toggle('is-open');
+		closeAll(more);
+		if (more && e.target.closest('.il-more > button')) {
+			more.classList.toggle('is-open');
+			if (more.classList.contains('is-open')) place(more);
+		}
 	});
+	window.addEventListener('scroll', function () { closeAll(null); }, true);
+	window.addEventListener('resize', function () { closeAll(null); });
+	document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(null); });
 	var bulk = document.getElementById('ilBulkForm');
 	var all = document.getElementById('ilCheckAll');
 	var sync = function () {

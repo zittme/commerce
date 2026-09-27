@@ -1,23 +1,36 @@
 @include('_tabs')
+@php
+$sd_ship = Zittme\Modules\Commerce\Models\Seller::canPage('shipping');
+$sd_settle = Zittme\Modules\Commerce\Models\Seller::canPage('settlements');
+$sd_profile = Zittme\Modules\Commerce\Models\Seller::canPage('seller_profile');
+$sd_items = Zittme\Modules\Commerce\Models\Seller::canPage('items');
+@endphp
 
 <div class="rsva">
 	@if (empty($sc_me->shop_id))
 	<div class="rsva-panel" style="border-color:var(--zmc-mark, #e3a92f)">
 		<h3>{{ lang('commerce.sc_need_shop_id') }}</h3>
 		<p style="margin:0 0 12px;font-size:13.5px">{{ lang('commerce.sc_need_shop_id_desc') }}</p>
-		<a class="rsva-btn rsva-btn-primary" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'seller_profile') }}">{{ lang('commerce.sc_menu_shop_info') }}</a>
+		@if ($sd_profile)<a class="rsva-btn rsva-btn-primary" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'seller_profile') }}">{{ lang('commerce.sc_menu_shop_info') }}</a>@endif
 	</div>
 	@endif
 
-	<div class="rsva-cards">
+	<div class="rsva-cards" style="grid-template-columns:repeat(auto-fill, minmax(180px, 1fr))">
+		@if ($sd_ship)
 		<a class="rsva-card" style="text-decoration:none" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'shipping', 'st', 'paid') }}"><b>{{ number_format($sc_stats->today) }}</b><span>{{ lang('commerce.sc_stat_today') }}</span></a>
 		<a class="rsva-card" style="text-decoration:none" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'shipping', 'st', 'paid') }}"><b>{{ number_format($sc_stats->to_confirm) }}</b><span>{{ lang('commerce.sc_stat_to_confirm') }}</span></a>
 		<a class="rsva-card" style="text-decoration:none" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'shipping', 'st', 'preparing') }}"><b>{{ number_format($sc_stats->to_ship) }}</b><span>{{ lang('commerce.sc_stat_to_ship') }}</span></a>
 		<a class="rsva-card" style="text-decoration:none" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'shipping', 'st', 'shipping') }}"><b>{{ number_format($sc_stats->shipping) }}</b><span>{{ lang('commerce.sc_stat_shipping') }}</span></a>
 		<div class="rsva-card"><b>{{ number_format($sc_stats->claims) }}</b><span>{{ lang('commerce.sc_stat_claims') }}</span></div>
+		@endif
+		@if ($sd_items)
+		<a class="rsva-card" style="text-decoration:none" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'items', 'f_status', 'sale') }}"><b>{{ number_format($sc_stats->items_on) }}</b><span>{{ lang('commerce.sc_stat_items_on') }}</span></a>
+		@else
 		<div class="rsva-card"><b>{{ number_format($sc_stats->items_on) }}</b><span>{{ lang('commerce.sc_stat_items_on') }}</span></div>
+		@endif
 	</div>
 
+	@if ($sd_settle)
 	<div class="rsva-panel">
 		<h3>{{ lang('commerce.sc_settle_title') }}</h3>
 		<div class="rsva-form-grid">
@@ -26,7 +39,9 @@
 		</div>
 		<p style="margin:14px 0 0"><a class="rsva-btn" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'settlements') }}">{{ lang('commerce.admin_menu_settlements') }}</a></p>
 	</div>
+	@endif
 
+	@if ($sd_ship)
 	<div class="rsva-panel">
 		<h3>{{ lang('commerce.sc_recent') }}</h3>
 		@if (count($sc_recent))
@@ -47,4 +62,5 @@
 		<div class="rsva-empty">{{ lang('commerce.sc_recent_empty') }}</div>
 		@endif
 	</div>
+	@endif
 </div>

@@ -55,7 +55,7 @@
 html, body { margin: 0; padding: 0; background: var(--zmc-bg); }
 body, body * { font-family: var(--zmc-font); font-style: normal; }
 body { -webkit-font-smoothing: antialiased; color: var(--zmc-ink); }
-.zmc-side { position: fixed; top: 0; left: 0; bottom: 0; width: 220px; box-sizing: border-box; padding: 20px 12px 14px; background: var(--zmc-side); border-right: 1px solid var(--zmc-line); z-index: 100; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+.zmc-side { position: fixed; top: var(--zmc-offset, 0px); left: 0; bottom: 0; width: 220px; box-sizing: border-box; padding: 20px 12px 14px; background: var(--zmc-side); border-right: 1px solid var(--zmc-line); z-index: 100; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
 .zmc-shop { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
 .zmc-shop i { flex: none; width: 34px; height: 34px; border-radius: var(--zmc-r-sm); background: var(--zmc-brand); color: var(--zmc-on-brand); display: grid; place-items: center; font-size: 15px; font-weight: 800; font-style: normal; }
 .zmc-shop div { min-width: 0; }
@@ -73,7 +73,7 @@ body { -webkit-font-smoothing: antialiased; color: var(--zmc-ink); }
 .zmc-side-foot { display: flex; flex-direction: column; padding-top: 12px; border-top: 1px solid var(--zmc-line); }
 .zmc-side-foot a { padding: 6px 10px; border-radius: var(--zmc-r-sm); font-size: 12.5px; color: var(--zmc-sub) !important; text-decoration: none !important; }
 .zmc-side-foot a:hover { color: var(--zmc-ink) !important; background: var(--zmc-hover); }
-.zmc-top { position: sticky; top: 0; z-index: 90; margin-left: 220px; padding: 14px 32px; background: var(--zmc-bg); border-bottom: 1px solid var(--zmc-line); display: flex; align-items: center; gap: 12px; }
+.zmc-top { position: sticky; top: var(--zmc-offset, 0px); z-index: 90; margin-left: 220px; padding: 14px 32px; background: var(--zmc-bg); border-bottom: 1px solid var(--zmc-line); display: flex; align-items: center; gap: 12px; }
 .zmc-top-title { flex: 1; min-width: 0; }
 .zmc-top-title small { display: block; font-size: 12.5px; color: var(--zmc-sub); }
 .zmc-top h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
@@ -116,7 +116,7 @@ body { -webkit-font-smoothing: antialiased; color: var(--zmc-ink); }
 .zmc-menu-btn svg { display: block; }
 .zmc-side-dim { display: none; position: fixed; inset: 0; z-index: 99; background: rgba(28,24,18,.4); }
 .zmc-side-dim.is-open { display: block; }
-.zmc-side-close { display: none; margin-left: auto; padding: 4px; border: 0; background: none; color: var(--zmc-sub); cursor: pointer; }
+.zmc-side-close { display: none; margin-left: auto; padding: 4px; border: 0; background: none; color: var(--zmc-ink-2); cursor: pointer; }
 @media (max-width: 900px) {
 	.zmc-side { width: 264px; transform: translateX(-100%); transition: transform .18s ease; }
 	.zmc-side.is-open { transform: translateX(0); box-shadow: 0 0 40px rgba(28,24,18,.25); }
@@ -157,11 +157,12 @@ if ($zmc_is_seller)
 	$zmc_menu['shop_cats'] = lang('commerce.sc_menu_shop_cats');
 	$zmc_menu['shop_design'] = lang('commerce.sc_menu_shop_design');
 	$zmc_menu['seller_profile'] = lang('commerce.sc_menu_shop_info');
+	$zmc_menu['staff'] = lang('commerce.sc_menu_staff');
 	$zmc_tree = [
 		['label' => '', 'items' => ['dashboard']],
 		['label' => lang('commerce.sc_group_items'), 'items' => ['items', 'shop_cats']],
 		['label' => lang('commerce.sc_group_orders'), 'items' => ['shipping', 'settlements']],
-		['label' => lang('commerce.sc_group_shop'), 'items' => ['shop_design', 'seller_profile']],
+		['label' => lang('commerce.sc_group_shop'), 'items' => ['shop_design', 'seller_profile', 'staff']],
 	];
 	$zmc_cfg_tabs = [];
 }
@@ -192,10 +193,11 @@ $zmc_title = $zmc_is_cfg ? ($zmc_current === 'config_display' ? lang('commerce.c
 $zmc_group_of = '';
 foreach ($zmc_tree as $zmc_g) { if (in_array($zmc_nav_current, $zmc_g['items'], true)) { $zmc_group_of = $zmc_g['label']; } }
 @endphp
+<div id="zmcAnchor" aria-hidden="true"></div>
 <aside class="zmc-side">
 	<div class="zmc-shop">
 		<i aria-hidden="true">{{ mb_substr($zmc_shop_name, 0, 1) }}</i>
-		<div><b>{{ $zmc_shop_name }}</b>@if ($zmc_shop_name !== $zmc_shell_title)<small>{{ $zmc_shell_title }}</small>@endif @if ($zmc_role !== 'owner' && !$zmc_is_seller)<small class="zmc-role">{{ lang('commerce.au_role_' . $zmc_role) }}</small>@endif</div>
+		<div><b>{{ $zmc_shop_name }}</b>@if ($zmc_shop_name !== $zmc_shell_title)<small>{{ $zmc_shell_title }}</small>@endif @if ($zmc_role !== 'owner' && !$zmc_is_seller)<small class="zmc-role">{{ lang('commerce.au_role_' . $zmc_role) }}</small>@endif @if ($zmc_is_seller && Zittme\Modules\Commerce\Models\Seller::memberRole() !== 'owner')<small class="zmc-role">{{ lang('commerce.ss_role_' . Zittme\Modules\Commerce\Models\Seller::memberRole()) }}</small>@endif</div>
 		<button type="button" class="zmc-side-close" id="zmcSideClose" aria-label="{{ lang('commerce.admin_menu_close') }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
 	</div>
 	<nav class="zmc-nav">
@@ -226,6 +228,20 @@ foreach ($zmc_tree as $zmc_g) { if (in_array($zmc_nav_current, $zmc_g['items'], 
 	@endforeach
 </nav>
 @endif
+<script>
+(function () {
+	var anchor = document.getElementById('zmcAnchor');
+	function offset() {
+		var top = anchor ? Math.max(0, Math.round(anchor.getBoundingClientRect().top)) : 0;
+		document.documentElement.style.setProperty('--zmc-offset', top + 'px');
+	}
+	offset();
+	window.addEventListener('load', offset);
+	window.addEventListener('resize', offset);
+	window.addEventListener('scroll', offset, { passive: true });
+	document.addEventListener('click', function () { setTimeout(offset, 300); });
+})();
+</script>
 <script>
 (function () {
 	var side = document.querySelector('.zmc-side');

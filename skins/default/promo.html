@@ -59,8 +59,7 @@
 			</span>
 			@if ($it->status === 'soldout')<span class="shp-soldout-cover">{{ $lang->shop_soldout }}</span>@endif
 			<span class="shp-card-body">
-				@if (!empty($it->brand_name))<span class="shp-card-brand">{{ $it->brand_name }}</span>@endif
-				@if (!empty($it->seller_name) && ($shop_config->show_seller_on_card ?? 'Y') !== 'N')<span class="shp-card-seller">{{ $it->seller_name }}</span>@endif
+				@if (!empty($it->card_brand ?? $it->brand_name ?? ''))<span class="shp-card-brand">{{ $it->card_brand ?? $it->brand_name }}</span>@endif
 				<span class="shp-card-name">{{ $it->item_name }}</span>
 				@if (!empty($it->review_count))
 				<span class="shp-card-rating">

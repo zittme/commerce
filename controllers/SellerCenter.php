@@ -6,6 +6,7 @@ use Zittme\Modules\Commerce\Models\Item as ItemModel;
 use Zittme\Modules\Commerce\Models\Lang as LangModel;
 use Zittme\Modules\Commerce\Models\Money as MoneyModel;
 use Zittme\Modules\Commerce\Models\Seller as SellerModel;
+use Zittme\Modules\Commerce\Models\SellerStaff as SellerStaffModel;
 use Zittme\Modules\Commerce\Models\Settlement as SettlementModel;
 use Zittme\Modules\Commerce\Models\Shop as ShopModel;
 use Zittme\Modules\Commerce\Models\Staff as StaffModel;
@@ -21,6 +22,7 @@ class SellerCenter extends Admin
 		'shop_design' => 'sellerShopDesign',
 		'shop_cats' => 'sellerShopCats',
 		'seller_profile' => 'dispCommerceAdminSellerProfile',
+		'staff' => 'sellerStaff',
 	];
 
 	protected static function me(): object
@@ -46,7 +48,7 @@ class SellerCenter extends Admin
 		}
 		$me = self::me();
 		$p = (string)\Context::get('p');
-		if (!isset(self::PAGES[$p]))
+		if (!isset(self::PAGES[$p]) || !SellerModel::canPage($p))
 		{
 			$p = 'dashboard';
 		}
@@ -60,6 +62,7 @@ class SellerCenter extends Admin
 		\Context::setBrowserTitle(lang('commerce.sc_title'));
 		$db = \Zittme\Framework\DB::getInstance();
 		$to_ship = $db->query('SELECT COUNT(*) AS cnt FROM commerce_order_seller WHERE seller_srl = ? AND status IN (?, ?)', [(int)$me->seller_srl, 'paid', 'preparing'])->fetchAll();
+		\Context::set('sc_role', SellerModel::memberRole());
 		\Context::set('zmc_counts', [
 			'to_ship' => (int)($to_ship[0]->cnt ?? 0),
 		]);
@@ -259,5 +262,152 @@ class SellerCenter extends Admin
 		}
 		$this->setMessage('success_saved');
 		$this->back('seller_profile');
+	}
+
+	protected function sellerStaff()
+	{
+		$me = self::me();
+		\Context::set('sc_me', $me);
+		\Context::set('ss_list', SellerStaffModel::listOf((int)$me->seller_srl));
+		\Context::set('ss_roles', SellerStaffModel::ROLES);
+		\Context::set('ss_logs', SellerStaffModel::recentLogs((int)$me->seller_srl));
+		\Context::set('ss_owner_srl', (int)$me->member_srl);
+		$this->renderView('staff', 'seller_staff');
+	}
+
+	public function procCommerceSellerCenterInviteMember()
+	{
+		$me = self::me();
+		$member = StaffModel::findMember((string)\Context::get('find'));
+		if (!$member)
+		{
+			return new \BaseObject(-1, lang('commerce.st_msg_no_member'));
+		}
+		\Context::set('target_member_srl', (int)$member->member_srl);
+		$reason = SellerStaffModel::blockReason($member, (int)$me->seller_srl);
+		if ($reason !== '')
+		{
+			return new \BaseObject(-1, lang('commerce.' . $reason));
+		}
+		$actor = (int)(\Context::get('logged_info')->member_srl ?? 0);
+		if (!SellerStaffModel::invite((int)$me->seller_srl, (int)$member->member_srl, (string)\Context::get('role'), $actor))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		\Zittme\Modules\Commerce\Models\Notify::send(
+			(int)$member->member_srl,
+			sprintf(lang('commerce.ss_notify_invited'), (string)$me->shop_name),
+			getNotEncodedFullUrl('', 'module', 'commerce', 'mid', '', 'act', 'dispCommerceSellerInvite')
+		);
+		$this->setMessage(lang('commerce.ss_msg_invited'));
+		$this->back('staff');
+	}
+
+	public function procCommerceSellerCenterUpdateMember()
+	{
+		$me = self::me();
+		if (!SellerStaffModel::setRole((int)$me->seller_srl, (int)\Context::get('target_member_srl'), (string)\Context::get('role')))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$this->setMessage('success_saved');
+		$this->back('staff');
+	}
+
+	public function procCommerceSellerCenterRemoveMember()
+	{
+		$me = self::me();
+		if (!SellerStaffModel::remove((int)$me->seller_srl, (int)\Context::get('target_member_srl')))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$this->setMessage('success_deleted');
+		$this->back('staff');
+	}
+
+	public function dispCommerceSellerInvite()
+	{
+		$logged = \Context::get('logged_info');
+		$member_srl = (int)($logged->member_srl ?? 0);
+		if ($member_srl <= 0)
+		{
+			throw new \Zittme\Framework\Exceptions\MustLogin;
+		}
+		$row = SellerStaffModel::get($member_srl);
+		$shop = $row ? SellerModel::get((int)$row->seller_srl) : null;
+		if ($row && $row->status === 'active' && $shop)
+		{
+			\Context::redirect(getNotEncodedUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter'));
+			return;
+		}
+		\Context::set('ss_invite', ($row && $row->status === 'invited' && $shop) ? $row : null);
+		\Context::set('ss_shop', $shop);
+		\Context::set('layout', 'none');
+		\Context::setBrowserTitle(lang('commerce.ss_invite_title'));
+		$this->setTemplatePath($this->module_path . 'views/admin/');
+		$this->setTemplateFile('seller_invite');
+	}
+
+	public function procCommerceSellerInviteAnswer()
+	{
+		$logged = \Context::get('logged_info');
+		$member_srl = (int)($logged->member_srl ?? 0);
+		$row = $member_srl > 0 ? SellerStaffModel::get($member_srl) : null;
+		if (!$row || $row->status !== 'invited')
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		\Context::set('target_member_srl', $member_srl);
+		if (\Context::get('answer') === 'accept')
+		{
+			if (!SellerStaffModel::accept($member_srl))
+			{
+				return new \BaseObject(-1, lang('commerce.ss_msg_is_operator_staff'));
+			}
+			\Zittme\Modules\Commerce\Models\Audit::note('procCommerceSellerInviteAccept', (int)$row->seller_srl);
+			$this->setRedirectUrl(getNotEncodedUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter'));
+			return;
+		}
+		SellerStaffModel::decline($member_srl);
+		\Zittme\Modules\Commerce\Models\Audit::note('procCommerceSellerInviteDecline', (int)$row->seller_srl);
+		$this->setMessage(lang('commerce.ss_msg_declined'));
+		$this->setRedirectUrl(getNotEncodedUrl('', 'module', '', 'mid', '', 'act', ''));
+	}
+
+	public function dispCommerceSellerDoc()
+	{
+		$seller = SellerModel::get((int)\Context::get('seller_srl'));
+		if (!$seller || SellerModel::isOperator((int)$seller->seller_srl))
+		{
+			throw new \Zittme\Framework\Exceptions\TargetNotFound;
+		}
+		$logged = \Context::get('logged_info');
+		$member_srl = (int)($logged->member_srl ?? 0);
+		$mine = StaffModel::seller();
+		$allowed = (!$mine && StaffModel::allows('@sub'))
+			|| ($member_srl > 0 && (int)$seller->member_srl === $member_srl)
+			|| ($mine && (int)$mine->seller_srl === (int)$seller->seller_srl && SellerModel::canPage('seller_profile'));
+		if (!$allowed)
+		{
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
+		$path = \Zittme\Modules\Commerce\Models\ApplyForm::filePath($seller, (string)\Context::get('field'));
+		if ($path === '')
+		{
+			throw new \Zittme\Framework\Exceptions\TargetNotFound;
+		}
+		$ext = strtolower(pathinfo($path, \PATHINFO_EXTENSION));
+		$types = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'];
+		while (ob_get_level())
+		{
+			ob_end_clean();
+		}
+		header('Content-Type: ' . ($types[$ext] ?? 'application/octet-stream'));
+		header('Content-Length: ' . filesize($path));
+		header('Content-Disposition: inline; filename="' . ($seller->shop_id ?: 'seller') . '_' . preg_replace('/[^a-z0-9_]/', '', (string)\Context::get('field')) . '.' . $ext . '"');
+		header('X-Content-Type-Options: nosniff');
+		header('Cache-Control: private, no-store');
+		readfile($path);
+		exit;
 	}
 }

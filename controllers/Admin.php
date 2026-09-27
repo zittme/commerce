@@ -45,7 +45,7 @@ class Admin extends Base
 		'enabled', 'market_mode', 'market_commission', 'market_apply', 'market_item_review', 'seller_item_in_store', 'code_prefix', 'allow_guest', 'pending_minutes',
 		'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key', 'couriers',
 		'shop_main', 'category_layout', 'item_image_size', 'show_shop_nav', 'show_search', 'show_admin_fab', 'home_show_recommend', 'home_show_new',
-		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones', 'show_seller_on_card',
+		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones', 'show_seller_on_card', 'short_shop_url', 'seller_form',
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
 		'privacy_text', 'privacy_version', 'retention_days',
 		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note', 'biz_logo',
@@ -61,7 +61,7 @@ class Admin extends Base
 
 	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note', 'ship_guide', 'claim_guide'];
 
-	protected const BOOLEAN_FIELDS = ['enabled', 'market_apply', 'market_item_review', 'seller_item_in_store', 'show_seller_on_card', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
+	protected const BOOLEAN_FIELDS = ['enabled', 'market_apply', 'market_item_review', 'seller_item_in_store', 'show_seller_on_card', 'short_shop_url', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
 		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale'];
 	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100], 'market_commission' => [0, 100]];
 	protected const INT_FIELDS = [
@@ -2947,6 +2947,10 @@ class Admin extends Base
 					SellerModel::restoreMarketItems();
 				}
 			}
+			elseif ($key === 'seller_form')
+			{
+				$value = \Zittme\Modules\Commerce\Models\ApplyForm::fromRequest();
+			}
 			elseif ($key === 'shop_main')
 			{
 				$value = $value === 'home' ? 'home' : 'list';
@@ -3060,6 +3064,10 @@ class Admin extends Base
 		if ($as_seller && in_array($as_seller->status, ['pending', 'approved', 'suspended'], true))
 		{
 			return new \BaseObject(-1, lang('commerce.sc_msg_seller_not_staff'));
+		}
+		if (\Zittme\Modules\Commerce\Models\SellerStaff::get($srl))
+		{
+			return new \BaseObject(-1, lang('commerce.ss_msg_not_operator_staff'));
 		}
 		$role = (string)\Context::get('role');
 		$role = in_array($role, StaffModel::ROLES, true) ? $role : 'manager';
@@ -3697,6 +3705,9 @@ class Admin extends Base
 			$row->regdate_text = $row->regdate ? zdate($row->regdate, 'Y.m.d') : '';
 			$row->ship_fee_text = MoneyModel::format((int)$row->ship_fee, MoneyModel::base());
 			$row->free_over_text = (int)$row->free_ship_over > 0 ? MoneyModel::format((int)$row->free_ship_over, MoneyModel::base()) : '';
+			$row->store_full = (string)($row->shop_id ?? '') !== '' ? \Zittme\Modules\Commerce\Models\Shop::fullUrl((string)$row->shop_id) : '';
+			$row->extra_list = \Zittme\Modules\Commerce\Models\ApplyForm::customValues($row);
+			$row->staff_count = count(\Zittme\Modules\Commerce\Models\SellerStaff::listOf((int)$row->seller_srl));
 			$sellers[] = $row;
 		}
 
@@ -3716,6 +3727,7 @@ class Admin extends Base
 			$counts['']++;
 		}
 
+		\Context::set('mk_conflicts', \Zittme\Modules\Commerce\Models\Shop::shortEnabled() ? \Zittme\Modules\Commerce\Models\Shop::midConflicts() : []);
 		\Context::set('mk_sellers', $sellers);
 		\Context::set('mk_counts', $counts);
 		\Context::set('mk_status', $status);
@@ -3723,6 +3735,92 @@ class Admin extends Base
 		\Context::set('mk_default_rate', (float)(self::config()->market_commission ?? 0));
 		\Context::set('page_navigation', $output->page_navigation ?? null);
 		$this->renderView('sellers', 'sellers');
+	}
+
+	public function dispCommerceAdminExportSellers()
+	{
+		if (!SellerModel::isOpen())
+		{
+			throw new \Zittme\Framework\Exceptions\NotPermitted;
+		}
+		$status = (string)\Context::get('f_status');
+		$status = in_array($status, SellerModel::STATUSES, true) ? $status : '';
+		$keyword = trim((string)\Context::get('q'));
+		$private = StaffModel::isRoot();
+		$custom = \Zittme\Modules\Commerce\Models\ApplyForm::config()['custom'];
+
+		$head = [lang('commerce.mk_col_no'), lang('commerce.mk_f_shop_name'), lang('commerce.sc_shop_id'), lang('commerce.su_col_store_url'), lang('commerce.mk_col_status'),
+			lang('commerce.mk_f_biz_name'), lang('commerce.mk_f_biz_no'), lang('commerce.mk_f_mailorder_no'), lang('commerce.mk_f_commission'), lang('commerce.mk_f_ship_fee'), lang('commerce.mk_f_free_over'),
+			lang('commerce.mk_applied_at'), lang('commerce.su_col_approved')];
+		if ($private)
+		{
+			array_push($head, lang('commerce.su_col_member'), lang('commerce.mk_f_ceo_name'), lang('commerce.mk_f_tel'), lang('commerce.mk_f_email'), lang('commerce.mk_f_biz_address'),
+				lang('commerce.mk_f_bank_name'), lang('commerce.mk_f_bank_account'), lang('commerce.mk_f_bank_holder'));
+			foreach ($custom as $cf)
+			{
+				$head[] = $cf['label'];
+			}
+		}
+		$rows = [$head];
+		$page = 1;
+		do
+		{
+			$args = (object)['page' => $page, 'list_count' => 200];
+			if ($status !== '')
+			{
+				$args->status = $status;
+			}
+			if ($keyword !== '')
+			{
+				$args->search_keyword = '%' . $keyword . '%';
+			}
+			$output = executeQueryArray('commerce.getSellerPage', $args);
+			$list = $output->toBool() ? (array)$output->data : [];
+			foreach ($list as $s)
+			{
+				if (empty($s->seller_srl) || SellerModel::isOperator((int)$s->seller_srl))
+				{
+					continue;
+				}
+				$line = [
+					(int)$s->seller_srl, (string)$s->shop_name, (string)$s->shop_id,
+					(string)$s->shop_id !== '' ? \Zittme\Modules\Commerce\Models\Shop::fullUrl((string)$s->shop_id) : '',
+					lang('commerce.mk_st_' . $s->status), (string)$s->biz_name, (string)$s->biz_no, (string)$s->mailorder_no,
+					SellerModel::commissionRate($s) . '%', MoneyModel::format((int)$s->ship_fee, MoneyModel::base()),
+					(int)$s->free_ship_over > 0 ? MoneyModel::format((int)$s->free_ship_over, MoneyModel::base()) : '',
+					$s->regdate ? zdate($s->regdate, 'Y-m-d H:i') : '', $s->approved_date ? zdate($s->approved_date, 'Y-m-d H:i') : '',
+				];
+				if ($private)
+				{
+					$member = \MemberModel::getMemberInfoByMemberSrl((int)$s->member_srl);
+					$extra = \Zittme\Modules\Commerce\Models\ApplyForm::extraOf($s);
+					array_push($line, (string)($member->user_id ?? ''), (string)$s->ceo_name, (string)$s->tel, (string)$s->email, (string)$s->biz_address,
+						(string)$s->bank_name, (string)$s->bank_account, (string)$s->bank_holder);
+					foreach ($custom as $cf_key => $cf)
+					{
+						$value = (string)($extra[$cf_key] ?? '');
+						$line[] = $cf['type'] === 'file' ? ($value !== '' ? \Zittme\Modules\Commerce\Models\ApplyForm::fileUrl((int)$s->seller_srl, $cf_key) : '') : $value;
+					}
+				}
+				$rows[] = $line;
+			}
+			$page++;
+		}
+		while (count($list) >= 200 && $page <= 100);
+
+		header('Content-Type: text/csv; charset=UTF-8');
+		header('Content-Disposition: attachment; filename="sellers_' . date('Ymd_His') . '.csv"');
+		header('Cache-Control: no-store');
+		echo "\xEF\xBB\xBF";
+		$fp = fopen('php://output', 'w');
+		foreach ($rows as $row)
+		{
+			fputcsv($fp, array_map(function ($cell) {
+				return is_string($cell) && preg_match('/^[=+\-@\t\r]/', $cell) ? "'" . $cell : $cell;
+			}, $row));
+		}
+		fclose($fp);
+		exit;
 	}
 
 	public function procCommerceAdminSellerStatus()
@@ -3972,8 +4070,13 @@ class Admin extends Base
 		\Context::set('mk_me', $my_seller);
 		\Context::set('mk_rate', SellerModel::commissionRate($my_seller));
 		\Context::set('mk_store_url', \Zittme\Modules\Commerce\Models\Shop::url((string)($my_seller->shop_id ?? '')));
+		\Context::set('mk_store_full', \Zittme\Modules\Commerce\Models\Shop::fullUrl((string)($my_seller->shop_id ?? '')));
+		\Context::set('mk_af', \Zittme\Modules\Commerce\Models\ApplyForm::fields($my_seller));
+		\Context::set('mk_editable', self::PROFILE_EDITABLE);
 		$this->renderView('seller_profile', 'seller_profile');
 	}
+
+	protected const PROFILE_EDITABLE = ['tel', 'email', 'bank_name', 'bank_account', 'bank_holder', 'intro'];
 
 	public function procCommerceAdminSaveSellerProfile()
 	{
@@ -3983,23 +4086,43 @@ class Admin extends Base
 			throw new \Zittme\Framework\Exceptions\NotPermitted;
 		}
 		$data = SellerModel::filterInput(true);
+		$before = SellerModel::get((int)$my_seller->seller_srl);
+		$af = \Zittme\Modules\Commerce\Models\ApplyForm::config()['builtin'];
 		$save = (object)[
-			'tel' => $data->tel,
-			'email' => $data->email,
-			'bank_name' => $data->bank_name,
-			'bank_account' => $data->bank_account,
-			'bank_holder' => $data->bank_holder,
-			'intro' => $data->intro,
 			'ship_fee' => $data->ship_fee,
 			'free_ship_over' => $data->free_ship_over,
 		];
-		if ($save->tel === '' || $save->bank_name === '' || $save->bank_account === '' || $save->bank_holder === '')
+		foreach (self::PROFILE_EDITABLE as $key)
 		{
-			return new \BaseObject(-1, lang('commerce.mk_msg_need_fields'));
+			$save->{$key} = (\Context::get($key) !== null && ($af[$key]['on'] ?? true)) ? $data->{$key} : (string)($before->{$key} ?? '');
 		}
-		$before = SellerModel::get((int)$my_seller->seller_srl);
+		$collected = \Zittme\Modules\Commerce\Models\ApplyForm::collect(\Zittme\Modules\Commerce\Models\ApplyForm::extraOf($before), (int)$my_seller->seller_srl);
+		if (isset($collected['error']))
+		{
+			return new \BaseObject(-1, $collected['error']);
+		}
+		$check = clone $before;
+		foreach ((array)$save as $key => $value)
+		{
+			$check->{$key} = $value;
+		}
+		$missing = SellerModel::missingField($check, $collected['extra'], \Zittme\Modules\Commerce\Models\ApplyForm::SECTIONS, ['shop_name', 'shop_id', 'biz_name', 'ceo_name', 'biz_no', 'mailorder_no', 'biz_address']);
+		if ($missing !== '')
+		{
+			return new \BaseObject(-1, sprintf(lang('commerce.mk_msg_missing'), $missing));
+		}
 		SellerModel::update((int)$my_seller->seller_srl, $save);
-		if ($before && ((string)$before->bank_name !== $save->bank_name || (string)$before->bank_account !== $save->bank_account || (string)$before->bank_holder !== $save->bank_holder))
+		$extra_before = \Zittme\Modules\Commerce\Models\ApplyForm::extraOf($before);
+		\Zittme\Modules\Commerce\Models\ApplyForm::storeExtra((int)$my_seller->seller_srl, $collected['extra']);
+		$bank_custom_changed = false;
+		foreach (\Zittme\Modules\Commerce\Models\ApplyForm::config()['custom'] as $cf_key => $cf)
+		{
+			if ($cf['section'] === 'bank' && (string)($extra_before[$cf_key] ?? '') !== (string)($collected['extra'][$cf_key] ?? ''))
+			{
+				$bank_custom_changed = true;
+			}
+		}
+		if ($before && ($bank_custom_changed || (string)$before->bank_name !== $save->bank_name || (string)$before->bank_account !== $save->bank_account || (string)$before->bank_holder !== $save->bank_holder))
 		{
 			\Zittme\Modules\Commerce\Models\Notify::toAdmins(
 				sprintf(lang('commerce.sc_msg_bank_changed'), (string)$before->shop_name),

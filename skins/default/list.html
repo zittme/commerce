@@ -150,6 +150,23 @@
 	@include('_sidecats')
 	@endif
 	<div class="shp-home-main">
+	@if (!empty($search_shops))
+	<section class="shp-shops" aria-label="{{ $lang->su_search_shops }}">
+		<h3 class="shp-shops-title">{{ $lang->su_search_shops }} <em>{{ count($search_shops) }}</em></h3>
+		<div class="shp-shops-list">
+			@foreach ($search_shops as $shp_s)
+			<a class="shp-shop" href="{{ $shp_s->url }}">
+				<span class="shp-shop-logo" @if ($shp_s->logo !== '') style="background-image:url('{{ escape($shp_s->logo) }}')" @endif>@if ($shp_s->logo === ''){{ $shp_s->initial }}@endif</span>
+				<span class="shp-shop-body">
+					<strong>{{ $shp_s->shop_name }}</strong>
+					@if ((string)$shp_s->shop_id !== '')<small>{{ '@' . $shp_s->shop_id }}</small>@endif
+					@if ($shp_s->intro !== '')<span>{{ $shp_s->intro }}</span>@endif
+				</span>
+			</a>
+			@endforeach
+		</div>
+	</section>
+	@endif
 	@if (empty($items))
 	<p class="shp-empty">{{ $lang->shop_no_items }}</p>
 	@else
@@ -178,8 +195,7 @@
 					@if ($it->is_new === 'Y')<span class="shp-badge">NEW</span>@endif
 					@if ($it->is_adult === 'Y')<span class="shp-badge is-adult">19</span>@endif
 				</span>
-				@if (!empty($it->brand_name))<span class="shp-card-brand">{{ $it->brand_name }}</span>@endif
-				@if (!empty($it->seller_name) && ($shop_config->show_seller_on_card ?? 'Y') !== 'N')<span class="shp-card-seller">{{ $it->seller_name }}</span>@endif
+				@if (!empty($it->card_brand ?? $it->brand_name ?? ''))<span class="shp-card-brand">{{ $it->card_brand ?? $it->brand_name }}</span>@endif
 				<span class="shp-card-name">{{ $it->item_name }}</span>
 				@if (!empty($it->review_count))
 				<span class="shp-card-rating">

@@ -19,6 +19,7 @@
 	<column name="shop_logo" type="varchar" size="250" />
 	<column name="shop_cover" type="varchar" size="250" />
 	<column name="shop_design" type="text" />
+	<column name="extra_vars" type="text" />
 	<column name="ship_fee" type="bigint" notnull="notnull" default="0" />
 	<column name="free_ship_over" type="bigint" notnull="notnull" default="0" />
 	<column name="carry_balance" type="bigint" notnull="notnull" default="0" />

@@ -1,0 +1,10 @@
+<table name="commerce_seller_staff">
+	<column name="member_srl" type="bigint" notnull="notnull" primarykey="primarykey" />
+	<column name="seller_srl" type="bigint" notnull="notnull" default="0" index="idx_seller_srl" />
+	<column name="role" type="varchar" size="10" notnull="notnull" default="items" />
+	<column name="status" type="varchar" size="10" notnull="notnull" default="invited" index="idx_status" />
+	<column name="added_by" type="bigint" notnull="notnull" default="0" />
+	<column name="regdate" type="char" size="14" />
+	<column name="accepted_date" type="char" size="14" />
+	<column name="last_update" type="char" size="14" />
+</table>

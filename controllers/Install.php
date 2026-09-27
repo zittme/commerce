@@ -73,6 +73,7 @@ class Install extends Base
 		['commerce_seller', 'carry_balance', 'bigint', null],
 		['commerce_settlement', 'carry_in', 'bigint', null],
 		['commerce_settlement', 'carry_out', 'bigint', null],
+		['commerce_seller', 'extra_vars', 'text', null],
 	];
 
 	public const ADDED_INDEXES = [
@@ -85,7 +86,7 @@ class Install extends Base
 		['commerce_item', 'idx_hidden_by_market', 'hidden_by_market', false],
 	];
 
-	public const LATE_TABLES = ['commerce_brand', 'commerce_staff', 'commerce_audit', 'commerce_timesale', 'commerce_timesale_item', 'commerce_pin', 'commerce_settlement', 'commerce_seller_category', 'commerce_settlement_adjust', 'commerce_seller_shopid'];
+	public const LATE_TABLES = ['commerce_brand', 'commerce_staff', 'commerce_audit', 'commerce_timesale', 'commerce_timesale_item', 'commerce_pin', 'commerce_settlement', 'commerce_seller_category', 'commerce_settlement_adjust', 'commerce_seller_shopid', 'commerce_seller_staff'];
 
 	public const ZERO_DEFAULT_COLUMNS = [
 		['commerce_seller', 'ship_fee'],
@@ -198,7 +199,7 @@ class Install extends Base
 			}
 		}
 
-		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade', 'commerce_stock_log', 'commerce_review', 'commerce_inquiry', 'commerce_address', 'commerce_tracking', 'commerce_promotion', 'commerce_promotion_item', 'commerce_badge', 'commerce_item_price', 'commerce_brand', 'commerce_staff', 'commerce_audit', 'commerce_timesale', 'commerce_timesale_item', 'commerce_pin', 'commerce_settlement', 'commerce_seller_category', 'commerce_settlement_adjust', 'commerce_seller_shopid'] as $table)
+		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade', 'commerce_stock_log', 'commerce_review', 'commerce_inquiry', 'commerce_address', 'commerce_tracking', 'commerce_promotion', 'commerce_promotion_item', 'commerce_badge', 'commerce_item_price', 'commerce_brand', 'commerce_staff', 'commerce_audit', 'commerce_timesale', 'commerce_timesale_item', 'commerce_pin', 'commerce_settlement', 'commerce_seller_category', 'commerce_settlement_adjust', 'commerce_seller_shopid', 'commerce_seller_staff'] as $table)
 		{
 			if (!$oDB->isTableExists($table))
 			{

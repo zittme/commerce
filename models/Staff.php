@@ -105,6 +105,7 @@ class Staff
 		'dispCommerceAdminSellers' => '@sub',
 		'procCommerceAdminSellerStatus' => '@sub',
 		'procCommerceAdminSellerCommission' => '@sub',
+		'dispCommerceAdminExportSellers' => '@sub',
 		'dispCommerceAdminSettlements' => '@sub',
 		'procCommerceAdminCreateSettlement' => '@sub',
 		'procCommerceAdminSettlementPaid' => '@sub',
@@ -163,7 +164,7 @@ class Staff
 		{
 			return (string)$me->role;
 		}
-		return self::seller() ? self::SELLER_ROLE : 'none';
+		return self::seller() ? (Seller::memberRole() === 'owner' ? self::SELLER_ROLE : 'sstaff') : 'none';
 	}
 
 	public static function seller(): ?object
@@ -232,7 +233,7 @@ class Staff
 	{
 		if (self::seller())
 		{
-			return in_array($page, Seller::PAGES, true);
+			return Seller::canPage($page);
 		}
 		if ($page === 'seller_profile')
 		{

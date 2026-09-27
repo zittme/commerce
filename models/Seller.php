@@ -8,7 +8,7 @@ class Seller
 {
 	public const STATUSES = ['pending', 'approved', 'rejected', 'suspended'];
 
-	public const PAGES = ['dashboard', 'items', 'item_edit', 'shipping', 'settlements', 'shop_design', 'shop_cats', 'seller_profile'];
+	public const PAGES = ['dashboard', 'items', 'item_edit', 'shipping', 'settlements', 'shop_design', 'shop_cats', 'seller_profile', 'staff'];
 
 	public const ACTS = [
 		'dispCommerceConsole',
@@ -38,12 +38,16 @@ class Seller
 		'dispCommerceAdminExportSettlement',
 		'dispCommerceAdminSellerProfile',
 		'procCommerceAdminSaveSellerProfile',
+		'procCommerceSellerCenterInviteMember',
+		'procCommerceSellerCenterUpdateMember',
+		'procCommerceSellerCenterRemoveMember',
 	];
 
 	protected static $cache = [];
 	protected static $current = false;
 	protected static $operator = false;
 	protected static $ready = null;
+	protected static $member_role = 'owner';
 
 	public static function isOpen(): bool
 	{
@@ -148,6 +152,7 @@ class Seller
 			return self::$current;
 		}
 		self::$current = null;
+		self::$member_role = 'owner';
 		if (!self::isOpen())
 		{
 			return null;
@@ -155,11 +160,40 @@ class Seller
 		$logged = \Context::get('logged_info');
 		$member_srl = is_object($logged) ? (int)$logged->member_srl : 0;
 		$row = self::getByMember($member_srl);
-		if ($row && $row->status === 'approved')
+		if ($row)
 		{
-			self::$current = $row;
+			if ($row->status === 'approved')
+			{
+				self::$current = $row;
+			}
+			return self::$current;
+		}
+		$staff = SellerStaff::activeOf($member_srl);
+		if ($staff)
+		{
+			$shop = self::get((int)$staff->seller_srl);
+			if ($shop && $shop->status === 'approved' && !self::isOperator((int)$shop->seller_srl))
+			{
+				self::$member_role = (string)$staff->role;
+				self::$current = $shop;
+			}
 		}
 		return self::$current;
+	}
+
+	public static function memberRole(): string
+	{
+		return self::current() ? self::$member_role : '';
+	}
+
+	public static function isOwner(): bool
+	{
+		return self::current() !== null && self::$member_role === 'owner';
+	}
+
+	public static function canPage(string $page): bool
+	{
+		return self::current() !== null && SellerStaff::pageAllowed(self::$member_role, $page);
 	}
 
 	public static function commissionRate(?object $seller): float
@@ -279,19 +313,19 @@ class Seller
 
 	public static function filterInput(bool $with_policy = false): object
 	{
-		$digits = function ($v, $len) { return mb_substr(preg_replace('/[^0-9\-]/', '', (string)$v), 0, $len); };
+		$keep = function ($v, $len, $pattern) { return mb_substr(trim(preg_replace($pattern, '', (string)$v)), 0, $len); };
 		$text = function ($key, $len) { return mb_substr(trim((string)\Context::get($key)), 0, $len); };
 		$data = (object)[
 			'shop_name' => $text('shop_name', 120),
 			'biz_name' => $text('biz_name', 120),
 			'ceo_name' => $text('ceo_name', 80),
-			'biz_no' => $digits(\Context::get('biz_no'), 20),
+			'biz_no' => strtoupper($keep(\Context::get('biz_no'), 20, '/[^0-9A-Za-z\-]/')),
 			'mailorder_no' => $text('mailorder_no', 40),
 			'biz_address' => $text('biz_address', 250),
-			'tel' => $digits(\Context::get('tel'), 30),
+			'tel' => $keep(\Context::get('tel'), 30, '/[^0-9+\-() ]/'),
 			'email' => $text('email', 120),
 			'bank_name' => $text('bank_name', 40),
-			'bank_account' => $digits(\Context::get('bank_account'), 60),
+			'bank_account' => strtoupper($keep(\Context::get('bank_account'), 60, '/[^0-9A-Za-z\- ]/')),
 			'bank_holder' => $text('bank_holder', 60),
 			'intro' => mb_substr(trim(strip_tags((string)\Context::get('intro'))), 0, 2000),
 		];
@@ -311,18 +345,16 @@ class Seller
 		return $data;
 	}
 
-	public static function missingField(object $data): string
+	public static function missingField(object $data, array $extra = [], array $sections = ApplyForm::SECTIONS, array $skip = []): string
 	{
-		foreach (['shop_name', 'biz_name', 'ceo_name', 'biz_no', 'mailorder_no', 'tel', 'bank_name', 'bank_account', 'bank_holder'] as $key)
+		$missing = ApplyForm::missing($data, $extra, $sections, $skip);
+		if ($missing !== '')
 		{
-			if (trim((string)($data->{$key} ?? '')) === '')
-			{
-				return $key;
-			}
+			return $missing;
 		}
 		if (($data->email ?? '') !== '' && !filter_var($data->email, \FILTER_VALIDATE_EMAIL))
 		{
-			return 'email';
+			return ApplyForm::builtinLabel('email');
 		}
 		return '';
 	}
@@ -532,6 +564,10 @@ class Seller
 			{
 				return false;
 			}
+		}
+		if ((int)(self::current()->seller_srl ?? 0) !== $seller_srl || !SellerStaff::actAllowed(self::$member_role, $act))
+		{
+			return false;
 		}
 
 		$item_srl = (int)\Context::get('item_srl');

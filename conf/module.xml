@@ -127,6 +127,7 @@
 		<action name="dispCommerceAdminSellers" class="Controllers\Admin" permission="member" />
 		<action name="procCommerceAdminSellerStatus" class="Controllers\Admin" permission="member" />
 		<action name="procCommerceAdminSellerCommission" class="Controllers\Admin" permission="member" />
+		<action name="dispCommerceAdminExportSellers" class="Controllers\Admin" permission="member" />
 		<action name="dispCommerceAdminSettlements" class="Controllers\Admin" permission="member" />
 		<action name="procCommerceAdminCreateSettlement" class="Controllers\Admin" permission="member" />
 		<action name="procCommerceAdminSettlementPaid" class="Controllers\Admin" permission="member" />
@@ -145,6 +146,12 @@
 		<action name="procCommerceSellerCenterDeleteCategory" class="Controllers\SellerCenter" permission="member" />
 		<action name="procCommerceSellerCenterItemCategory" class="Controllers\SellerCenter" permission="member" />
 		<action name="procCommerceSellerCenterSaveShopId" class="Controllers\SellerCenter" permission="member" />
+		<action name="procCommerceSellerCenterInviteMember" class="Controllers\SellerCenter" permission="member" />
+		<action name="procCommerceSellerCenterUpdateMember" class="Controllers\SellerCenter" permission="member" />
+		<action name="procCommerceSellerCenterRemoveMember" class="Controllers\SellerCenter" permission="member" />
+		<action name="dispCommerceSellerInvite" class="Controllers\SellerCenter" standalone="true" />
+		<action name="procCommerceSellerInviteAnswer" class="Controllers\SellerCenter" permission="member" standalone="true" />
+		<action name="dispCommerceSellerDoc" class="Controllers\SellerCenter" standalone="true" />
 	</actions>
 
 	<classes>
@@ -165,6 +172,8 @@
 		<eventHandler after="menu.getSitemapUrls" class="Controllers\Trigger" method="triggerSitemapUrls" />
 		<eventHandler after="member.doLogin" class="Controllers\Trigger" method="triggerAfterLogin" />
 		<eventHandler after="member.doAutoLogin" class="Controllers\Trigger" method="triggerAfterLogin" />
+		<eventHandler before="moduleHandler.init" class="Controllers\Trigger" method="triggerShortShopUrl" />
+		<eventHandler after="moduleHandler.proc" class="Controllers\Trigger" method="triggerMidConflict" />
 	</eventHandlers>
 
 </module>

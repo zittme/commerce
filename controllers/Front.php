@@ -45,6 +45,15 @@ class Front extends Base
 
 		$brand_mid = (string)($this->module_info->mid ?? '');
 		BrandModel::attach($items, $brand_mid);
+		$show_seller = (self::config()->show_seller_on_card ?? 'Y') !== 'N';
+		foreach ($items as $card_item)
+		{
+			if (is_object($card_item))
+			{
+				$card_item->card_seller = $show_seller ? (string)($card_item->seller_name ?? '') : '';
+				$card_item->card_brand = (string)($card_item->brand_name ?? '') !== '' ? (string)$card_item->brand_name : $card_item->card_seller;
+			}
+		}
 		$shop_brands = BrandModel::getList(true);
 		$brand_counts = BrandModel::itemCounts();
 		foreach ($shop_brands as $sb)
@@ -319,11 +328,15 @@ class Front extends Base
 			$args->category_srl_list = implode(',', self::categoryWithDescendants($category_srl));
 		}
 		$keyword = trim((string)\Context::get('q'));
+		$search_shops = [];
 		if ($keyword !== '')
 		{
 			$args->search_keyword = '%' . $keyword . '%';
 			$args->search_brand_srl_list = BrandModel::searchSrls($keyword, true) ?: null;
+			$search_shops = \Zittme\Modules\Commerce\Models\Shop::search($keyword, (string)($this->module_info->mid ?? ''), 50);
+			$args->search_seller_srl_list = count($search_shops) ? implode(',', array_map(function ($s) { return (int)$s->seller_srl; }, $search_shops)) : null;
 		}
+		\Context::set('search_shops', array_slice($search_shops, 0, 6));
 
 		$brand = BrandModel::find((string)\Context::get('brand'));
 		$brand_draft = $brand ? BrandModel::previewDraft((int)$brand->brand_srl) : null;
@@ -1495,6 +1508,17 @@ class Front extends Base
 		}
 		\Context::set('is_member', $member_srl > 0);
 		\Context::set('my_seller', $mine);
+		$apply_fields = [];
+		foreach (\Zittme\Modules\Commerce\Models\ApplyForm::fields($mine) as $af_section => $af_list)
+		{
+			$af_list = array_values(array_filter($af_list, function ($f) { return $f->on; }));
+			if (count($af_list))
+			{
+				$apply_fields[$af_section] = $af_list;
+			}
+		}
+		\Context::set('apply_fields', $apply_fields);
+		\Context::set('apply_is_staff', !$mine && $member_srl > 0 && \Zittme\Modules\Commerce\Models\SellerStaff::get($member_srl) !== null);
 		\Context::set('apply_open', (self::config()->market_apply ?? 'N') === 'Y');
 		\Context::set('apply_rate', (float)(self::config()->market_commission ?? 0));
 		\Context::set('console_url', getNotEncodedUrl('', 'mid', '', 'act', 'dispCommerceSellerCenter'));
@@ -1529,11 +1553,27 @@ class Front extends Base
 		{
 			return new \BaseObject(-1, lang('commerce.mk_msg_need_agree'));
 		}
+		if (\Zittme\Modules\Commerce\Models\SellerStaff::get($member_srl))
+		{
+			return new \BaseObject(-1, lang('commerce.ss_msg_staff_cannot_apply'));
+		}
 		$data = \Zittme\Modules\Commerce\Models\Seller::filterInput();
-		$missing = \Zittme\Modules\Commerce\Models\Seller::missingField($data);
+		foreach (\Zittme\Modules\Commerce\Models\ApplyForm::config()['builtin'] as $af_key => $af_def)
+		{
+			if (!$af_def['on'] && isset($data->{$af_key}))
+			{
+				$data->{$af_key} = $old ? (string)($old->{$af_key} ?? '') : '';
+			}
+		}
+		$collected = \Zittme\Modules\Commerce\Models\ApplyForm::collect(\Zittme\Modules\Commerce\Models\ApplyForm::extraOf($old), $member_srl);
+		if (isset($collected['error']))
+		{
+			return new \BaseObject(-1, $collected['error']);
+		}
+		$missing = \Zittme\Modules\Commerce\Models\Seller::missingField($data, $collected['extra']);
 		if ($missing !== '')
 		{
-			return new \BaseObject(-1, sprintf(lang('commerce.mk_msg_missing'), lang('commerce.mk_f_' . $missing)));
+			return new \BaseObject(-1, sprintf(lang('commerce.mk_msg_missing'), $missing));
 		}
 		if (\Zittme\Modules\Commerce\Models\Seller::operatorSrl() <= 0)
 		{
@@ -1544,10 +1584,12 @@ class Front extends Base
 		{
 			return new \BaseObject(-1, lang('commerce.' . $id_error));
 		}
-		if (!\Zittme\Modules\Commerce\Models\Seller::apply($member_srl, $data))
+		$new_srl = \Zittme\Modules\Commerce\Models\Seller::apply($member_srl, $data);
+		if (!$new_srl)
 		{
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
+		\Zittme\Modules\Commerce\Models\ApplyForm::storeExtra($new_srl, $collected['extra']);
 		$this->setMessage(lang('commerce.mk_msg_applied'));
 		$this->setRedirectUrl(getNotEncodedUrl('', 'mid', (string)\Context::get('mid'), 'act', 'dispCommerceSellerApply'));
 	}

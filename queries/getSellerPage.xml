@@ -12,6 +12,7 @@
 			<condition operation="like" column="shop_name" var="search_keyword" />
 			<condition operation="like" column="biz_name" var="search_keyword" pipe="or" />
 			<condition operation="like" column="biz_no" var="search_keyword" pipe="or" />
+			<condition operation="like" column="shop_id" var="search_keyword" pipe="or" />
 		</group>
 	</conditions>
 	<navigation>

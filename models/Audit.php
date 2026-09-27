@@ -7,6 +7,7 @@ class Audit
 	public const SKIP = [
 		'procCommerceAdminPreviewConfig', 'procCommerceAdminPreviewPromotion', 'procCommerceAdminPreviewBrand',
 		'procCommerceAdminGetLangCodes', 'procCommerceAdminGetLangCode', 'procCommerceAdminUploadBanner', 'procCommerceAdminUploadItemImage',
+		'procCommerceSellerCenterPreviewDesign', 'procCommerceSellerCenterUpload',
 	];
 
 	public const VIEWS = [
@@ -14,6 +15,7 @@ class Audit
 		'dispCommerceAdminOrderInvoice' => 'view',
 		'dispCommerceAdminExportOrders' => 'export',
 		'dispCommerceAdminExportStats' => 'export',
+		'dispCommerceAdminExportSellers' => 'export',
 	];
 
 	protected const TARGETS = [
@@ -63,7 +65,7 @@ class Audit
 			{
 				return;
 			}
-			$is_proc = strpos($act, 'procCommerceAdmin') === 0;
+			$is_proc = strpos($act, 'procCommerceAdmin') === 0 || strpos($act, 'procCommerceSellerCenter') === 0;
 			$view_kind = self::VIEWS[$act] ?? '';
 			if (!$is_proc && $view_kind === '')
 			{
@@ -97,6 +99,22 @@ class Audit
 		}
 	}
 
+	public static function note(string $act, int $seller_srl): void
+	{
+		try
+		{
+			self::write([
+				'kind' => 'change',
+				'act' => $act,
+				'target_type' => 'seller',
+				'target_srl' => $seller_srl,
+				'summary' => self::label($act),
+				'detail' => ['seller_srl' => $seller_srl],
+			]);
+		}
+		catch (\Throwable $e) {}
+	}
+
 	public static function denied(string $act): void
 	{
 		try
@@ -122,6 +140,11 @@ class Audit
 		$actor = $logged ? trim(($logged->nick_name ?? '') . ' (' . ($logged->user_id ?? $logged->email_address ?? '') . ')') : '';
 		$role = Staff::role();
 		$row += ['target_type' => '', 'target_srl' => 0, 'summary' => '', 'result' => 'ok'];
+		$shop = Staff::seller();
+		if ($shop)
+		{
+			$row['detail'] = (array)($row['detail'] ?? []) + ['seller_srl' => (int)$shop->seller_srl, 'seller_role' => Seller::memberRole()];
+		}
 		$row['alert'] = $role === 'owner' ? '' : self::detectAlert($member_srl, $row);
 		$now = date('YmdHis');
 		\Zittme\Framework\DB::getInstance()->query(

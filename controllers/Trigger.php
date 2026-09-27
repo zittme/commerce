@@ -23,6 +23,82 @@ class Trigger extends Base
 		return new \BaseObject();
 	}
 
+	public function triggerShortShopUrl($handler)
+	{
+		try
+		{
+			if (!is_object($handler) || empty($handler->mid) || !empty($handler->module) || !empty($handler->act) || !empty($handler->document_srl))
+			{
+				return;
+			}
+			$id = strtolower((string)$handler->mid);
+			if (!\Zittme\Modules\Commerce\Models\Shop::validFormat($id) || !\Zittme\Modules\Commerce\Models\Shop::shortEnabled())
+			{
+				return;
+			}
+			if (\ModuleModel::getModuleInfoByMid($handler->mid) || \Zittme\Modules\Commerce\Models\Shop::routeConflict($id) !== '')
+			{
+				return;
+			}
+			$found = \Zittme\Modules\Commerce\Models\Shop::find($id);
+			if (!$found || $found->seller->status !== 'approved')
+			{
+				return;
+			}
+			$mid = \Zittme\Modules\Commerce\Models\Shop::defaultMid();
+			if (!\ModuleModel::getModuleInfoByMid($mid))
+			{
+				return;
+			}
+			$handler->mid = $mid;
+			$handler->act = 'dispCommerceStore';
+			\Context::set('mid', $mid, true);
+			\Context::set('act', 'dispCommerceStore', true);
+			\Context::set('shop', $id, true);
+		}
+		catch (\Throwable $e)
+		{
+		}
+	}
+
+	public function triggerMidConflict($oModule)
+	{
+		try
+		{
+			$act = is_object($oModule) ? (string)($oModule->act ?? '') : '';
+			if ($act === '' || strpos($act, 'proc') !== 0 || strpos($act, 'Admin') === false || strpos($act, 'Commerce') !== false)
+			{
+				return;
+			}
+			$mid = strtolower(trim((string)\Context::get('mid')));
+			if ($mid === '' || !\Zittme\Modules\Commerce\Models\Shop::validFormat($mid) || !\Zittme\Modules\Commerce\Models\Seller::isOpen())
+			{
+				return;
+			}
+			foreach (\Zittme\Modules\Commerce\Models\Shop::midConflicts() as $row)
+			{
+				if ((string)$row->shop_id !== $mid)
+				{
+					continue;
+				}
+				$key = 'commerce_mid_conflict_' . $mid;
+				if (\Zittme\Framework\Cache::get($key))
+				{
+					return;
+				}
+				\Zittme\Framework\Cache::set($key, true, 86400);
+				\Zittme\Modules\Commerce\Models\Notify::toAdmins(
+					sprintf(lang('commerce.su_msg_mid_conflict'), $mid, (string)$row->shop_name),
+					\Zittme\Modules\Commerce\Models\Notify::consoleUrl('sellers')
+				);
+				return;
+			}
+		}
+		catch (\Throwable $e)
+		{
+		}
+	}
+
 	public function triggerModuleListInSitemap(&$moduleList)
 	{
 		if (is_array($moduleList))

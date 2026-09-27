@@ -99,7 +99,13 @@
 
 	@php $ie_console = !empty($zmc_console); @endphp
 	@php $ie_is_new = !$item; @endphp
-	@php $ie_form = $item ?: (Context::get('clone_item') ?: null); @endphp
+	@php
+	$ie_form = $item ?: (Context::get('clone_item') ?: null);
+	$ie_seller_row = Zittme\Modules\Commerce\Models\Staff::seller();
+	$ie_seller = $ie_seller_row !== null;
+	$ie_ship_fee = $ie_seller ? (int)($ie_seller_row->ship_fee ?? 0) : (int)($shop_config->default_ship_fee ?? 0);
+	$ie_free_over = $ie_seller ? (int)($ie_seller_row->free_ship_over ?? 0) : (int)($shop_config->free_ship_over ?? 0);
+	@endphp
 	@php $ie_item_srl = $item ? (int)$item->item_srl : (int)$editor_target_srl; @endphp
 	@php $ie_return = $ie_console ? getNotEncodedUrl('', 'act', $zmc_entry ?? 'dispCommerceConsole', 'p', 'item_edit', 'item_srl', $ie_item_srl) : getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminItemEdit', 'item_srl', $ie_item_srl); @endphp
 	<form action="{{ getUrl('') }}" method="post" enctype="multipart/form-data" id="ieForm">
@@ -158,7 +164,7 @@
 						<option value="{{ $srl }}" @if((int)($ie_form->category_srl ?? 0) === $srl) selected @endif>{{ ($c->depth ?? 0) > 0 ? str_repeat('&nbsp;&nbsp;', $c->depth) . '└ ' : '' }}{{ $c->title }}</option>
 						@endforeach
 					</select>
-					<span class="ie-help">{{ lang('commerce.admin_item_edit_13') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminCategories') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_14') }}</a>{{ lang('commerce.admin_item_edit_15') }}</span>
+					@if (!$ie_seller)<span class="ie-help">{{ lang('commerce.admin_item_edit_13') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminCategories') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_14') }}</a>{{ lang('commerce.admin_item_edit_15') }}</span>@endif
 				</div>
 				<div>
 					<label>{{ lang('commerce.item_brand') }}</label>
@@ -168,7 +174,7 @@
 						<option value="{{ $ib->brand_srl }}" @if((int)($ie_form->brand_srl ?? 0) === (int)$ib->brand_srl) selected @endif>{{ $ib->name }}@if ($ib->name_en) ({{ $ib->name_en }})@endif</option>
 						@endforeach
 					</select>
-					<span class="ie-help"><a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminBrands') }}">{{ lang('commerce.item_brand_manage') }}</a></span>
+					@if (!$ie_seller)<span class="ie-help"><a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminBrands') }}">{{ lang('commerce.item_brand_manage') }}</a></span>@endif
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_16') }}</label>
@@ -271,7 +277,7 @@
 						</label>
 						@endforeach
 					</div>
-					<p class="ie-help">{{ lang('commerce.admin_item_edit_56') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminBadges') }}">{{ lang('commerce.admin_item_edit_57') }}</a>{{ lang('commerce.admin_item_edit_58') }}</p>
+					@if (!$ie_seller)<p class="ie-help">{{ lang('commerce.admin_item_edit_56') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminBadges') }}">{{ lang('commerce.admin_item_edit_57') }}</a>{{ lang('commerce.admin_item_edit_58') }}</p>@endif
 				</div>
 			</div>
 			<details class="ie-adv">
@@ -293,7 +299,7 @@
 						<label><input type="checkbox" name="is_adult" value="Y" @if(($ie_form->is_adult ?? '') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_60') }}</label>
 						<label><input type="hidden" name="grade_discount" value="N" /><input type="checkbox" name="grade_discount" value="Y" @if(($ie_form->grade_discount ?? 'Y') !== 'N') checked @endif /> {{ lang('commerce.admin_item_edit_194') }}</label>
 					</div>
-					<span class="ie-help">{{ lang('commerce.admin_item_edit_61') }} <a href="{{ getUrl('', 'p', '', 'module', 'admin', 'act', 'dispMemberAdminIdentityConfig') }}" target="_blank" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_62') }}</a>{{ lang('commerce.admin_item_edit_63') }}</span>
+					@if (!$ie_seller)<span class="ie-help">{{ lang('commerce.admin_item_edit_61') }} <a href="{{ getUrl('', 'p', '', 'module', 'admin', 'act', 'dispMemberAdminIdentityConfig') }}" target="_blank" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_62') }}</a>{{ lang('commerce.admin_item_edit_63') }}</span>@endif
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_64') }}</label>
@@ -350,11 +356,11 @@
 				<div style="grid-column:1/-1">
 					<label>{{ lang('commerce.admin_item_edit_36') }}</label>
 					<div class="ie-pills">
-						<label><input type="radio" name="ship_fee_type" value="default" @if(($ie_form->ship_fee_type ?? 'default') === 'default') checked @endif /> {{ sprintf(lang('commerce.admin_item_edit_155'), shop_money_base((int)($shop_config->default_ship_fee ?? 0)) . ((int)($shop_config->free_ship_over ?? 0) > 0 ? sprintf(lang('commerce.admin_item_edit_156'), shop_money_base((int)$shop_config->free_ship_over)) : '')) }}</label>
+						<label><input type="radio" name="ship_fee_type" value="default" @if(($ie_form->ship_fee_type ?? 'default') === 'default') checked @endif /> {{ sprintf(lang('commerce.admin_item_edit_155'), shop_money_base($ie_ship_fee) . ($ie_free_over > 0 ? sprintf(lang('commerce.admin_item_edit_156'), shop_money_base($ie_free_over)) : '')) }}</label>
 						<label><input type="radio" name="ship_fee_type" value="free" @if(($ie_form->ship_fee_type ?? '') === 'free') checked @endif /> {{ lang('commerce.admin_item_edit_37') }}</label>
 						<label><input type="radio" name="ship_fee_type" value="fixed" @if(($ie_form->ship_fee_type ?? '') === 'fixed') checked @endif /> {{ lang('commerce.admin_item_edit_38') }}</label>
 					</div>
-					<span class="ie-help">{{ lang('commerce.admin_item_edit_39') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminConfig') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_40') }}</a>{{ lang('commerce.admin_item_edit_41') }}</span>
+					<span class="ie-help">{{ lang('commerce.admin_item_edit_39') }} @if ($ie_seller)<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'seller_profile') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.sc_menu_shop_info') }}</a>@else<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminConfig') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_40') }}</a>@endif{{ lang('commerce.admin_item_edit_41') }}</span>
 				</div>
 				<div id="ieShipFeeField">
 					<label>{{ lang('commerce.admin_item_edit_42') }}</label>
@@ -375,7 +381,7 @@
 				<div class="ie-suffix" data-suffix="{{ lang('commerce.admin_item_edit_154') }}"><input type="number" name="pin_daily_limit" min="0" max="999" value="{{ (int)($ie_form->pin_daily_limit ?? 0) }}" placeholder="{{ lang('commerce.ts_unlimited') }}" /></div>
 				<span class="ie-help">{{ lang('commerce.pin_daily_hint') }}</span>
 				@if (!empty($item))
-				<a class="rsva-btn rsva-btn-sm" style="margin-top:10px" href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminPins', 'f_item', $item->item_srl) }}">{{ lang('commerce.pin_manage') }}</a>
+				@if (!$ie_seller)<a class="rsva-btn rsva-btn-sm" style="margin-top:10px" href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminPins', 'f_item', $item->item_srl) }}">{{ lang('commerce.pin_manage') }}</a>@endif
 				@endif
 			</div>
 			<script>document.getElementById('iePin').addEventListener('change', function () { document.getElementById('iePinMore').hidden = !this.checked; });</script>
@@ -399,7 +405,7 @@
 					@else
 					<div style="padding:10px 0;font-size:15px;font-weight:700">{{ number_format((int)($ie_form->stock ?? 0)) }}{{ lang('commerce.admin_item_edit_154') }}</div>
 					@endif
-					<span class="ie-help">{{ lang('commerce.admin_item_edit_31') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock') }}">{{ lang('commerce.admin_item_edit_27') }}</a> {{ lang('commerce.admin_item_edit_32') }}</span>
+					@if (!$ie_seller)<span class="ie-help">{{ lang('commerce.admin_item_edit_31') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock') }}">{{ lang('commerce.admin_item_edit_27') }}</a> {{ lang('commerce.admin_item_edit_32') }}</span>@endif
 				</div>
 			</div>
 			<details class="ie-adv">

@@ -102,8 +102,16 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<div><label>{{ lang('commerce.sc_cfg_item_in_store') }}</label><select name="seller_item_in_store"><option value="Y" @if(($shop_config->seller_item_in_store ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->seller_item_in_store ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select></div>
 				<div><label>{{ lang('commerce.sc_cfg_item_review') }}</label><select name="market_item_review"><option value="N" @if(($shop_config->market_item_review ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->market_item_review ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></div>
 				<div><label>{{ lang('commerce.mk_cfg_apply') }}</label><select name="market_apply"><option value="N" @if(($shop_config->market_apply ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->market_apply ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></div>
+				<div><label>{{ lang('commerce.su_cfg_short') }}</label><select name="short_shop_url"><option value="N" @if(($shop_config->short_shop_url ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->short_shop_url ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select><p class="cfg-guide">{{ sprintf(lang('commerce.su_cfg_short_desc'), rtrim(getFullUrl(''), '/') . '/' . lang('commerce.su_cfg_short_sample')) }}</p></div>
 			</div>
+			@php $cfg_su_conflicts = $cfg_mk_ready ? Zittme\Modules\Commerce\Models\Shop::midConflicts() : []; @endphp
+			@if (count($cfg_su_conflicts))
+			<p style="margin:14px 0 0;font-size:13px;color:var(--zmc-bad, #b33a2e)">{{ lang('commerce.su_conflict_title') }} @foreach ($cfg_su_conflicts as $cfg_su_c)<b>{{ $cfg_su_c->shop_id }}</b> ({{ $cfg_su_c->shop_name }})@if (!$loop->last), @endif @endforeach</p>
+			@endif
 		</div>
+		@if ($cfg_mk_ready)
+		@include('_applyform')
+		@endif
 		<button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_config_81') }}</button>
 	</form>
 	@endif

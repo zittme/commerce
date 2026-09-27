@@ -34,6 +34,11 @@ class Shop
 		{
 			return 'sc_msg_id_reserved';
 		}
+		$conflict = self::routeConflict($id);
+		if ($conflict !== '')
+		{
+			return $conflict === 'mid' ? 'sc_msg_id_mid' : 'sc_msg_id_reserved';
+		}
 		$db = \Zittme\Framework\DB::getInstance();
 		$rows = $db->query('SELECT seller_srl FROM commerce_seller WHERE shop_id = ? AND seller_srl <> ?', [$id, $except_seller_srl])->fetchAll();
 		$used = $db->query('SELECT seller_srl FROM commerce_seller_shopid WHERE shop_id = ? AND seller_srl <> ?', [$id, $except_seller_srl])->fetchAll();
@@ -122,18 +127,134 @@ class Shop
 		{
 			return '';
 		}
+		$default_mid = self::defaultMid();
 		if ($mid === '')
 		{
-			$instance = \Zittme\Modules\Commerce\Controllers\Base::getDefaultInstance();
-			$mid = $instance ? (string)$instance->mid : \Zittme\Modules\Commerce\Controllers\Base::DEFAULT_MID;
+			$mid = $default_mid;
 		}
-		$params = ['', 'mid', $mid, 'act', 'dispCommerceStore', 'shop', $shop_id];
+		$params = ($mid === $default_mid && self::shortAvailable($shop_id))
+			? ['', 'mid', $shop_id]
+			: ['', 'mid', $mid, 'act', 'dispCommerceStore', 'shop', $shop_id];
 		foreach ($extra as $k => $v)
 		{
 			$params[] = (string)$k;
 			$params[] = $v;
 		}
 		return (string)call_user_func_array('getUrl', $params);
+	}
+
+	public static function fullUrl(string $shop_id): string
+	{
+		if ($shop_id === '')
+		{
+			return '';
+		}
+		$params = self::shortAvailable($shop_id)
+			? ['', 'mid', $shop_id]
+			: ['', 'mid', self::defaultMid(), 'act', 'dispCommerceStore', 'shop', $shop_id];
+		return (string)call_user_func_array('getNotEncodedFullUrl', $params);
+	}
+
+	public static function defaultMid(): string
+	{
+		$instance = \Zittme\Modules\Commerce\Controllers\Base::getDefaultInstance();
+		return $instance ? (string)$instance->mid : \Zittme\Modules\Commerce\Controllers\Base::DEFAULT_MID;
+	}
+
+	public static function shortEnabled(): bool
+	{
+		return (\Zittme\Modules\Commerce\Controllers\Base::config()->short_shop_url ?? 'N') === 'Y' && Seller::isOpen();
+	}
+
+	public static function shortAvailable(string $shop_id): bool
+	{
+		return self::shortEnabled() && self::validFormat($shop_id) && self::routeConflict($shop_id) === '';
+	}
+
+	public static function routeConflict(string $id): string
+	{
+		static $cache = [];
+		$id = strtolower($id);
+		if (isset($cache[$id]))
+		{
+			return $cache[$id];
+		}
+		$lang_prefix = method_exists('\Zittme\Framework\Router', 'isReservedPrefix')
+			? \Zittme\Framework\Router::isReservedPrefix($id)
+			: in_array($id, (array)(\Zittme\Framework\Config::get('locale.enabled_lang') ?: []), true);
+		if (in_array($id, self::RESERVED, true) || \Context::isReservedWord($id) || $lang_prefix || in_array($id, ['rss', 'atom'], true))
+		{
+			return $cache[$id] = 'reserved';
+		}
+		static $dirs = null;
+		if ($dirs === null)
+		{
+			$dirs = array_map('strtolower', array_merge(
+				(array)\FileHandler::readDir(\RX_BASEDIR),
+				(array)\FileHandler::readDir(\RX_BASEDIR . 'modules/'),
+				['rss', 'atom', 'api', 'admin']
+			));
+		}
+		if (in_array($id, $dirs, true))
+		{
+			return $cache[$id] = 'reserved';
+		}
+		$rows = \Zittme\Framework\DB::getInstance()->query('SELECT module_srl FROM modules WHERE mid = ?', [$id])->fetchAll();
+		return $cache[$id] = count($rows) ? 'mid' : '';
+	}
+
+	public static function search(string $keyword, string $mid = '', int $limit = 6): array
+	{
+		$keyword = trim($keyword);
+		if ($keyword === '' || !Seller::isOpen())
+		{
+			return [];
+		}
+		$like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $keyword) . '%';
+		$rows = \Zittme\Framework\DB::getInstance()->query(
+			"SELECT seller_srl, shop_name, shop_id, shop_logo, intro FROM commerce_seller WHERE status = 'approved' AND member_srl > 0 AND (shop_name LIKE ? OR shop_id LIKE ?) ORDER BY CASE WHEN shop_id = ? OR shop_name = ? THEN 0 ELSE 1 END, shop_name ASC LIMIT " . max(1, min(50, $limit + 1)),
+			[$like, strtolower($like), strtolower($keyword), $keyword]
+		)->fetchAll();
+		$list = [];
+		foreach ($rows as $row)
+		{
+			if (Seller::isOperator((int)$row->seller_srl) || count($list) >= $limit)
+			{
+				continue;
+			}
+			$row->url = (string)$row->shop_id !== '' ? self::url((string)$row->shop_id, $mid) : getUrl('', 'mid', $mid ?: self::defaultMid(), 'v', 'list', 'seller', (int)$row->seller_srl);
+			$row->logo = self::ownsUpload((string)($row->shop_logo ?? ''), (int)$row->seller_srl) ? (string)$row->shop_logo : '';
+			$row->intro = mb_substr(trim(preg_replace('/\s+/', ' ', (string)$row->intro)), 0, 80);
+			$row->initial = mb_substr((string)$row->shop_name, 0, 1);
+			$list[] = $row;
+		}
+		return $list;
+	}
+
+	public static function searchSellerSrls(string $keyword): array
+	{
+		$srls = [];
+		foreach (self::search($keyword, '', 50) as $row)
+		{
+			$srls[] = (int)$row->seller_srl;
+		}
+		return $srls;
+	}
+
+	public static function midConflicts(): array
+	{
+		$rows = \Zittme\Framework\DB::getInstance()->query(
+			"SELECT commerce_seller.seller_srl, commerce_seller.shop_name, commerce_seller.shop_id FROM commerce_seller JOIN modules ON modules.mid = commerce_seller.shop_id WHERE commerce_seller.shop_id <> ''"
+		)->fetchAll();
+		$list = [];
+		foreach ($rows as $row)
+		{
+			if (!Seller::isOperator((int)$row->seller_srl))
+			{
+				$list[] = $row;
+			}
+		}
+		return $list;
 	}
 
 	public static function itemUrl(string $shop_id, int $item_srl, string $mid = '', bool $full = false): string

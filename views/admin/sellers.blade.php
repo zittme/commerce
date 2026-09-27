@@ -7,7 +7,7 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 @endphp
 
 <style>
-.mk-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.mk-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 14px; }
 .mk-tabs a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--zmc-line-strong, #d6d2c8); border-radius: 5px; font-size: 13px; color: var(--zmc-ink, #232a3b) !important; text-decoration: none !important; background: var(--zmc-surface, #fff); }
 .mk-tabs a.is-on { background: var(--zmc-brand, #26345c); border-color: var(--zmc-brand, #26345c); color: var(--zmc-on-brand, #fff8e6) !important; }
 .mk-tabs a.is-hot b { color: var(--zmc-bad, #b33a2e); }
@@ -25,6 +25,8 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 .mk-info div { display: flex; gap: 8px; min-width: 0; }
 .mk-info dt { flex: none; width: 92px; color: var(--zmc-sub, #7a7f8c); }
 .mk-info dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.mk-info .mk-store { grid-column: 1 / -1; }
+.mk-info .mk-store dd { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .mk-intro { margin: 10px 0 0; padding: 10px 12px; border-radius: 5px; background: var(--zmc-bg, #f7f6f3); font-size: 13px; white-space: pre-line; }
 .mk-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--zmc-line, #e6e3dc); }
 .mk-acts form { display: inline-flex; gap: 6px; align-items: center; margin: 0; }
@@ -42,8 +44,12 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 			@if ($mk_status !== '')<input type="hidden" name="f_status" value="{{ $mk_status }}" />@endif
 			<input type="search" name="q" value="{{ $mk_q }}" placeholder="{{ lang('commerce.mk_search_ph') }}" />
 		</form>
+		<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', 'commerce', 'mid', '', 'act', 'dispCommerceAdminExportSellers', 'f_status', $mk_status, 'q', $mk_q) }}" data-zmc-keep>{{ lang('commerce.su_export') }}</a>
 	</nav>
 
+	@if (!empty($mk_conflicts))
+	<div class="rsva-panel" style="border-color:var(--zmc-bad, #b33a2e)"><p style="margin:0;font-size:13px;color:var(--zmc-bad, #b33a2e)">{{ lang('commerce.su_conflict_title') }} @foreach ($mk_conflicts as $mk_c)<b>{{ $mk_c->shop_id }}</b> ({{ $mk_c->shop_name }})@if (!$loop->last), @endif @endforeach</p></div>
+	@endif
 	@if (empty($mk_sellers))
 	<div class="rsva-panel"><p class="mk-empty">{{ lang('commerce.mk_empty_sellers') }}</p></div>
 	@else
@@ -66,6 +72,13 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 				<div><dt>{{ lang('commerce.mk_f_bank') }}</dt><dd>{{ $s->bank_name }} {{ $s->bank_account }} ({{ $s->bank_holder }})</dd></div>
 				<div><dt>{{ lang('commerce.mk_f_ship_fee') }}</dt><dd>{{ $s->ship_fee_text }}@if ($s->free_over_text !== '') · {{ sprintf(lang('commerce.mk_free_over'), $s->free_over_text) }}@endif</dd></div>
 				<div><dt>{{ lang('commerce.mk_f_commission') }}</dt><dd>{{ $s->effective_rate }}%@if ($s->rate_text === '') <span class="mk-sub">({{ lang('commerce.mk_rate_default') }})</span>@endif</dd></div>
+				@foreach ($s->extra_list as $mk_x)
+				<div><dt>{{ $mk_x->label }}</dt><dd>@if ($mk_x->file_url !== '')<a href="{{ $mk_x->file_url }}" target="_blank" rel="noopener">{{ lang('commerce.af_file_view') }}</a>@else{{ $mk_x->value }}@endif</dd></div>
+				@endforeach
+				@if ($s->staff_count > 0)<div><dt>{{ lang('commerce.ss_count') }}</dt><dd>{{ number_format($s->staff_count) }}</dd></div>@endif
+				@if ($s->store_full !== '')
+				<div class="mk-store"><dt>{{ lang('commerce.su_col_store_url') }}</dt><dd><a href="{{ $s->store_full }}" target="_blank" rel="noopener">{{ $s->store_full }}</a> <button type="button" class="rsva-btn rsva-btn-sm" data-qr-url="{{ $s->store_full }}" data-qr-name="{{ $s->shop_id }}" data-qr-title="{{ $s->shop_name }}">{{ lang('commerce.qr_short') }}</button></dd></div>
+				@endif
 			</dl>
 			@if (trim((string)$s->intro) !== '')<p class="mk-intro">{{ $s->intro }}</p>@endif
 			@if ($s->status === 'rejected' && trim((string)$s->reject_reason) !== '')<p class="mk-sub" style="margin:8px 0 0">{{ lang('commerce.mk_reject_reason') }}: {{ $s->reject_reason }}</p>@endif
@@ -112,3 +125,4 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 	@endif
 	<p class="mk-sub" style="margin-top:14px">{{ sprintf(lang('commerce.mk_rate_hint'), $mk_default_text) }}</p>
 </div>
+@include('_qr')
