@@ -341,6 +341,40 @@ class Seller
 		{
 			$data->ship_fee = max(0, min(100000000, Money::inputToMinor(\Context::get('ship_fee'))));
 			$data->free_ship_over = max(0, min(10000000000, Money::inputToMinor(\Context::get('free_ship_over'))));
+			if (\Context::get('ship_cutoff') !== null)
+			{
+				$cutoff = trim((string)\Context::get('ship_cutoff'));
+				$data->ship_cutoff = Delivery::validTime($cutoff) ? $cutoff : '';
+			}
+			if (\Context::get('ship_holidays') !== null)
+			{
+				$data->ship_holidays = implode("\n", array_map(function ($d) { return substr($d, 0, 4) . '-' . substr($d, 4, 2) . '-' . substr($d, 6, 2); }, array_keys(Delivery::parseHolidays((string)\Context::get('ship_holidays')))));
+			}
+			if (\Context::get('ship_quick') !== null)
+			{
+				$data->ship_quick = \Context::get('ship_quick') === 'Y' ? 'Y' : 'N';
+			}
+			foreach (['ship_regions', 'ship_quick_regions'] as $region_key)
+			{
+				if (\Context::get($region_key) !== null)
+				{
+					$data->{$region_key} = Delivery::cleanRegions((string)\Context::get($region_key));
+				}
+			}
+			$zone_input = \Context::get('ship_zone_fee');
+			if (is_array($zone_input))
+			{
+				$zone_fees = [];
+				foreach ($zone_input as $zone_index => $zone_value)
+				{
+					$zone_value = trim((string)$zone_value);
+					if (is_numeric($zone_index) && $zone_value !== '' && is_numeric($zone_value))
+					{
+						$zone_fees[(string)(int)$zone_index] = max(0, min(100000000, Money::inputToMinor($zone_value)));
+					}
+				}
+				$data->ship_zone_fees = count($zone_fees) ? json_encode($zone_fees) : '';
+			}
 		}
 		return $data;
 	}

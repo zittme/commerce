@@ -1,0 +1,16 @@
+<query id="getRecentViews" action="select">
+	<tables>
+		<table name="commerce_recent_view" />
+	</tables>
+	<columns>
+		<column name="item_srl" />
+		<column name="regdate" />
+	</columns>
+	<conditions>
+		<condition operation="equal" column="member_srl" var="member_srl" filter="number" notnull="notnull" />
+	</conditions>
+	<navigation>
+		<index var="sort_index" default="regdate" order="desc" />
+		<list_count var="list_count" default="20" />
+	</navigation>
+</query>

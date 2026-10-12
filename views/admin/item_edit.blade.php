@@ -362,6 +362,25 @@
 					</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_39') }} @if ($ie_seller)<a href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceSellerCenter', 'p', 'seller_profile') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.sc_menu_shop_info') }}</a>@else<a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminConfig') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_40') }}</a>@endif{{ lang('commerce.admin_item_edit_41') }}</span>
 				</div>
+				@if (\Zittme\Modules\Commerce\Models\Delivery::enabled())
+				<div>
+					<label>{{ lang('commerce.ship_type_label') }}</label>
+					<select name="ship_type">
+						@foreach (\Zittme\Modules\Commerce\Models\Delivery::types() as $st_key => $st_name)
+						<option value="{{ $st_key }}" @if(($ie_form->ship_type ?? 'normal') === $st_key) selected @endif>{{ $st_name }}</option>
+						@endforeach
+					</select>
+					<span class="ie-help">{{ lang('commerce.ship_type_help') }}</span>
+				</div>
+				@endif
+				@if (\Zittme\Modules\Commerce\Models\Delivery::quickEnabled())
+				<div>
+					<label>{{ lang('commerce.ship_type_quick') }}</label>
+					<input type="hidden" name="allow_quick" value="N" />
+					<label style="font-weight:500"><input type="checkbox" name="allow_quick" value="Y" @if(($ie_form->allow_quick ?? 'N') === 'Y') checked @endif /> {{ lang('commerce.quick_item_allow') }}</label>
+					<span class="ie-help">{{ lang('commerce.quick_item_help') }}</span>
+				</div>
+				@endif
 				<div id="ieShipFeeField">
 					<label>{{ lang('commerce.admin_item_edit_42') }}</label>
 					<div class="ie-suffix" data-suffix="{{ \Zittme\Modules\Commerce\Models\Money::unitLabel() }}"><input type="number" name="ship_fee" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($ie_form->ship_fee ?? 0)) }}" /></div>

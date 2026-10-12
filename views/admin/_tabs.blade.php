@@ -8,6 +8,7 @@
 .rsva-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e8ee; border-radius: 12px; overflow: hidden; }
 .rsva-table th { padding: 10px 12px; background: #f7f8fa; font-size: 13px; font-weight: 600; color: #6b7684; text-align: left; border-bottom: 1px solid #e5e8ee; }
 .rsva-table td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+.rsva-table th.mk-num, .rsva-table td.mk-num, .rsva-table th.num, .rsva-table td.num, .rsva-table th.il-num, .rsva-table td.il-num { text-align: right; }
 .rsva-table tr:last-child td { border-bottom: 0; }
 .rsva-st { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f2f3f5; color: #6b7684; }
 .rsva-st-confirmed { background: rgba(38,119,227,.1); color: #2677e3; }
@@ -18,10 +19,10 @@
 /* 관리자 전역 a/버튼 색 규칙이 특이도로 덮으므로 색은 !important 로 고정한다 */
 .rsva-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border: 1px solid #e5e8ee; border-radius: 9px; background: #fff !important; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; color: #1c2330 !important; text-decoration: none !important; }
 .rsva-btn:hover { border-color: #2677e3; color: #2677e3 !important; }
-.rsva-btn-primary { background: #2677e3 !important; border-color: #2677e3; color: #fff !important; }
-.rsva-btn-primary:hover { filter: brightness(1.06); color: #fff !important; }
+.rsva-btn-primary { background: #1f6ad0 !important; border-color: #1f6ad0; color: #fff !important; }
+.rsva-btn-primary:hover, .rsva-btn-primary:focus-visible { background: #1a5bb5 !important; border-color: #1a5bb5; color: #fff !important; }
 .rsva-btn-sm { padding: 4px 9px; font-size: 12px; border-radius: 7px; }
-.rsva-btn-danger:hover { border-color: #e5484d; color: #e5484d !important; }
+.rsva-btn-danger:hover { border-color: #cd2b31; color: #cd2b31 !important; }
 .rsva-panel { padding: 18px 20px; border: 1px solid #e5e8ee; border-radius: 14px; background: #fff; margin-bottom: 16px; }
 .rsva-panel h3 { margin: 0 0 12px; font-size: 15px; font-weight: 700; }
 .rsva-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
@@ -35,7 +36,7 @@
 .rsva-pagenav { display: flex; justify-content: center; align-items: center; gap: 4px; margin: 16px 0 4px; }
 .rsva-pagenav a { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 6px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #4e5968 !important; text-decoration: none !important; }
 .rsva-pagenav a:hover { background: #f4f6f9; color: #2677e3 !important; }
-.rsva-pagenav a.is-active { background: #2677e3; color: #fff !important; }
+.rsva-pagenav a.is-active { background: #1f6ad0; color: #fff !important; }
 .rsva-weekdays { display: flex; gap: 6px; flex-wrap: wrap; }
 .rsva-weekdays label { display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; border: 1px solid #e5e8ee; border-radius: 8px; font-size: 12px; cursor: pointer; margin: 0; font-weight: 500; }
 @media (max-width: 768px) { .rsva-table { display: block; overflow-x: auto; } }
@@ -128,6 +129,8 @@ body { -webkit-font-smoothing: antialiased; color: var(--zmc-ink); }
 }
 @media (prefers-reduced-motion: reduce) { .zmc-side { transition: none; } }
 </style>
+@php $zmc_skin_css = \Zittme\Modules\Commerce\Controllers\Base::consoleSkinCss(); @endphp
+@if ($zmc_skin_css !== '')<link rel="stylesheet" href="{{ $zmc_skin_css }}" />@endif
 @php
 $zmc_menu = [];
 foreach (['pins', 'timesale', 'staff', 'audit', 'dashboard', 'orders', 'shipping', 'items', 'brands', 'stock', 'categories', 'badges', 'promotions', 'qna', 'claims', 'coupons', 'credits', 'grades', 'stats', 'config', 'sellers', 'settlements', 'seller_profile'] as $zmc_key)

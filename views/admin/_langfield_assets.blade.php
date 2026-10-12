@@ -10,7 +10,7 @@
 #zlfPanel.is-open { display: block; }
 .zlf-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
 .zlf-tabs button { flex: 1; padding: 6px 0; border: 1px solid #e5e8ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 12.5px; color: #6b7684; cursor: pointer; }
-.zlf-tabs button.is-on { border-color: #2677e3; background: #2677e3; color: #fff; font-weight: 700; }
+.zlf-tabs button.is-on { border-color: #1f6ad0; background: #1f6ad0; color: #fff; font-weight: 700; }
 .zlf-search { width: 100%; box-sizing: border-box; padding: 7px 9px; margin-bottom: 8px; border: 1px solid #e5e8ee; border-radius: 8px; font-size: 12.5px; font-family: inherit; }
 .zlf-list { max-height: 210px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
 .zlf-list li { padding: 7px 9px; border-radius: 7px; font-size: 12.5px; cursor: pointer; }
@@ -23,7 +23,7 @@
 .zlf-row input { flex: 1; min-width: 0; box-sizing: border-box; padding: 6px 8px; border: 1px solid #e5e8ee; border-radius: 7px; font-size: 12.5px; font-family: inherit; }
 .zlf-hint { margin: 6px 0 0; font-size: 11.5px; color: #8b95a1; line-height: 1.6; }
 .zlf-foot { margin-top: 10px; text-align: right; }
-.zlf-save { padding: 7px 14px; border: 0; border-radius: 8px; background: #2677e3; color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.zlf-save { padding: 7px 14px; border: 0; border-radius: 8px; background: #1f6ad0; color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .zlf-current { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f2f5; font-size: 12px; color: #6b7684; }
 .zlf-current b { color: #2677e3; font-weight: 700; }
 .zlf-current button { margin-left: auto; padding: 4px 9px; border: 1px solid #e5e8ee; border-radius: 7px; background: #fff; font-family: inherit; font-size: 11.5px; color: #6b7684; cursor: pointer; }

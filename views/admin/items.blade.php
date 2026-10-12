@@ -200,7 +200,7 @@ $il_edit = getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerc
 #zmcItemTable tbody tr:hover .zmc-handle { color: #6b7684; }
 .zmc-sortsave { position: fixed; right: 26px; bottom: 26px; z-index: 30; display: none; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: var(--zmc-ink, #1d2433); color: #fff; box-shadow: 0 12px 30px -12px rgba(16,24,40,.6); }
 .zmc-sortsave.is-on { display: flex; }
-.zmc-sortsave button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--zmc-brand, #2677e3); color: #fff; font-weight: 700; cursor: pointer; font-family: inherit; }
+.zmc-sortsave button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--zmc-brand, #1f6ad0); color: #fff; font-weight: 700; cursor: pointer; font-family: inherit; }
 .zmc-sortsave a { color: #cdd5e0; font-size: 13px; text-decoration: underline; cursor: pointer; }
 </style>
 

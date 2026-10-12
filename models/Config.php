@@ -115,6 +115,18 @@ class Config
 		'currencies' => [],
 
 		'currency_fallback' => 'convert',
+
+		'ship_types_enabled' => 'Y',
+		'ship_cutoff_normal' => '15:00',
+		'ship_cutoff_fast' => '24:00',
+		'ship_cutoff_dawn' => '23:00',
+		'ship_cutoff_today' => '11:00',
+		'ship_days_normal' => 2,
+		'ship_workdays' => '1,2,3,4,5,6',
+		'ship_holidays' => '',
+		'ship_quick_enabled' => 'N',
+		'ship_regions' => '',
+		'ship_quick_regions' => '',
 	];
 
 

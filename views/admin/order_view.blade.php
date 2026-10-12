@@ -58,6 +58,8 @@
 		<h3>{{ lang('commerce.admin_order_view_13') }}
 			<span class="rsva-st {{ in_array($os->status, ['shipping','delivered']) ? 'rsva-st-confirmed' : '' }}">{{ ['pending'=>lang('commerce.st_order_pending'),'paid'=>lang('commerce.st_sel_paid'),'preparing'=>lang('commerce.st_sel_preparing'),'shipping'=>lang('commerce.st_sel_shipping'),'delivered'=>lang('commerce.st_sel_delivered'),'confirmed'=>lang('commerce.st_log_confirmed'),'cancelled'=>lang('commerce.st_order_cancelled'),'refunded'=>lang('commerce.st_sel_refunded')][$os->status] ?? $os->status }}</span>
 			@if ($os->shipping_invoice)<small style="font-weight:500;color:#6b7684">{{ $os->shipping_company }} {{ $os->shipping_invoice }}</small>@endif
+			@php $ov_quick = false; foreach ((array)($order_items ?? []) as $ov_oi) { if (($ov_oi->ship_type ?? "") === "quick" && (count($order_sellers) === 1 || (int)($ov_oi->seller_srl ?? 0) === (int)$os->seller_srl)) { $ov_quick = true; } } @endphp
+			@if ($ov_quick)<small style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#fdf3e2;color:#8a5a0b;font-weight:600">{{ \Zittme\Modules\Commerce\Models\Delivery::quickText() }}</small>@endif
 		</h3>
 		<form action="{{ getUrl('') }}" method="post" class="rsva-inline">
 			<input type="hidden" name="module" value="admin" />

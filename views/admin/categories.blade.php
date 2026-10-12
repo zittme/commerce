@@ -96,7 +96,7 @@
 .zmc-catsave { position: fixed; right: 26px; bottom: 26px; z-index: 30; display: none; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: #1d2433; color: #fff; box-shadow: 0 12px 30px -12px rgba(16,24,40,.6); }
 .zmc-catsave.is-on { display: flex; }
 .zmc-name-cell { position: relative; }
-.zmc-catsave button { padding: 8px 14px; border: 0; border-radius: 8px; background: #2677e3; color: #fff; font-weight: 700; cursor: pointer; font-family: inherit; }
+.zmc-catsave button { padding: 8px 14px; border: 0; border-radius: 8px; background: #1f6ad0; color: #fff; font-weight: 700; cursor: pointer; font-family: inherit; }
 </style>
 
 <div class="zmc-catsave" id="zmcCatSave">

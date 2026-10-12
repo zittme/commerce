@@ -12,6 +12,7 @@
 	<column name="qty" type="int" notnull="notnull" default="1" />
 	<column name="subtotal" type="bigint" notnull="notnull" default="0" />
 	<column name="tax_type" type="varchar" size="10" notnull="notnull" default="taxable" />
+	<column name="ship_type" type="varchar" size="10" notnull="notnull" default="normal" />
 	<column name="claim_status" type="varchar" size="10" notnull="notnull" default="none" />
 	<column name="timesale_item_srl" type="bigint" notnull="notnull" default="0" />
 	<column name="seller_srl" type="bigint" notnull="notnull" default="0" index="idx_seller_srl" />

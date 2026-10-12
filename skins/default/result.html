@@ -144,6 +144,9 @@
 	</table>
 
 	@foreach ($order_sellers as $os)
+	@if (!empty($os->eta) && ($os->eta->type ?? '') === 'quick')
+	<div class="shp-box" style="margin-top:12px"><div class="shp-summary-row"><span>{{ $lang->shop_shipping_info }}</span><span><strong>{{ $os->eta->text }}</strong></span></div></div>
+	@endif
 	@if (!empty($os->shipping_invoice))
 	@php
 	$shp_tk = Context::get('tracking_info');

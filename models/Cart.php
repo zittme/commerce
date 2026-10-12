@@ -243,6 +243,28 @@ class Cart
 
 	public static function extraShipFee(string $zipcode, string $address1 = '', string $country = 'KR', string $state = '', string $city = '', int $item_total = 0): int
 	{
+		return self::extraShipZone($zipcode, $address1, $country, $state, $city, $item_total)[1];
+	}
+
+	public static function zoneFee(array $zone, int $item_total): int
+	{
+		$fee = (int)($zone['fee'] ?? 0);
+		$matched_from = -1;
+		foreach (is_array($zone['tiers'] ?? null) ? $zone['tiers'] : [] as $tier)
+		{
+			$tier = (array)$tier;
+			$from = (int)($tier['from'] ?? 0);
+			if ($item_total >= $from && $from > $matched_from)
+			{
+				$matched_from = $from;
+				$fee = max(0, (int)($tier['fee'] ?? 0));
+			}
+		}
+		return $fee;
+	}
+
+	public static function extraShipZone(string $zipcode, string $address1 = '', string $country = 'KR', string $state = '', string $city = '', int $item_total = 0): array
+	{
 		$zipcode = preg_replace('/[^0-9]/', '', $zipcode);
 		$country = strtoupper(trim($country)) ?: Address::baseCountry();
 		$region = $address1 !== '' ? Stats::normalizeRegion(explode(' ', trim($address1))[0]) : '';
@@ -250,9 +272,9 @@ class Cart
 		$zones = json_decode((string)(Base::config()->ship_extra_zones ?? '[]'), true);
 		if (!is_array($zones))
 		{
-			return 0;
+			return [-1, 0];
 		}
-		foreach ($zones as $zone)
+		foreach (array_values($zones) as $zone_index => $zone)
 		{
 			$zone = (array)$zone;
 			$fee = (int)($zone['fee'] ?? 0);
@@ -284,14 +306,14 @@ class Cart
 			$buyer_region = trim($state);
 			if ($zone_region !== '' && $buyer_region !== '' && strcasecmp($zone_region, $buyer_region) === 0)
 			{
-				return $fee;
+				return [$zone_index, $fee];
 			}
 
 			if (!Address::isDomestic($country))
 			{
 				if ($zone_region === '')
 				{
-					return $fee;
+					return [$zone_index, $fee];
 				}
 				continue;
 			}
@@ -302,7 +324,7 @@ class Cart
 			{
 				if ($region !== '' && Stats::normalizeRegion($name) === $region)
 				{
-					return $fee;
+					return [$zone_index, $fee];
 				}
 			}
 
@@ -318,16 +340,16 @@ class Cart
 					$zip_num = (int)substr($zipcode, 0, max(strlen($from), 1));
 					if ($from !== '' && $to !== '' && $zip_num >= (int)$from && $zip_num <= (int)$to)
 					{
-						return $fee;
+						return [$zone_index, $fee];
 					}
 				}
 				elseif ($pattern !== '' && strpos($zipcode, $pattern) === 0)
 				{
-					return $fee;
+					return [$zone_index, $fee];
 				}
 			}
 		}
-		return 0;
+		return [-1, 0];
 	}
 
 	public static function isPinOnly(object $resolved): bool

@@ -78,6 +78,33 @@ foreach ($mk_af['intro'] ?? [] as $sp_f) { $sp_intro[] = $sp_f; }
 			<div class="rsva-form-grid">
 				<div><label>{{ lang('commerce.mk_f_ship_fee') }}</label><input type="text" inputmode="decimal" name="ship_fee" value="{{ $mk_me->ship_fee_input }}" /></div>
 				<div><label>{{ lang('commerce.mk_f_free_over') }}</label><input type="text" inputmode="decimal" name="free_ship_over" value="{{ $mk_me->free_over_input }}" placeholder="0" /></div>
+				@if (\Zittme\Modules\Commerce\Models\Delivery::enabled())
+				<div><label>{{ lang('commerce.ship_cutoff_label') }}</label><input type="time" name="ship_cutoff" value="{{ $mk_me->ship_cutoff ?? '' }}" placeholder="{{ \Zittme\Modules\Commerce\Models\Delivery::cutoffFor('fast') }}" /></div>
+				<div style="grid-column:1/-1"><label>{{ lang('commerce.ship_holidays_label') }}</label><textarea name="ship_holidays" rows="3" placeholder="2026-10-03">{{ $mk_me->ship_holidays ?? '' }}</textarea><span class="ie-help">{{ lang('commerce.ship_holidays_help') }}</span></div>
+				@endif
+				<div style="grid-column:1/-1"><label>{{ lang('commerce.ship_regions_label') }}</label><textarea name="ship_regions" rows="3" placeholder="{{ lang('commerce.ship_regions_ph') }}">{{ $mk_me->ship_regions ?? '' }}</textarea><span class="ie-help">{{ lang('commerce.ship_regions_help') }}</span></div>
+				@if (\Zittme\Modules\Commerce\Models\Delivery::quickEnabled())
+				<div style="grid-column:1/-1"><input type="hidden" name="ship_quick" value="N" /><label style="font-weight:500"><input type="checkbox" name="ship_quick" value="Y" @if(($mk_me->ship_quick ?? 'N') === 'Y') checked @endif /> {{ lang('commerce.quick_seller_enable') }}</label><span class="ie-help">{{ lang('commerce.quick_cod_note') }}</span></div>
+				<div style="grid-column:1/-1"><label>{{ lang('commerce.quick_regions_label') }}</label><textarea name="ship_quick_regions" rows="3" placeholder="{{ lang('commerce.quick_regions_ph') }}">{{ $mk_me->ship_quick_regions ?? '' }}</textarea><span class="ie-help">{{ lang('commerce.quick_regions_help') }}</span></div>
+				@endif
+				@php
+				$sp_zones = json_decode((string)($shop_config->ship_extra_zones ?? \Zittme\Modules\Commerce\Models\Config::getConfig()->ship_extra_zones ?? '[]'), true);
+				$sp_zones = is_array($sp_zones) ? array_values($sp_zones) : [];
+				$sp_zone_fees = json_decode((string)($mk_me->ship_zone_fees ?? ''), true);
+				$sp_zone_fees = is_array($sp_zone_fees) ? $sp_zone_fees : [];
+				@endphp
+				@if (count($sp_zones))
+				<div style="grid-column:1/-1">
+					<label>{{ lang('commerce.zone_seller_label') }}</label>
+					<div class="rsva-form-grid">
+						@foreach ($sp_zones as $sp_i => $sp_zone)
+						@php $sp_zone = (array)$sp_zone; $sp_name = trim((string)($sp_zone['region'] ?? '') . ' ' . (string)($sp_zone['zips'] ?? '')) ?: (string)($sp_zone['country'] ?? ''); @endphp
+						<div><label style="font-weight:500">{{ $sp_name }}</label><input type="text" inputmode="decimal" name="ship_zone_fee[{{ $sp_i }}]" value="{{ array_key_exists((string)$sp_i, $sp_zone_fees) ? \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$sp_zone_fees[(string)$sp_i]) : '' }}" placeholder="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)($sp_zone['fee'] ?? 0)) }}" /></div>
+						@endforeach
+					</div>
+					<span class="ie-help">{{ lang('commerce.zone_seller_help') }}</span>
+				</div>
+				@endif
 			</div>
 			<p style="margin:10px 0 0;font-size:12.5px;color:var(--zmc-sub, #7a7f8c)">{{ lang('commerce.mk_profile_ship_desc') }}</p>
 		</div>

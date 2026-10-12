@@ -24,11 +24,11 @@
 .shp-adm-langbox [data-clear] { width: 100%; margin-top: 8px; padding: 6px 0; border: 1px solid #e5e8ee; border-radius: 8px; background: #fff; font-size: 12px; color: #6b7684; cursor: pointer; }
 .shp-adm-langtabs { display: flex; gap: 4px; margin-bottom: 8px; }
 .shp-adm-langtabs button { flex: 1; padding: 6px 0; border: 1px solid #e5e8ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 12px; color: #6b7684; cursor: pointer; }
-.shp-adm-langtabs button.is-on { border-color: var(--shp-point, #2677e3); background: var(--shp-point, #2677e3); color: #fff; font-weight: 700; }
+.shp-adm-langtabs button.is-on { border-color: var(--shp-point, #1f6ad0); background: var(--shp-point, #1f6ad0); color: #fff; font-weight: 700; }
 .shp-adm-langrow { display: flex !important; align-items: center; gap: 8px; margin: 0 0 6px !important; }
 .shp-adm-langrow span { flex: 0 0 68px; font-size: 12px; color: #6b7684; }
 .shp-adm-langrow input { flex: 1; min-width: 0; box-sizing: border-box; padding: 6px 8px; border: 1px solid #e5e8ee; border-radius: 7px; font-size: 12.5px; font-family: inherit; }
-.shp-adm-langsave { width: 100%; margin-top: 6px; padding: 7px 0; border: 0; border-radius: 8px; background: var(--shp-point, #2677e3); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.shp-adm-langsave { width: 100%; margin-top: 6px; padding: 7px 0; border: 0; border-radius: 8px; background: var(--shp-point, #1f6ad0); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .shp-adm-btn-primary { background: #1a1f2e; border-color: #1a1f2e; color: #fff; font-weight: 600; }
 .shp-adm-btn-primary:hover { background: #2a3040; }
 .shp-adm-banner { position: relative; border: 1px solid #e3e6eb; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #fafbfc; }
@@ -42,4 +42,4 @@
 .shp-adm-banner-tools button:hover { background: #f0f2f5; }
 
 .shp-adm-console { display: block; margin-top: 10px; padding: 10px; border-radius: 9px; background: #191f28; color: #fff !important; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none !important; }
-.shp-adm-console:hover { background: #2677e3; }
+.shp-adm-console:hover { background: #1f6ad0; }

@@ -296,6 +296,134 @@ class Front extends Base
 		catch (\Throwable $e)
 		{
 		}
+		\Zittme\Modules\Commerce\Models\Delivery::attach($items);
+	}
+
+	protected static function narrowItemSrls(object $args, array $srls): void
+	{
+		$srls = array_values(array_unique(array_map('intval', $srls)));
+		if (isset($args->item_srl_list) && $args->item_srl_list !== '')
+		{
+			$srls = array_values(array_intersect($srls, array_map('intval', explode(',', (string)$args->item_srl_list))));
+		}
+		$args->item_srl_list = count($srls) ? implode(',', $srls) : '0';
+	}
+
+	protected static function csvParam(string $key, string $pattern = '/^[a-z0-9_]+$/'): array
+	{
+		$raw = \Context::get($key);
+		$list = is_array($raw) ? $raw : explode(',', (string)$raw);
+		$out = [];
+		foreach ($list as $value)
+		{
+			$value = trim((string)$value);
+			if ($value !== '' && preg_match($pattern, $value))
+			{
+				$out[] = $value;
+			}
+		}
+		return array_values(array_unique(array_slice($out, 0, 30)));
+	}
+
+	protected static function applyListFilters(object $args): object
+	{
+		$f = (object)[
+			'ship' => array_values(array_intersect(self::csvParam('ship'), \Zittme\Modules\Commerce\Models\Delivery::TYPES)),
+			'sellers' => array_map('intval', self::csvParam('sellers', '/^\d+$/')),
+			'brands' => array_map('intval', self::csvParam('brands', '/^\d+$/')),
+			'benefit' => array_values(array_intersect(self::csvParam('benefit'), ['free', 'sale', 'timesale'])),
+			'rating' => max(0, min(5, (int)\Context::get('rating'))),
+			'pmin' => trim((string)\Context::get('pmin')),
+			'pmax' => trim((string)\Context::get('pmax')),
+			'active' => 0,
+		];
+		if (count($f->ship))
+		{
+			$args->ship_type_list = implode(',', $f->ship);
+			$f->active += count($f->ship);
+		}
+		if (count($f->sellers))
+		{
+			$args->seller_srl_list = implode(',', $f->sellers);
+			$f->active += count($f->sellers);
+		}
+		if (count($f->brands))
+		{
+			$args->brand_srl_list = implode(',', $f->brands);
+			$f->active += count($f->brands);
+		}
+		if ($f->pmin !== '' && is_numeric($f->pmin))
+		{
+			$args->eprice_min = MoneyModel::inputToMinor($f->pmin);
+			$f->active++;
+		}
+		else
+		{
+			$f->pmin = '';
+		}
+		if ($f->pmax !== '' && is_numeric($f->pmax))
+		{
+			$args->eprice_max = MoneyModel::inputToMinor($f->pmax);
+			$f->active++;
+		}
+		else
+		{
+			$f->pmax = '';
+		}
+		if (in_array('free', $f->benefit, true))
+		{
+			$args->ship_fee_type = 'free';
+		}
+		if (in_array('timesale', $f->benefit, true))
+		{
+			self::narrowItemSrls($args, \Zittme\Modules\Commerce\Models\Timesale::openItemSrls());
+		}
+		$f->active += count($f->benefit);
+		if ($f->rating > 0)
+		{
+			$srls = [];
+			try
+			{
+				$stmt = \Zittme\Framework\DB::getInstance()->query('SELECT item_srl FROM commerce_review GROUP BY item_srl HAVING AVG(rating) >= ' . (int)$f->rating);
+				foreach ($stmt as $row)
+				{
+					$srls[] = (int)$row->item_srl;
+				}
+			}
+			catch (\Throwable $e)
+			{
+			}
+			self::narrowItemSrls($args, $srls);
+			$f->active++;
+		}
+		return $f;
+	}
+
+	protected static function filterOptions(): object
+	{
+		$sellers = \Zittme\Modules\Commerce\Models\Seller::isOpen() ? \Zittme\Modules\Commerce\Models\Seller::nameMap() : [];
+		$brands = [];
+		foreach (BrandModel::getList(true) as $brand)
+		{
+			$brands[(int)$brand->brand_srl] = LangModel::text((string)$brand->name);
+		}
+		return (object)[
+			'ship' => \Zittme\Modules\Commerce\Models\Delivery::enabled() ? \Zittme\Modules\Commerce\Models\Delivery::types() : [],
+			'sellers' => $sellers,
+			'brands' => $brands,
+		];
+	}
+
+	protected static function setRecentItems(int $except = 0): void
+	{
+		$recent = \Zittme\Modules\Commerce\Models\RecentView::items(12, $except);
+		self::attachReviewStats($recent);
+		\Zittme\Modules\Commerce\Models\Seller::attachNames($recent, (string)\Context::get('mid'));
+		foreach ($recent as $recent_item)
+		{
+			$recent_item->card_seller = (string)($recent_item->seller_name ?? '');
+		}
+		\Context::set('recent_items', $recent);
 	}
 
 	public function dispCommerceList()
@@ -383,6 +511,11 @@ class Front extends Base
 		}
 		\Context::set('current_seller', $current_seller);
 
+		$list_filters = self::applyListFilters($args);
+		\Context::set('list_filters', $list_filters);
+		\Context::set('filter_options', self::filterOptions());
+		self::setRecentItems();
+
 		$filter = in_array(\Context::get('f'), ['recommend', 'new', 'popular', 'sale', 'timesale'], true) ? (string)\Context::get('f') : '';
 		if ($filter === 'recommend')
 		{
@@ -391,12 +524,9 @@ class Front extends Base
 		elseif ($filter === 'timesale')
 		{
 			$ts_srls = \Zittme\Modules\Commerce\Models\Timesale::openItemSrls();
-			$args->item_srl_list = count($ts_srls) ? implode(',', $ts_srls) : '0';
+			self::narrowItemSrls($args, $ts_srls);
 		}
-		elseif ($filter === 'sale')
-		{
-			$args->list_count = 200;
-		}
+		$sale_only = $filter === 'sale' || in_array('sale', $list_filters->benefit, true);
 
 		$sort = (string)\Context::get('sort');
 		if ($sort === '' && $filter === 'popular')
@@ -418,6 +548,10 @@ class Front extends Base
 				$args->sort_index = 'effective_price';
 				$args->order_type = 'desc';
 				break;
+			case 'review':
+				$args->sort_index = 'buy_count';
+				$args->order_type = 'desc';
+				break;
 			case 'new':
 				$args->sort_index = 'item_srl';
 				$args->order_type = 'desc';
@@ -429,7 +563,7 @@ class Front extends Base
 		}
 
 		$args->page = max(1, (int)\Context::get('page'));
-		$args->list_count = 24;
+		$args->list_count = ($sale_only || $sort === 'review') ? 200 : 24;
 
 		$output = executeQuery('commerce.getItemList', $args);
 		$items = ($output->toBool() && !empty($output->data)) ? (is_array($output->data) ? $output->data : [$output->data]) : [];
@@ -442,7 +576,7 @@ class Front extends Base
 		}));
 
 
-		if ($filter === 'sale')
+		if ($sale_only)
 		{
 			$items = array_values(array_filter($items, function($it) {
 				return (int)($it->sale_price ?? 0) > 0 && (int)$it->sale_price < (int)$it->price;
@@ -450,10 +584,15 @@ class Front extends Base
 		}
 
 		self::attachReviewStats($items);
+		if ($sort === 'review')
+		{
+			usort($items, function ($a, $b) { return ((int)($b->review_count ?? 0) <=> (int)($a->review_count ?? 0)) ?: ((float)($b->rating_avg ?? 0) <=> (float)($a->rating_avg ?? 0)); });
+			$items = array_slice($items, 0, 60);
+		}
 
 		\Context::set('items', $items);
 		\Context::set('current_filter', $filter);
-		\Context::set('page_navigation', $filter === 'sale' ? null : ($output->page_navigation ?? null));
+		\Context::set('page_navigation', ($sale_only || $sort === 'review') ? null : ($output->page_navigation ?? null));
 		\Context::set('shop_categories', self::getActiveCategories());
 		$this->setShopContext($items ?? []);
 		\Context::set('current_category', $category_srl);
@@ -579,6 +718,7 @@ class Front extends Base
 			}
 		}
 		$this->setShopContext($home_items);
+		self::setRecentItems();
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', $config);
 		self::injectAdminPanel();
@@ -653,6 +793,8 @@ class Front extends Base
 				: getUrl('', 'mid', (string)($this->module_info->mid ?? ''), 'v', 'list', 'seller', $item_seller->seller_srl);
 		}
 		\Context::set('item_seller', $item_seller);
+		\Zittme\Modules\Commerce\Models\Delivery::attach([$item]);
+		\Zittme\Modules\Commerce\Models\RecentView::add($item_srl);
 		$this->setItemSeo($item);
 		$shop_options = ItemModel::getOptions($item_srl, true);
 		$shop_axes = ($item->option_mode ?? 'single') === 'combo'
@@ -708,6 +850,7 @@ class Front extends Base
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', self::config());
 		$this->setShopContext([$item]);
+		self::setRecentItems((int)$item->item_srl);
 		$this->addItemStructuredData($item, $item_disp['effective'], $item_disp_currency, $reviews);
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('item');
@@ -813,6 +956,7 @@ class Front extends Base
 		self::assertShopEnabled();
 		$resolved = CartModel::resolve();
 		\Context::set('cart', $resolved);
+		\Zittme\Modules\Commerce\Models\Delivery::attach(array_map(function ($e) { return $e->item; }, (array)($resolved->items ?? [])));
 		\Zittme\Modules\Commerce\Models\Seller::attachNames(array_map(function ($e) { return $e->item; }, (array)($resolved->items ?? [])), (string)($this->module_info->mid ?? ''));
 		$last_store = $_SESSION['commerce_last_store'] ?? null;
 		\Context::set('shop_continue_url', (is_array($last_store) && time() - (int)($last_store['time'] ?? 0) < 7200) ? (string)$last_store['url'] : '');
@@ -937,12 +1081,18 @@ class Front extends Base
 		\Context::set('shp_fx_zero_decimal', \Zittme\Modules\Commerce\Models\Money::isZeroDecimal($fx_currency));
 
 		\Context::set('cart', $resolved);
+		\Zittme\Modules\Commerce\Models\Delivery::attach(array_map(function ($e) { return $e->item; }, (array)($resolved->items ?? [])));
 		\Zittme\Modules\Commerce\Models\Seller::attachNames(array_map(function ($e) { return $e->item; }, (array)($resolved->items ?? [])), (string)($this->module_info->mid ?? ''));
 		\Context::set('ship_fee', $ship_fee);
 		\Context::set('payment_price', $resolved->item_total + $ship_fee);
 		\Context::set('is_member', $logged_info && $logged_info->member_srl ? true : false);
 		\Context::set('pay_available', self::isPayAvailable());
-		\Context::set('shop_config', self::config());
+		$checkout_config = clone self::config();
+		$checkout_entries = array_values(array_filter((array)($resolved->items ?? []), function ($e) { return empty($e->blocked); }));
+		$checkout_config->ship_extra_zones = \Zittme\Modules\Commerce\Models\Delivery::effectiveZones($checkout_entries, (int)($resolved->item_total_listed ?? $resolved->item_total));
+		\Context::set('shop_config', $checkout_config);
+		\Context::set('ship_quick_available', \Zittme\Modules\Commerce\Models\Delivery::quickAvailable($checkout_entries));
+		\Context::set('ship_quick_note', \Zittme\Modules\Commerce\Models\Delivery::quickText());
 		\Context::set('shop_address_mode', AddressModel::mode());
 		\Context::set('shop_base_country', AddressModel::baseCountry());
 		\Context::set('shop_need_country', AddressModel::needsCountry());
@@ -1097,6 +1247,7 @@ class Front extends Base
 			$label_os->shop_label = $label_info ? $label_info->shop_name : lang('commerce.mk_direct');
 			$label_os->claimable = !in_array($label_os->status, [self::SELLER_CONFIRMED, self::SELLER_CANCELLED, self::SELLER_REFUNDED, self::SELLER_PENDING], true);
 		}
+		\Zittme\Modules\Commerce\Models\Delivery::attachSellerOrders($order, $order_sellers, (array)\Context::get('order_items'));
 		\Context::set('order_sellers', $order_sellers);
 		$claimable_sellers = array_values(array_filter($order_sellers, function ($os) { return !empty($os->claimable); }));
 		$claim_blocked_reason = '';

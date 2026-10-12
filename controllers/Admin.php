@@ -57,18 +57,20 @@ class Admin extends Base
 		'notify_admin_new_order', 'notify_admin_claim',
 		'notify_buyer_received', 'notify_buyer_paid', 'notify_buyer_shipping',
 		'notify_buyer_delivered', 'notify_buyer_claim_done',
+		'ship_types_enabled', 'ship_cutoff_normal', 'ship_cutoff_fast', 'ship_cutoff_dawn', 'ship_cutoff_today', 'ship_days_normal', 'ship_workdays', 'ship_holidays', 'ship_quick_enabled', 'ship_regions', 'ship_quick_regions',
 	];
 
 	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note', 'ship_guide', 'claim_guide'];
 
 	protected const BOOLEAN_FIELDS = ['enabled', 'market_apply', 'market_item_review', 'seller_item_in_store', 'show_seller_on_card', 'short_shop_url', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
-		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale'];
+		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale', 'ship_types_enabled', 'ship_quick_enabled'];
 	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100], 'market_commission' => [0, 100]];
 	protected const INT_FIELDS = [
 		'pending_minutes' => [10, 1440],
 		'claim_days' => [0, 90],
 		'retention_days' => [0, 3650],
 		'home_count' => [4, 24],
+		'ship_days_normal' => [1, 14],
 	];
 	protected const MONEY_FIELDS = [
 		'default_ship_fee' => [0, 100000000],
@@ -1337,6 +1339,48 @@ class Admin extends Base
 		$this->add('values', LangModel::values($code));
 	}
 
+	protected static function csvMoneyHead(string $label): array
+	{
+		return [$label, sprintf(lang('commerce.csv_shown'), $label)];
+	}
+
+	protected static function csvMoney(int $minor, string $currency = ''): array
+	{
+		$currency = $currency !== '' ? strtoupper($currency) : MoneyModel::base();
+		$number = MoneyModel::isZeroDecimal($currency) ? (string)$minor : number_format($minor / 100, 2, '.', '');
+		return [$number, MoneyModel::format($minor, $currency)];
+	}
+
+	protected static function csvDate($value): string
+	{
+		$value = preg_replace('/[^0-9]/', '', (string)$value);
+		if (strlen($value) >= 14)
+		{
+			return zdate(substr($value, 0, 14), 'Y-m-d H:i:s');
+		}
+		if (strlen($value) >= 8)
+		{
+			return substr($value, 0, 4) . '-' . substr($value, 4, 2) . '-' . substr($value, 6, 2);
+		}
+		return '';
+	}
+
+	protected static function csvSend(string $filename, array $rows): void
+	{
+		header('Content-Type: text/csv; charset=UTF-8');
+		header('Content-Disposition: attachment; filename="' . $filename . '"');
+		header('Cache-Control: no-store');
+		echo "\xEF\xBB\xBF";
+		$fp = fopen('php://output', 'w');
+		foreach ($rows as $row)
+		{
+			fputcsv($fp, array_map(function ($cell) {
+				return (is_string($cell) && !is_numeric($cell) && preg_match('/^[=+\-@\t\r]/', $cell)) ? "'" . $cell : $cell;
+			}, $row));
+		}
+		fclose($fp);
+	}
+
 	protected static function csvAddressLine(object $address): string
 	{
 		$country = strtoupper((string)($address->country ?? '')) ?: AddressModel::baseCountry();
@@ -1422,7 +1466,7 @@ class Admin extends Base
 		$rows = [[
 			lang('commerce.csv_order_code'), lang('commerce.csv_order_date'), lang('commerce.csv_orderer'), lang('commerce.csv_orderer_phone'), lang('commerce.csv_orderer_email'),
 			lang('commerce.csv_receiver'), lang('commerce.csv_receiver_phone'), lang('commerce.csv_zipcode'), lang('commerce.csv_address'), lang('commerce.csv_address_detail'), lang('commerce.csv_delivery_memo'),
-			lang('commerce.csv_items'), lang('commerce.csv_qty_total'), lang('commerce.csv_amount'), lang('commerce.csv_pay_status'), lang('commerce.csv_ship_status'), lang('commerce.csv_carrier'), lang('commerce.csv_tracking_no'),
+			lang('commerce.csv_items'), lang('commerce.csv_qty_total'), ...self::csvMoneyHead(lang('commerce.csv_amount')), lang('commerce.csv_pay_status'), lang('commerce.csv_ship_status'), lang('commerce.csv_carrier'), lang('commerce.csv_tracking_no'),
 		]];
 
 		$order_labels = ['pending' => lang('commerce.st_order_pending'), 'paid' => lang('commerce.st_order_paid'), 'cancelled' => lang('commerce.st_order_cancelled'), 'failed' => lang('commerce.st_order_failed'), 'expired' => lang('commerce.st_order_expired')];
@@ -1454,7 +1498,7 @@ class Admin extends Base
 
 			$rows[] = [
 				(string)$order->order_code,
-				zdate($order->regdate, 'Y-m-d H:i'),
+				self::csvDate($order->regdate),
 				(string)$order->orderer_name,
 				(string)$order->orderer_phone,
 				(string)$order->orderer_email,
@@ -1466,7 +1510,7 @@ class Admin extends Base
 				$address ? (string)$address->delivery_memo : '',
 				implode(' / ', $names),
 				(string)$qty_total,
-				MoneyModel::minorToInput((int)$order->payment_price),
+				...self::csvMoney((int)$order->payment_price, (string)($order->currency ?? '')),
 				$order_labels[$order->status] ?? (string)$order->status,
 				$seller ? ($seller_labels[$seller->status] ?? (string)$seller->status) : '',
 				$seller ? (string)($seller->shipping_company ?? '') : '',
@@ -1474,20 +1518,8 @@ class Admin extends Base
 			];
 		}
 
-		$filename = 'orders_' . date('Ymd_His') . '.csv';
+		self::csvSend('orders_' . date('Ymd_His') . '.csv', $rows);
 
-		header('Content-Type: text/csv; charset=UTF-8');
-		header('Content-Disposition: attachment; filename="' . $filename . '"');
-		header('Cache-Control: no-store');
-
-		// 엑셀은 BOM 이 없으면 UTF-8 CSV 를 ANSI 로 읽어 한글이 깨진다
-		echo "\xEF\xBB\xBF";
-		$fp = fopen('php://output', 'w');
-		foreach ($rows as $row)
-		{
-			fputcsv($fp, $row);
-		}
-		fclose($fp);
 		exit;
 	}
 
@@ -2325,6 +2357,7 @@ class Admin extends Base
 			'option_mode' => \Context::get('option_mode') === 'combo' ? 'combo' : 'single',
 			'ship_fee_type' => in_array(\Context::get('ship_fee_type'), ['default', 'free', 'fixed'], true) ? \Context::get('ship_fee_type') : 'default',
 			'ship_fee' => max(0, MoneyModel::inputToMinor(\Context::get('ship_fee'))),
+			'ship_type' => \Zittme\Modules\Commerce\Models\Delivery::normalize(\Context::get('ship_type')),
 			'status' => in_array(\Context::get('status'), ['sale', 'soldout', 'hidden', 'stop'], true) ? \Context::get('status') : 'sale',
 			'is_recommend' => \Context::get('is_recommend') === 'Y' ? 'Y' : 'N',
 			'is_new' => \Context::get('is_new') === 'Y' ? 'Y' : 'N',
@@ -2335,7 +2368,16 @@ class Admin extends Base
 			'last_update' => self::now(),
 		];
 
+		$fields->allow_quick = \Context::get('allow_quick') === 'Y' ? 'Y' : 'N';
 		$is_new = $item_srl <= 0 || !ItemModel::get($item_srl);
+		if (!$is_new && \Context::get('ship_type') === null)
+		{
+			unset($fields->ship_type);
+		}
+		if (!$is_new && \Context::get('allow_quick') === null)
+		{
+			unset($fields->allow_quick);
+		}
 		if ($item_srl <= 0)
 		{
 			$item_srl = getNextSequence();
@@ -2950,6 +2992,28 @@ class Admin extends Base
 			elseif ($key === 'seller_form')
 			{
 				$value = \Zittme\Modules\Commerce\Models\ApplyForm::fromRequest();
+			}
+			elseif (strpos($key, 'ship_cutoff_') === 0)
+			{
+				$value = trim((string)$value);
+				if (!\Zittme\Modules\Commerce\Models\Delivery::validTime($value))
+				{
+					continue;
+				}
+			}
+			elseif ($key === 'ship_workdays')
+			{
+				$days = array_values(array_unique(array_filter(array_map('intval', (array)$value), function ($d) { return $d >= 0 && $d <= 6; })));
+				sort($days);
+				$value = count($days) ? implode(',', $days) : '1,2,3,4,5,6';
+			}
+			elseif ($key === 'ship_regions' || $key === 'ship_quick_regions')
+			{
+				$value = \Zittme\Modules\Commerce\Models\Delivery::cleanRegions((string)$value);
+			}
+			elseif ($key === 'ship_holidays')
+			{
+				$value = implode("\n", array_map(function ($d) { return substr($d, 0, 4) . '-' . substr($d, 4, 2) . '-' . substr($d, 6, 2); }, array_keys(\Zittme\Modules\Commerce\Models\Delivery::parseHolidays((string)$value))));
 			}
 			elseif ($key === 'shop_main')
 			{
@@ -3750,7 +3814,7 @@ class Admin extends Base
 		$custom = \Zittme\Modules\Commerce\Models\ApplyForm::config()['custom'];
 
 		$head = [lang('commerce.mk_col_no'), lang('commerce.mk_f_shop_name'), lang('commerce.sc_shop_id'), lang('commerce.su_col_store_url'), lang('commerce.mk_col_status'),
-			lang('commerce.mk_f_biz_name'), lang('commerce.mk_f_biz_no'), lang('commerce.mk_f_mailorder_no'), lang('commerce.mk_f_commission'), lang('commerce.mk_f_ship_fee'), lang('commerce.mk_f_free_over'),
+			lang('commerce.mk_f_biz_name'), lang('commerce.mk_f_biz_no'), lang('commerce.mk_f_mailorder_no'), lang('commerce.mk_f_commission'), ...self::csvMoneyHead(lang('commerce.mk_f_ship_fee')), ...self::csvMoneyHead(lang('commerce.mk_f_free_over')),
 			lang('commerce.mk_applied_at'), lang('commerce.su_col_approved')];
 		if ($private)
 		{
@@ -3786,9 +3850,9 @@ class Admin extends Base
 					(int)$s->seller_srl, (string)$s->shop_name, (string)$s->shop_id,
 					(string)$s->shop_id !== '' ? \Zittme\Modules\Commerce\Models\Shop::fullUrl((string)$s->shop_id) : '',
 					lang('commerce.mk_st_' . $s->status), (string)$s->biz_name, (string)$s->biz_no, (string)$s->mailorder_no,
-					SellerModel::commissionRate($s) . '%', MoneyModel::format((int)$s->ship_fee, MoneyModel::base()),
-					(int)$s->free_ship_over > 0 ? MoneyModel::format((int)$s->free_ship_over, MoneyModel::base()) : '',
-					$s->regdate ? zdate($s->regdate, 'Y-m-d H:i') : '', $s->approved_date ? zdate($s->approved_date, 'Y-m-d H:i') : '',
+					SellerModel::commissionRate($s) . '%', ...self::csvMoney((int)$s->ship_fee),
+					...self::csvMoney((int)$s->free_ship_over),
+					self::csvDate($s->regdate), self::csvDate($s->approved_date),
 				];
 				if ($private)
 				{
@@ -3808,18 +3872,7 @@ class Admin extends Base
 		}
 		while (count($list) >= 200 && $page <= 100);
 
-		header('Content-Type: text/csv; charset=UTF-8');
-		header('Content-Disposition: attachment; filename="sellers_' . date('Ymd_His') . '.csv"');
-		header('Cache-Control: no-store');
-		echo "\xEF\xBB\xBF";
-		$fp = fopen('php://output', 'w');
-		foreach ($rows as $row)
-		{
-			fputcsv($fp, array_map(function ($cell) {
-				return is_string($cell) && preg_match('/^[=+\-@\t\r]/', $cell) ? "'" . $cell : $cell;
-			}, $row));
-		}
-		fclose($fp);
+		self::csvSend('sellers_' . date('Ymd_His') . '.csv', $rows);
 		exit;
 	}
 
@@ -4012,17 +4065,24 @@ class Admin extends Base
 			{
 				throw new \Zittme\Framework\Exceptions\NotPermitted;
 			}
-			$rows[] = [lang('commerce.mk_col_order'), lang('commerce.mk_col_delivered'), lang('commerce.mk_col_sales'), lang('commerce.mk_col_delivery'), lang('commerce.mk_col_refund'), lang('commerce.mk_col_commission'), lang('commerce.mk_col_settle')];
+			$rows[] = array_merge([lang('commerce.mk_col_order'), lang('commerce.mk_col_delivered')],
+				self::csvMoneyHead(lang('commerce.mk_col_sales')), self::csvMoneyHead(lang('commerce.mk_col_delivery')), self::csvMoneyHead(lang('commerce.mk_col_refund')),
+				self::csvMoneyHead(lang('commerce.mk_col_commission')), self::csvMoneyHead(lang('commerce.mk_col_settle')));
 			foreach (SettlementModel::lines($settlement_srl) as $line)
 			{
-				$rows[] = [(string)$line->order_code, (string)$line->delivered_date, (int)$line->item_total, (int)$line->delivery_fee, (int)$line->refund, (int)$line->commission, (int)$line->settle_amount];
+				$rows[] = array_merge([(string)$line->order_code, self::csvDate($line->delivered_date)],
+					self::csvMoney((int)$line->item_total), self::csvMoney((int)$line->delivery_fee), self::csvMoney((int)$line->refund),
+					self::csvMoney((int)$line->commission), self::csvMoney((int)$line->settle_amount));
 			}
 			$filename = 'settlement_' . $settlement_srl . '.csv';
 		}
 		else
 		{
 			$f_seller = $my_seller ? (int)$my_seller->seller_srl : max(0, (int)\Context::get('f_seller'));
-			$rows[] = [lang('commerce.mk_col_no'), lang('commerce.mk_col_seller'), lang('commerce.mk_col_period'), lang('commerce.mk_col_orders'), lang('commerce.mk_col_sales'), lang('commerce.mk_col_delivery'), lang('commerce.mk_col_refund'), lang('commerce.mk_col_commission'), lang('commerce.mk_col_settle'), lang('commerce.mk_col_status'), lang('commerce.mk_col_bank'), lang('commerce.mk_col_paid')];
+			$rows[] = array_merge([lang('commerce.mk_col_no'), lang('commerce.mk_col_seller'), lang('commerce.csv_period_start'), lang('commerce.csv_period_end'), lang('commerce.mk_col_orders')],
+				self::csvMoneyHead(lang('commerce.mk_col_sales')), self::csvMoneyHead(lang('commerce.mk_col_delivery')), self::csvMoneyHead(lang('commerce.mk_col_refund')),
+				self::csvMoneyHead(lang('commerce.mk_col_commission')), self::csvMoneyHead(lang('commerce.mk_col_settle')),
+				[lang('commerce.mk_col_status'), lang('commerce.mk_col_bank'), lang('commerce.mk_col_paid')]);
 			$page = 1;
 			do
 			{
@@ -4030,11 +4090,12 @@ class Admin extends Base
 				foreach ($result->list as $st)
 				{
 					$shop = SellerModel::get((int)$st->seller_srl);
-					$rows[] = [
-						(int)$st->settlement_srl, (string)($shop->shop_name ?? ''), $st->period_start . '-' . $st->period_end, (int)$st->order_count,
-						(int)$st->item_total, (int)$st->delivery_total, (int)$st->refund_total, (int)$st->commission_total, (int)$st->settle_amount,
-						lang('commerce.mk_st_' . $st->status), trim($st->bank_name . ' ' . $st->bank_account . ' ' . $st->bank_holder), (string)$st->paid_date,
-					];
+					$rows[] = array_merge(
+						[(int)$st->settlement_srl, (string)($shop->shop_name ?? ''), self::csvDate($st->period_start), self::csvDate($st->period_end), (int)$st->order_count],
+						self::csvMoney((int)$st->item_total), self::csvMoney((int)$st->delivery_total), self::csvMoney((int)$st->refund_total),
+						self::csvMoney((int)$st->commission_total), self::csvMoney((int)$st->settle_amount),
+						[lang('commerce.mk_st_' . $st->status), trim($st->bank_name . ' ' . $st->bank_account . ' ' . $st->bank_holder), self::csvDate($st->paid_date)]
+					);
 				}
 				$page++;
 			}
@@ -4042,18 +4103,7 @@ class Admin extends Base
 			$filename = 'settlements_' . date('Ymd_His') . '.csv';
 		}
 
-		header('Content-Type: text/csv; charset=UTF-8');
-		header('Content-Disposition: attachment; filename="' . $filename . '"');
-		header('Cache-Control: no-store');
-		echo "\xEF\xBB\xBF";
-		$fp = fopen('php://output', 'w');
-		foreach ($rows as $row)
-		{
-			fputcsv($fp, array_map(function ($cell) {
-				return is_string($cell) && preg_match('/^[=+\-@]/', $cell) ? "'" . $cell : $cell;
-			}, $row));
-		}
-		fclose($fp);
+		self::csvSend($filename, $rows);
 		exit;
 	}
 
@@ -4092,6 +4142,13 @@ class Admin extends Base
 			'ship_fee' => $data->ship_fee,
 			'free_ship_over' => $data->free_ship_over,
 		];
+		foreach (['ship_cutoff', 'ship_holidays', 'ship_quick', 'ship_regions', 'ship_quick_regions', 'ship_zone_fees'] as $ship_key)
+		{
+			if (property_exists($data, $ship_key))
+			{
+				$save->{$ship_key} = $data->{$ship_key};
+			}
+		}
 		foreach (self::PROFILE_EDITABLE as $key)
 		{
 			$save->{$key} = (\Context::get($key) !== null && ($af[$key]['on'] ?? true)) ? $data->{$key} : (string)($before->{$key} ?? '');

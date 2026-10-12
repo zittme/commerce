@@ -18,6 +18,12 @@
 		<column name="shop_id" var="shop_id" />
 		<column name="ship_fee" var="ship_fee" />
 		<column name="free_ship_over" var="free_ship_over" />
+		<column name="ship_cutoff" var="ship_cutoff" />
+		<column name="ship_holidays" var="ship_holidays" />
+		<column name="ship_quick" var="ship_quick" />
+		<column name="ship_regions" var="ship_regions" />
+		<column name="ship_quick_regions" var="ship_quick_regions" />
+		<column name="ship_zone_fees" var="ship_zone_fees" />
 		<column name="status" var="status" />
 		<column name="reject_reason" var="reject_reason" />
 		<column name="approved_date" var="approved_date" />

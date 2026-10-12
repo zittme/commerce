@@ -109,16 +109,40 @@ class Order extends Base
 			return new \BaseObject(-1, 'msg_shop_state_required');
 		}
 
+		$ship_zip = (string)\Context::get('zipcode');
+		$ship_addr = (string)\Context::get('address1');
+		$ship_country = self::filterCountry((string)\Context::get('country'));
+		$ship_quick = !$pin_only && \Context::get('ship_method') === 'quick';
+		if ($ship_quick && !\Zittme\Modules\Commerce\Models\Delivery::quickAvailable($entries))
+		{
+			return new \BaseObject(-1, lang('commerce.msg_quick_unavailable'));
+		}
+		if (!$pin_only)
+		{
+			foreach ($entries as $entry)
+			{
+				if (($entry->item->is_pin ?? 'N') !== 'Y' && !\Zittme\Modules\Commerce\Models\Delivery::canShipTo($entry->item, $ship_zip, $ship_addr, $ship_country, $ship_quick))
+				{
+					return new \BaseObject(-1, sprintf(lang($ship_quick ? 'commerce.msg_quick_region' : 'commerce.msg_ship_region'), $entry->item->item_name));
+				}
+			}
+		}
+
 		$item_total = $resolved->item_total;
-		$delivery_fee = CartModel::calcShipFee($resolved);
-		$delivery_fee += $pin_only ? 0 : CartModel::extraShipFee(
-			(string)\Context::get('zipcode'),
-			(string)\Context::get('address1'),
-			self::filterCountry((string)\Context::get('country')),
-			(string)\Context::get('state'),
-			(string)\Context::get('city'),
-			(int)($resolved->item_total_listed ?? $item_total)
-		);
+		$zone_fees = (object)['shop' => 0, 'sellers' => [], 'total' => 0];
+		if ($ship_quick)
+		{
+			$delivery_fee = 0;
+		}
+		else
+		{
+			$delivery_fee = CartModel::calcShipFee($resolved);
+			if (!$pin_only)
+			{
+				$zone_fees = \Zittme\Modules\Commerce\Models\Delivery::zoneFees($entries, $ship_zip, $ship_addr, $ship_country, (string)\Context::get('state'), (string)\Context::get('city'), (int)($resolved->item_total_listed ?? $item_total));
+				$delivery_fee += $zone_fees->total;
+			}
+		}
 
 		$reserved = [];
 		foreach ($entries as $entry)
@@ -335,7 +359,7 @@ class Order extends Base
 			return $output;
 		}
 
-		$bundles = self::buildBundles($entries, $seller, $item_total, $delivery_fee, $discount_total, $payment_price, $order_currency !== $base_currency ? $order_currency : '');
+		$bundles = self::buildBundles($entries, $seller, $item_total, $delivery_fee, $discount_total, $payment_price, $order_currency !== $base_currency ? $order_currency : '', $ship_quick ? null : $zone_fees->sellers);
 		$order_seller_srl = 0;
 		foreach ($bundles as $bundle)
 		{
@@ -386,6 +410,7 @@ class Order extends Base
 				'qty' => $entry->qty,
 				'subtotal' => $entry->subtotal,
 				'tax_type' => ($entry->item->tax_type ?? 'taxable') === 'free' ? 'free' : 'taxable',
+				'ship_type' => ($ship_quick && ($entry->item->is_pin ?? 'N') !== 'Y') ? 'quick' : \Zittme\Modules\Commerce\Models\Delivery::normalize($entry->item->ship_type ?? 'normal'),
 				'claim_status' => 'none',
 				'timesale_item_srl' => (int)($entry->timesale_item_srl ?? 0),
 				'regdate' => $now,
@@ -515,7 +540,7 @@ class Order extends Base
 		$this->setRedirectUrl($result_url);
 	}
 
-	protected static function buildBundles(array $entries, ?object $seller, int $item_total, int $delivery_fee, int $discount_total, int $payment_price, string $fx_currency = ''): array
+	protected static function buildBundles(array $entries, ?object $seller, int $item_total, int $delivery_fee, int $discount_total, int $payment_price, string $fx_currency = '', ?array $seller_extra = []): array
 	{
 		if (!\Zittme\Modules\Commerce\Models\Seller::isOpen())
 		{
@@ -536,7 +561,7 @@ class Order extends Base
 		$fee_sum = 0;
 		foreach (\Zittme\Modules\Commerce\Models\Seller::groupEntries($entries) as $seller_srl => $group)
 		{
-			$fee = \Zittme\Modules\Commerce\Models\Seller::groupShipFee((int)$seller_srl, $group);
+			$fee = $seller_extra === null ? 0 : \Zittme\Modules\Commerce\Models\Seller::groupShipFee((int)$seller_srl, $group) + (int)($seller_extra[(int)$seller_srl] ?? 0);
 			if ($fx_currency !== '')
 			{
 				$fee = max(0, \Zittme\Modules\Commerce\Models\Money::convertMinor($fee, $fx_currency));

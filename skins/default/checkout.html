@@ -88,6 +88,16 @@
 							</div>
 						</div>
 						<div class="shp-row" style="grid-column:1/-1"><label>{{ $lang->shop_delivery_memo }}</label><input type="text" name="delivery_memo" placeholder="{{ $lang->shop_delivery_memo_ph }}" /></div>
+						@if (!empty($ship_quick_available))
+						<div class="shp-row" style="grid-column:1/-1">
+							<label>{{ lang('commerce.ship_method_label') }}</label>
+							<div style="display:flex;flex-wrap:wrap;gap:8px 18px">
+								<label style="display:inline-flex;align-items:center;gap:6px;width:auto;margin:0;white-space:nowrap;font-weight:500"><input type="radio" name="ship_method" value="parcel" checked /> {{ lang('commerce.ship_method_parcel') }}</label>
+								<label style="display:inline-flex;align-items:center;gap:6px;width:auto;margin:0;white-space:nowrap;font-weight:500"><input type="radio" name="ship_method" value="quick" /> {{ lang('commerce.ship_type_quick') }}</label>
+							</div>
+							<p style="margin:8px 0 0;font-size:12.5px;line-height:1.5;color:inherit;opacity:.78">{{ $ship_quick_note }}</p>
+						</div>
+						@endif
 					</div>
 					@if ($is_member)
 					<label class="shp-save-addr"><input type="checkbox" name="save_address" value="Y" /> {{ $lang->shop_save_address ?? '이 배송지를 주소록에 저장' }}</label>
@@ -171,7 +181,7 @@
 			</div>
 
 			<aside class="shp-2col-aside">
-				<div class="shp-box shp-paybox" data-item-total="{{ (int)$cart->item_total }}" data-ship-judge-total="{{ (int)($cart->item_total_listed ?? $cart->item_total) }}" data-ship-fee="{{ (int)$ship_fee }}" data-currency="{{ $shp_currency }}" data-base="{{ $shp_base_currency ?? 'KRW' }}" data-base-zero="{{ $shp_base_zero ? 1 : 0 }}" data-rate="{{ $shp_fx_rate }}" data-zero="{{ $shp_fx_zero_decimal ? 1 : 0 }}" data-symbol="{{ $shp_currency_symbol }}" data-won-suffix="{{ $shp_won_suffix ? 1 : 0 }}" data-extra-zones="{{ $shop_config->ship_extra_zones ?? '[]' }}">
+				<div class="shp-box shp-paybox" data-item-total="{{ (int)$cart->item_total }}" data-ship-judge-total="{{ (int)($cart->item_total_listed ?? $cart->item_total) }}" data-ship-fee="{{ (int)$ship_fee }}" data-currency="{{ $shp_currency }}" data-base="{{ $shp_base_currency ?? 'KRW' }}" data-base-zero="{{ ($shp_base_zero ?? false) ? 1 : 0 }}" data-rate="{{ $shp_fx_rate }}" data-zero="{{ $shp_fx_zero_decimal ? 1 : 0 }}" data-symbol="{{ $shp_currency_symbol }}" data-won-suffix="{{ ($shp_won_suffix ?? false) ? 1 : 0 }}" data-extra-zones="{{ $shop_config->ship_extra_zones ?? '[]' }}">
 					<h3>{{ $lang->shop_pay_summary ?? '결제 금액' }}</h3>
 					<div class="shp-summary-row"><span>{{ $lang->shop_item_total }}</span><span>{{ shop_money_in($cart->item_total, $shp_currency) }}</span></div>
 					<div class="shp-summary-row" id="shpSumDiscount" hidden><span>{{ $lang->shop_discount }}</span><span class="shp-minus">-<em>0</em></span></div>
@@ -255,6 +265,7 @@
 			return Math.round((fee / (shpBaseZero ? 1 : 100)) / shpRate * (shpZero ? 1 : 100));
 		}
 		var shipFreeLabel = {!! json_encode($lang->shop_ship_free) !!};
+		var shipQuickLabel = {!! json_encode(lang('commerce.quick_pay_on_receipt')) !!};
 		var extraZones = [];
 		try { extraZones = JSON.parse(paybox ? paybox.getAttribute('data-extra-zones') : '[]') || []; } catch (e) {}
 		var regionAliases = { '충청북도': '충북', '충청남도': '충남', '전라북도': '전북', '전라남도': '전남', '경상북도': '경북', '경상남도': '경남', '강원도': '강원', '제주도': '제주' };
@@ -334,11 +345,13 @@
 		function recalc() {
 			if (!paybox) return;
 			var itemTotal = parseInt(paybox.getAttribute('data-item-total'), 10) || 0;
-			var shipBase = parseInt(paybox.getAttribute('data-ship-fee'), 10) || 0;
-			var shipExtra = toOrderMinor(zipExtra());
+			var shipQuickEl = document.querySelector('input[name="ship_method"]:checked');
+			var shipQuick = !!(shipQuickEl && shipQuickEl.value === 'quick');
+			var shipBase = shipQuick ? 0 : (parseInt(paybox.getAttribute('data-ship-fee'), 10) || 0);
+			var shipExtra = shipQuick ? 0 : toOrderMinor(zipExtra());
 			var shipFee = shipBase + shipExtra;
 						var shipEl = document.getElementById('shpSumShip');
-			if (shipEl) shipEl.textContent = shipBase > 0 ? '+' + money(shipBase) : shipFreeLabel;
+			if (shipEl) shipEl.textContent = shipQuick ? shipQuickLabel : (shipBase > 0 ? '+' + money(shipBase) : shipFreeLabel);
 			var extraRow = document.getElementById('shpSumShipExtra');
 			if (extraRow) {
 				extraRow.hidden = shipExtra <= 0;
@@ -399,6 +412,7 @@
 			shpStateInput.addEventListener('input', recalc);
 		}
 
+		Array.prototype.forEach.call(document.querySelectorAll('input[name="ship_method"]'), function (el) { el.addEventListener('change', recalc); });
 		['address1', 'zipcode', 'country', 'state', 'city'].forEach(function (name) {
 			var el = document.querySelector('[name="' + name + '"]');
 			if (!el) return;

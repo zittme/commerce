@@ -74,6 +74,15 @@ class Install extends Base
 		['commerce_settlement', 'carry_in', 'bigint', null],
 		['commerce_settlement', 'carry_out', 'bigint', null],
 		['commerce_seller', 'extra_vars', 'text', null],
+		['commerce_item', 'ship_type', 'varchar', 10],
+		['commerce_order_item', 'ship_type', 'varchar', 10],
+		['commerce_seller', 'ship_cutoff', 'varchar', 5],
+		['commerce_seller', 'ship_holidays', 'text', null],
+		['commerce_item', 'allow_quick', 'char', 1],
+		['commerce_seller', 'ship_quick', 'char', 1],
+		['commerce_seller', 'ship_regions', 'text', null],
+		['commerce_seller', 'ship_quick_regions', 'text', null],
+		['commerce_seller', 'ship_zone_fees', 'text', null],
 	];
 
 	public const ADDED_INDEXES = [
@@ -84,9 +93,10 @@ class Install extends Base
 		['commerce_order_item', 'idx_seller_srl', 'seller_srl', false],
 		['commerce_settlement_adjust', 'unique_settlement_os', ['settlement_srl', 'order_seller_srl'], true],
 		['commerce_item', 'idx_hidden_by_market', 'hidden_by_market', false],
+		['commerce_item', 'idx_ship_type', 'ship_type', false],
 	];
 
-	public const LATE_TABLES = ['commerce_brand', 'commerce_staff', 'commerce_audit', 'commerce_timesale', 'commerce_timesale_item', 'commerce_pin', 'commerce_settlement', 'commerce_seller_category', 'commerce_settlement_adjust', 'commerce_seller_shopid', 'commerce_seller_staff'];
+	public const LATE_TABLES = ['commerce_brand', 'commerce_staff', 'commerce_audit', 'commerce_timesale', 'commerce_timesale_item', 'commerce_pin', 'commerce_settlement', 'commerce_seller_category', 'commerce_settlement_adjust', 'commerce_seller_shopid', 'commerce_seller_staff', 'commerce_recent_view'];
 
 	public const ZERO_DEFAULT_COLUMNS = [
 		['commerce_seller', 'ship_fee'],
@@ -107,9 +117,16 @@ class Install extends Base
 		['commerce_settlement', 'carry_out'],
 	];
 
+	public const VALUE_DEFAULT_COLUMNS = [
+		['commerce_item', 'ship_type', 'normal'],
+		['commerce_order_item', 'ship_type', 'normal'],
+	];
+
 	public const N_DEFAULT_COLUMNS = [
 		['commerce_item', 'is_pin'],
 		['commerce_item', 'hidden_by_market'],
+		['commerce_item', 'allow_quick'],
+		['commerce_seller', 'ship_quick'],
 	];
 
 	public function moduleInstall()
@@ -199,7 +216,7 @@ class Install extends Base
 			}
 		}
 
-		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade', 'commerce_stock_log', 'commerce_review', 'commerce_inquiry', 'commerce_address', 'commerce_tracking', 'commerce_promotion', 'commerce_promotion_item', 'commerce_badge', 'commerce_item_price', 'commerce_brand', 'commerce_staff', 'commerce_audit', 'commerce_timesale', 'commerce_timesale_item', 'commerce_pin', 'commerce_settlement', 'commerce_seller_category', 'commerce_settlement_adjust', 'commerce_seller_shopid', 'commerce_seller_staff'] as $table)
+		foreach (['commerce_coupon', 'commerce_coupon_issue', 'commerce_credit_balance', 'commerce_credit_log', 'commerce_grade', 'commerce_member_grade', 'commerce_stock_log', 'commerce_review', 'commerce_inquiry', 'commerce_address', 'commerce_tracking', 'commerce_promotion', 'commerce_promotion_item', 'commerce_badge', 'commerce_item_price', 'commerce_brand', 'commerce_staff', 'commerce_audit', 'commerce_timesale', 'commerce_timesale_item', 'commerce_pin', 'commerce_settlement', 'commerce_seller_category', 'commerce_settlement_adjust', 'commerce_seller_shopid', 'commerce_seller_staff', 'commerce_recent_view'] as $table)
 		{
 			if (!$oDB->isTableExists($table))
 			{
@@ -290,6 +307,10 @@ class Install extends Base
 				if (in_array([$table, $column], self::ZERO_DEFAULT_COLUMNS, true))
 				{
 					$oDB->addColumn($table, $column, $type, $size, 0, true);
+				}
+				elseif (in_array([$table, $column, 'normal'], self::VALUE_DEFAULT_COLUMNS, true))
+				{
+					$oDB->addColumn($table, $column, $type, $size, 'normal', true);
 				}
 				elseif (in_array([$table, $column], self::N_DEFAULT_COLUMNS, true))
 				{

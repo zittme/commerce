@@ -24,6 +24,12 @@
 		<condition operation="less" column="regdate" var="regdate_to" pipe="and" />
 		<condition operation="more" column="sale_price" var="price_min" pipe="and" />
 		<condition operation="less" column="sale_price" var="price_max" pipe="and" />
+		<condition operation="in" column="ship_type" var="ship_type_list" pipe="and" />
+		<condition operation="in" column="seller_srl" var="seller_srl_list" filter="number" pipe="and" />
+		<condition operation="in" column="brand_srl" var="brand_srl_list" filter="number" pipe="and" />
+		<condition operation="equal" column="ship_fee_type" var="ship_fee_type" pipe="and" />
+		<condition operation="more" column="effective_price" var="eprice_min" pipe="and" />
+		<condition operation="less" column="effective_price" var="eprice_max" pipe="and" />
 	</conditions>
 	<navigation>
 		<index var="sort_index" default="list_order" order="order_type" />

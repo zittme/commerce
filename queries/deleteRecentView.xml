@@ -1,0 +1,10 @@
+<query id="deleteRecentView" action="delete">
+	<tables>
+		<table name="commerce_recent_view" />
+	</tables>
+	<conditions>
+		<condition operation="equal" column="member_srl" var="member_srl" filter="number" notnull="notnull" />
+		<condition operation="in" column="item_srl" var="item_srl" filter="number" pipe="and" />
+		<condition operation="less" column="regdate" var="regdate_before" pipe="and" />
+	</conditions>
+</query>

@@ -470,7 +470,7 @@
 		var shpDisp = '{{ $shp_currency }}';
 		var shpDispZero = {{ $shp_currency_zero ? 'true' : 'false' }};
 		var shpDispSym = '{{ $shp_currency_symbol }}';
-		var shpWon = {{ $shp_won_suffix ? 'true' : 'false' }};
+		var shpWon = {{ ($shp_won_suffix ?? false) ? 'true' : 'false' }};
 		var shpDispRate = 1;
 		function fmt(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
 		function smoney(minor) {

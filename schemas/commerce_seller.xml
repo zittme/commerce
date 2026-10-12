@@ -22,6 +22,12 @@
 	<column name="extra_vars" type="text" />
 	<column name="ship_fee" type="bigint" notnull="notnull" default="0" />
 	<column name="free_ship_over" type="bigint" notnull="notnull" default="0" />
+	<column name="ship_cutoff" type="varchar" size="5" />
+	<column name="ship_holidays" type="text" />
+	<column name="ship_quick" type="char" size="1" notnull="notnull" default="N" />
+	<column name="ship_regions" type="text" />
+	<column name="ship_quick_regions" type="text" />
+	<column name="ship_zone_fees" type="text" />
 	<column name="carry_balance" type="bigint" notnull="notnull" default="0" />
 	<column name="status" type="varchar" size="20" notnull="notnull" default="active" index="idx_status" />
 	<column name="reject_reason" type="varchar" size="250" />

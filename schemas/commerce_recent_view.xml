@@ -1,0 +1,5 @@
+<table name="commerce_recent_view">
+	<column name="member_srl" type="bigint" notnull="notnull" unique="unique_member_item" />
+	<column name="item_srl" type="bigint" notnull="notnull" unique="unique_member_item" />
+	<column name="regdate" type="char" size="14" notnull="notnull" index="idx_regdate" />
+</table>

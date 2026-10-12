@@ -29,6 +29,8 @@
 	<column name="option_mode" type="varchar" size="10" notnull="notnull" default="single" />
 	<column name="ship_fee_type" type="varchar" size="10" notnull="notnull" default="default" />
 	<column name="ship_fee" type="bigint" notnull="notnull" default="0" />
+	<column name="ship_type" type="varchar" size="10" notnull="notnull" default="normal" index="idx_ship_type" />
+	<column name="allow_quick" type="char" size="1" notnull="notnull" default="N" />
 	<column name="is_pin" type="char" size="1" notnull="notnull" default="N" />
 	<column name="hidden_by_market" type="char" size="1" notnull="notnull" default="N" index="idx_hidden_by_market" />
 	<column name="pin_daily_limit" type="int" notnull="notnull" default="0" />

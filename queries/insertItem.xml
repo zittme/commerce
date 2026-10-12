@@ -29,6 +29,8 @@
 		<column name="option_axes" var="option_axes" />
 		<column name="option_mode" var="option_mode" />
 		<column name="ship_fee_type" var="ship_fee_type" default="default" />
+		<column name="ship_type" var="ship_type" default="normal" />
+		<column name="allow_quick" var="allow_quick" default="N" />
 		<column name="ship_fee" var="ship_fee" default="0" />
 		<column name="status" var="status" default="sale" />
 		<column name="is_recommend" var="is_recommend" default="N" />

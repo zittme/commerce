@@ -144,6 +144,33 @@ class Base extends \ModuleObject
 		return self::$_default_instance ?: null;
 	}
 
+	public static function consoleSkinCss(): string
+	{
+		$list = \ModuleModel::getMidList((object)['module' => 'commerce'], ['module_srl', 'skin', 'mskin']);
+		foreach (is_array($list) ? $list : [] as $row)
+		{
+			$skin = (string)($row->skin ?? '');
+			if ($skin === '' || $skin === '/USE_DEFAULT/')
+			{
+				continue;
+			}
+			if (strpos($skin, '|@|') !== false)
+			{
+				[$theme, $name] = explode('|@|', $skin, 2);
+				$rel = 'themes/' . $theme . '/modules/commerce/skins/' . $name . '/css/console.css';
+			}
+			else
+			{
+				$rel = 'modules/commerce/skins/' . $skin . '/css/console.css';
+			}
+			if (preg_match('#^[a-zA-Z0-9_/.-]+$#', $rel) && strpos($rel, '..') === false && is_file(\RX_BASEDIR . $rel))
+			{
+				return \RX_BASEURL . $rel . '?' . filemtime(\RX_BASEDIR . $rel);
+			}
+		}
+		return '';
+	}
+
 	public static function getDefaultSeller(): ?object
 	{
 		$output = executeQuery('commerce.getSellerList', (object)['list_count' => 1]);
