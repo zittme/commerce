@@ -79,7 +79,7 @@ foreach ($mk_af['intro'] ?? [] as $sp_f) { $sp_intro[] = $sp_f; }
 				<div><label>{{ lang('commerce.mk_f_ship_fee') }}</label><input type="text" inputmode="decimal" name="ship_fee" value="{{ $mk_me->ship_fee_input }}" /></div>
 				<div><label>{{ lang('commerce.mk_f_free_over') }}</label><input type="text" inputmode="decimal" name="free_ship_over" value="{{ $mk_me->free_over_input }}" placeholder="0" /></div>
 				@if (\Zittme\Modules\Commerce\Models\Delivery::enabled())
-				<div><label>{{ lang('commerce.ship_cutoff_label') }}</label><input type="time" name="ship_cutoff" value="{{ $mk_me->ship_cutoff ?? '' }}" placeholder="{{ \Zittme\Modules\Commerce\Models\Delivery::cutoffFor('fast') }}" /></div>
+				<div><label>{{ lang('commerce.ship_cutoff_label') }}</label><input type="time" name="ship_cutoff" value="{{ ($mk_me->ship_cutoff ?? '') === '24:00' ? '23:59' : ($mk_me->ship_cutoff ?? '') }}" placeholder="{{ \Zittme\Modules\Commerce\Models\Delivery::cutoffFor('fast') }}" /></div>
 				<div style="grid-column:1/-1"><label>{{ lang('commerce.ship_holidays_label') }}</label><textarea name="ship_holidays" rows="3" placeholder="2026-10-03">{{ $mk_me->ship_holidays ?? '' }}</textarea><span class="ie-help">{{ lang('commerce.ship_holidays_help') }}</span></div>
 				@endif
 				<div style="grid-column:1/-1"><label>{{ lang('commerce.ship_regions_label') }}</label><textarea name="ship_regions" rows="3" placeholder="{{ lang('commerce.ship_regions_ph') }}">{{ $mk_me->ship_regions ?? '' }}</textarea><span class="ie-help">{{ lang('commerce.ship_regions_help') }}</span></div>

@@ -38,7 +38,7 @@ class Delivery
 		{
 			$cutoff = $seller_cutoff;
 		}
-		return self::validTime($cutoff) ? $cutoff : ($type === 'today' ? '11:00' : ($type === 'dawn' ? '23:00' : ($type === 'fast' ? '24:00' : '15:00')));
+		return self::validTime($cutoff) ? $cutoff : ($type === 'today' ? '11:00' : ($type === 'dawn' ? '23:00' : ($type === 'fast' ? '23:59' : '15:00')));
 	}
 
 	public static function validTime(string $value): bool

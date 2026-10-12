@@ -118,7 +118,7 @@ class Config
 
 		'ship_types_enabled' => 'Y',
 		'ship_cutoff_normal' => '15:00',
-		'ship_cutoff_fast' => '24:00',
+		'ship_cutoff_fast' => '23:59',
 		'ship_cutoff_dawn' => '23:00',
 		'ship_cutoff_today' => '11:00',
 		'ship_days_normal' => 2,

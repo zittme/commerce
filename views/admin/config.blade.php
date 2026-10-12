@@ -7,6 +7,9 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 @endphp
 <div class="rsva cfg-page">
 	<style>
+	.cfg-page .rsva-weekdays { display: flex; flex-wrap: wrap; gap: 6px; }
+	.cfg-page .rsva-weekdays label { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 7px 12px; border: 1px solid var(--zmc-line, #e5e8ee); border-radius: 8px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+	.cfg-page .rsva-weekdays input[type="checkbox"] { width: auto !important; height: auto; margin: 0; padding: 0; }
 	.cfg-page { max-width: 1320px; }
 	.cfg-page h4.cfg-sub { margin: 26px 0 2px; padding-top: 18px; border-top: 1px solid var(--zmc-line-strong, #d6d2c8); font-size: 14px; font-weight: 700; color: var(--zmc-ink, #232a3b); }
 	.cfg-page .rsva-panel > .rsva-form-grid { display: block; }
@@ -133,24 +136,25 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.ship_cfg_title') }}</h3>
 			<div class="rsva-form-grid">
-				<div style="grid-column:1/-1"><input type="hidden" name="ship_types_enabled" value="N" /><label><input type="checkbox" name="ship_types_enabled" value="Y" @if(($shop_config->ship_types_enabled ?? 'Y') === 'Y') checked @endif /> {{ lang('commerce.ship_cfg_enable') }}</label></div>
+				<div><label>{{ lang('commerce.ship_cfg_enable') }}</label><select name="ship_types_enabled"><option value="Y" @if(($shop_config->ship_types_enabled ?? 'Y') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->ship_types_enabled ?? 'Y') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select><p class="cfg-guide">{{ lang('commerce.ship_cfg_help') }}</p></div>
 				@foreach (['normal', 'fast', 'dawn', 'today'] as $sc_type)
-				<div><label>{{ sprintf(lang('commerce.ship_cfg_cutoff'), lang('commerce.ship_type_' . $sc_type)) }}</label><input type="time" name="ship_cutoff_{{ $sc_type }}" value="{{ ((array)$shop_config)['ship_cutoff_' . $sc_type] ?? '' }}" /></div>
+				@php $sc_cut = (string)(((array)$shop_config)['ship_cutoff_' . $sc_type] ?? ''); @endphp
+				<div><label>{{ sprintf(lang('commerce.ship_cfg_cutoff'), lang('commerce.ship_type_' . $sc_type)) }}</label><input type="time" name="ship_cutoff_{{ $sc_type }}" value="{{ $sc_cut === '24:00' ? '23:59' : $sc_cut }}" /></div>
 				@endforeach
 				<div><label>{{ lang('commerce.ship_cfg_days_normal') }}</label><input type="number" name="ship_days_normal" min="1" max="14" value="{{ (int)($shop_config->ship_days_normal ?? 2) }}" /></div>
-				<div style="grid-column:1/-1">
+				<div>
 					<label>{{ lang('commerce.ship_cfg_workdays') }}</label>
-					<div class="ie-pills">
+					<div class="rsva-weekdays">
 						@php $sc_wd = explode(',', (string)($shop_config->ship_workdays ?? '1,2,3,4,5,6')); $sc_names = explode(',', lang('commerce.eta_weekdays')); @endphp
 						@foreach ([1, 2, 3, 4, 5, 6, 0] as $sc_d)
 						<label><input type="checkbox" name="ship_workdays[]" value="{{ $sc_d }}" @if(in_array((string)$sc_d, $sc_wd, true)) checked @endif /> {{ $sc_names[$sc_d] ?? $sc_d }}</label>
 						@endforeach
 					</div>
 				</div>
-				<div style="grid-column:1/-1"><label>{{ lang('commerce.ship_holidays_label') }}</label><textarea name="ship_holidays" rows="4" placeholder="2026-10-03">{{ $shop_config->ship_holidays ?? '' }}</textarea><p class="cfg-guide">{{ lang('commerce.ship_cfg_help') }}</p></div>
-				<div style="grid-column:1/-1"><label>{{ lang('commerce.ship_regions_label') }}</label><textarea name="ship_regions" rows="3" placeholder="{{ lang('commerce.ship_regions_ph') }}">{{ $shop_config->ship_regions ?? '' }}</textarea><p class="cfg-guide">{{ lang('commerce.ship_regions_help') }}</p></div>
-				<div style="grid-column:1/-1"><input type="hidden" name="ship_quick_enabled" value="N" /><label><input type="checkbox" name="ship_quick_enabled" value="Y" @if(($shop_config->ship_quick_enabled ?? 'N') === 'Y') checked @endif /> {{ lang('commerce.quick_cfg_enable') }}</label><p class="cfg-guide">{{ lang('commerce.quick_cfg_help') }}</p></div>
-				<div style="grid-column:1/-1"><label>{{ lang('commerce.quick_regions_label') }}</label><textarea name="ship_quick_regions" rows="3" placeholder="{{ lang('commerce.quick_regions_ph') }}">{{ $shop_config->ship_quick_regions ?? '' }}</textarea><p class="cfg-guide">{{ lang('commerce.quick_regions_help') }}</p></div>
+				<div><label>{{ lang('commerce.ship_holidays_label') }}</label><textarea name="ship_holidays" rows="4" placeholder="2026-10-03">{{ $shop_config->ship_holidays ?? '' }}</textarea></div>
+				<div><label>{{ lang('commerce.ship_regions_label') }}</label><textarea name="ship_regions" rows="3" placeholder="{{ lang('commerce.ship_regions_ph') }}">{{ $shop_config->ship_regions ?? '' }}</textarea><p class="cfg-guide">{{ lang('commerce.ship_regions_help') }}</p></div>
+				<div><label>{{ lang('commerce.quick_cfg_enable') }}</label><select name="ship_quick_enabled"><option value="N" @if(($shop_config->ship_quick_enabled ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->ship_quick_enabled ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select><p class="cfg-guide">{{ lang('commerce.quick_cfg_help') }}</p></div>
+				<div><label>{{ lang('commerce.quick_regions_label') }}</label><textarea name="ship_quick_regions" rows="3" placeholder="{{ lang('commerce.quick_regions_ph') }}">{{ $shop_config->ship_quick_regions ?? '' }}</textarea><p class="cfg-guide">{{ lang('commerce.quick_regions_help') }}</p></div>
 			</div>
 		</div>
 		<div class="rsva-panel">
