@@ -500,7 +500,7 @@
 (function () {
 	var mode = {!! json_encode($shop_address_mode) !!};
 	var baseCountry = {!! json_encode($shop_base_country ?? 'KR') !!};
-	var form = document.querySelector('.shp-checkout form') || document.forms[0];
+	var form = (document.querySelector('input[name="zipcode_intl"]') || {}).form || document.querySelector('form.shp-form');
 	if (!form) return;
 	var country = document.getElementById('shpCountry');
 
