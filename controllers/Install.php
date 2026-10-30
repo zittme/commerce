@@ -83,6 +83,7 @@ class Install extends Base
 		['commerce_seller', 'ship_regions', 'text', null],
 		['commerce_seller', 'ship_quick_regions', 'text', null],
 		['commerce_seller', 'ship_zone_fees', 'text', null],
+		['commerce_item', 'hidden_by_suspend', 'char', 1],
 	];
 
 	public const ADDED_INDEXES = [
@@ -125,6 +126,7 @@ class Install extends Base
 	public const N_DEFAULT_COLUMNS = [
 		['commerce_item', 'is_pin'],
 		['commerce_item', 'hidden_by_market'],
+		['commerce_item', 'hidden_by_suspend'],
 		['commerce_item', 'allow_quick'],
 		['commerce_seller', 'ship_quick'],
 	];

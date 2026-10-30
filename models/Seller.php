@@ -469,12 +469,35 @@ class Seller
 			$args->approved_date = date('YmdHis');
 		}
 		$ok = executeQuery('commerce.updateSeller', $args)->toBool();
-		if ($ok && in_array($status, ['suspended', 'rejected'], true))
+		if ($ok)
 		{
-			\Zittme\Framework\DB::getInstance()->query(
-				"UPDATE commerce_item SET status = 'hidden', last_update = ? WHERE seller_srl = ? AND status IN ('sale', 'soldout')",
-				[date('YmdHis'), $seller_srl]
-			);
+			$oDB = \Zittme\Framework\DB::getInstance();
+			$tracked = $oDB->isColumnExists('commerce_item', 'hidden_by_suspend');
+			if (in_array($status, ['suspended', 'rejected'], true))
+			{
+				if ($tracked)
+				{
+					$oDB->query(
+						"UPDATE commerce_item SET hidden_by_suspend = CASE WHEN status = 'soldout' THEN 'O' ELSE 'S' END, status = 'hidden', last_update = ? WHERE seller_srl = ? AND status IN ('sale', 'soldout')",
+						[date('YmdHis'), $seller_srl]
+					);
+				}
+				else
+				{
+					$oDB->query(
+						"UPDATE commerce_item SET status = 'hidden', last_update = ? WHERE seller_srl = ? AND status IN ('sale', 'soldout')",
+						[date('YmdHis'), $seller_srl]
+					);
+				}
+			}
+			elseif ($status === 'approved' && $tracked)
+			{
+				$oDB->query(
+					"UPDATE commerce_item SET status = CASE WHEN hidden_by_suspend = 'O' THEN 'soldout' ELSE 'sale' END, hidden_by_suspend = 'N', last_update = ? WHERE seller_srl = ? AND hidden_by_suspend IN ('S', 'O') AND status = 'hidden'",
+					[date('YmdHis'), $seller_srl]
+				);
+				$oDB->query("UPDATE commerce_item SET hidden_by_suspend = 'N' WHERE seller_srl = ? AND hidden_by_suspend <> 'N'", [$seller_srl]);
+			}
 		}
 		self::forget($seller_srl);
 		return $ok;

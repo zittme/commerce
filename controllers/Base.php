@@ -25,12 +25,25 @@ class Base extends \ModuleObject
 	public const SELLER_CANCELLED = 'cancelled';
 	public const SELLER_REFUNDED = 'refunded';
 
+	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note', 'ship_guide', 'claim_guide'];
+
 	protected static $_default_instance = null;
 
 	public static function config(): object
 	{
 		self::ensureCurrencySchema();
 		return ConfigModel::getConfig();
+	}
+
+	public static function viewConfig(): object
+	{
+		$config = clone self::config();
+		if (trim((string)($config->privacy_text ?? '')) === ConfigModel::DEFAULTS['privacy_text'])
+		{
+			$config->privacy_text = lang('commerce.shop_privacy_default');
+		}
+		\Zittme\Modules\Commerce\Models\Lang::textAll([$config], self::LANG_CONFIG_FIELDS);
+		return $config;
 	}
 
 	protected static function assertShopEnabled(): void

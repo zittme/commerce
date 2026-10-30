@@ -60,8 +60,6 @@ class Admin extends Base
 		'ship_types_enabled', 'ship_cutoff_normal', 'ship_cutoff_fast', 'ship_cutoff_dawn', 'ship_cutoff_today', 'ship_days_normal', 'ship_workdays', 'ship_holidays', 'ship_quick_enabled', 'ship_regions', 'ship_quick_regions',
 	];
 
-	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note', 'ship_guide', 'claim_guide'];
-
 	protected const BOOLEAN_FIELDS = ['enabled', 'market_apply', 'market_item_review', 'seller_item_in_store', 'show_seller_on_card', 'short_shop_url', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
 		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale', 'ship_types_enabled', 'ship_quick_enabled'];
 	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100], 'market_commission' => [0, 100]];
@@ -1595,7 +1593,7 @@ class Admin extends Base
 		}
 
 		\Context::set('invoices', $invoices);
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		\Context::setBrowserTitle(count($invoices) > 1 ?
 			('주문서 ' . count($invoices) . '건') : ('주문서 ' . $invoices[0]->order->order_code));
 		\Context::set('layout', 'none');
@@ -3649,7 +3647,7 @@ class Admin extends Base
 		}
 		elseif ($action === 'approve')
 		{
-			$refund_amount = max(0, MoneyModel::inputToMinor(\Context::get('refund_amount')));
+			$refund_amount = max(0, MoneyModel::inputToMinor(\Context::get('refund_amount'), $order ? (string)($order->currency ?? '') : ''));
 			if ($order)
 			{
 				$refund_amount = min($refund_amount, (int)$order->payment_price);

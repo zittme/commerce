@@ -33,6 +33,7 @@
 	<column name="allow_quick" type="char" size="1" notnull="notnull" default="N" />
 	<column name="is_pin" type="char" size="1" notnull="notnull" default="N" />
 	<column name="hidden_by_market" type="char" size="1" notnull="notnull" default="N" index="idx_hidden_by_market" />
+	<column name="hidden_by_suspend" type="char" size="1" notnull="notnull" default="N" />
 	<column name="pin_daily_limit" type="int" notnull="notnull" default="0" />
 	<column name="status" type="varchar" size="20" notnull="notnull" default="sale" index="idx_status" />
 	<column name="is_recommend" type="char" size="1" notnull="notnull" default="N" index="idx_recommend" />

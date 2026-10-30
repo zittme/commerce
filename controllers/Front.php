@@ -252,7 +252,7 @@ class Front extends Base
 		\Context::set('promo_banner', \Zittme\Modules\Commerce\Models\Promotion::bannerOf($promo));
 		\Context::set('items', $items);
 		\Context::set('cart_count', count(CartModel::rows()));
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		$this->setShopContext($items);
 		\Context::setBrowserTitle($promo->title);
 		self::applyImageSize();
@@ -599,7 +599,7 @@ class Front extends Base
 		\Context::set('current_sort', $sort);
 		\Context::set('current_q', $keyword);
 		\Context::set('cart_count', count(CartModel::rows()));
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		self::injectAdminPanel();
 		self::applyImageSize();
 		$this->setTemplatePath($this->getSkinPath());
@@ -720,7 +720,7 @@ class Front extends Base
 		$this->setShopContext($home_items);
 		self::setRecentItems();
 		\Context::set('cart_count', count(CartModel::rows()));
-		\Context::set('shop_config', $config);
+		\Context::set('shop_config', self::viewConfig());
 		self::injectAdminPanel();
 		self::applyImageSize();
 		$this->setTemplatePath($this->getSkinPath());
@@ -848,7 +848,7 @@ class Front extends Base
 		}
 		\Context::set('adult_ok', ($item->is_adult ?? 'N') !== 'Y' || Order::isAdultVerified($member_srl));
 		\Context::set('cart_count', count(CartModel::rows()));
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		$this->setShopContext([$item]);
 		self::setRecentItems((int)$item->item_srl);
 		$this->addItemStructuredData($item, $item_disp['effective'], $item_disp_currency, $reviews);
@@ -961,7 +961,7 @@ class Front extends Base
 		$last_store = $_SESSION['commerce_last_store'] ?? null;
 		\Context::set('shop_continue_url', (is_array($last_store) && time() - (int)($last_store['time'] ?? 0) < 7200) ? (string)$last_store['url'] : '');
 		\Context::set('ship_fee', CartModel::calcShipFee($resolved));
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setShopContext();
 		$this->setTemplateFile('cart');
@@ -1087,7 +1087,7 @@ class Front extends Base
 		\Context::set('payment_price', $resolved->item_total + $ship_fee);
 		\Context::set('is_member', $logged_info && $logged_info->member_srl ? true : false);
 		\Context::set('pay_available', self::isPayAvailable());
-		$checkout_config = clone self::config();
+		$checkout_config = self::viewConfig();
 		$checkout_entries = array_values(array_filter((array)($resolved->items ?? []), function ($e) { return empty($e->blocked); }));
 		$checkout_config->ship_extra_zones = \Zittme\Modules\Commerce\Models\Delivery::effectiveZones($checkout_entries, (int)($resolved->item_total_listed ?? $resolved->item_total));
 		\Context::set('shop_config', $checkout_config);
@@ -1266,7 +1266,7 @@ class Front extends Base
 		\Context::set('claimable_sellers', $claimable_sellers);
 		\Context::set('claim_blocked_reason', $claim_blocked_reason);
 		\Context::set('display_status', OrderModel::displayStatus($order, $order_sellers));
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('result');
 	}
@@ -1309,7 +1309,7 @@ class Front extends Base
 		\Context::set('my_coupons', $member_srl > 0 ? \Zittme\Modules\Commerce\Models\Coupon::listUsableForMember($member_srl, 0) : []);
 		\Context::set('seller_apply_link', $member_srl > 0 && \Zittme\Modules\Commerce\Models\Seller::isOpen()
 			&& ((self::config()->market_apply ?? 'N') === 'Y' || \Zittme\Modules\Commerce\Models\Seller::getByMember($member_srl)));
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		$this->setTemplatePath($this->getSkinPath());
 		$this->setTemplateFile('my');
 	}
@@ -1372,7 +1372,7 @@ class Front extends Base
 		\Context::set('next_remaining', $next_grade ? max(0, $next_grade->min_spend - $total_spend) : 0);
 		\Context::set('grade_progress', $progress);
 		\Context::set('default_credit_rate', $default_rate);
-		\Context::set('shop_config', $config);
+		\Context::set('shop_config', self::viewConfig());
 		$skin_path = $this->getSkinPath();
 		if (!is_file($skin_path . 'grades.html'))
 		{
@@ -1631,7 +1631,7 @@ class Front extends Base
 		\Context::set('store_color', $design['color']);
 		$_SESSION['commerce_last_store'] = ['url' => $store->url, 'time' => time()];
 		\Context::set('cart_count', count(CartModel::rows()));
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		self::injectAdminPanel();
 
 		$skin_path = $this->getSkinPath();
@@ -1673,7 +1673,7 @@ class Front extends Base
 		\Context::set('apply_open', (self::config()->market_apply ?? 'N') === 'Y');
 		\Context::set('apply_rate', (float)(self::config()->market_commission ?? 0));
 		\Context::set('console_url', getNotEncodedUrl('', 'mid', '', 'act', 'dispCommerceSellerCenter'));
-		\Context::set('shop_config', self::config());
+		\Context::set('shop_config', self::viewConfig());
 		$skin_path = $this->getSkinPath();
 		if (!is_file($skin_path . 'seller_apply.html'))
 		{
