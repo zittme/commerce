@@ -268,7 +268,7 @@
 .zmd-mini a:hover { color: var(--zmc-brand, #26345c); }
 @media (max-width: 1400px) { .zmd-cards-todo { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 1100px) { .zmd-cards-todo { grid-template-columns: repeat(2, minmax(0, 1fr)); } .zmd-split { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 640px) { .zmd-cards, .zmd-cards-sales, .zmd-cards-todo { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .zmd-cards, .zmd-cards-sales, .zmd-cards-todo { grid-template-columns: minmax(0, 1fr); } .zmd-mini { display: block; overflow-x: auto; } .zmd-split > * { min-width: 0; } }
 .zmd-todo { margin: 0 0 16px; }
 .zmd-todo h3 { margin: 0 0 10px; font-size: 16px; font-weight: 800; }
 .zmd-todo h3 small, .rsva-panel h3 small { margin-left: 6px; font-size: 13px; font-weight: 500; color: var(--zmc-sub, #7a7f8c); }

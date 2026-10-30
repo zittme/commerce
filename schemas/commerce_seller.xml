@@ -31,6 +31,7 @@
 	<column name="carry_balance" type="bigint" notnull="notnull" default="0" />
 	<column name="status" type="varchar" size="20" notnull="notnull" default="active" index="idx_status" />
 	<column name="reject_reason" type="varchar" size="250" />
+	<column name="suspend_until" type="char" size="14" />
 	<column name="approved_date" type="char" size="14" />
 	<column name="regdate" type="char" size="14" />
 	<column name="last_update" type="char" size="14" />

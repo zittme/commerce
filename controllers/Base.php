@@ -48,6 +48,7 @@ class Base extends \ModuleObject
 
 	protected static function assertShopEnabled(): void
 	{
+		\Zittme\Modules\Commerce\Models\Seller::releaseExpired();
 		if ((self::config()->enabled ?? 'Y') === 'Y')
 		{
 			return;

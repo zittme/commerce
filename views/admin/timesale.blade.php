@@ -26,9 +26,13 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 .ts-calc { font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ts-calc s { color: var(--pm-sub); }
 .ts-calc b { color: #b3261e; }
+.pm .ts-rows input.ts-tiers { width: 150px; height: 32px; padding: 0 8px; box-sizing: border-box; }
+.ts-buyers { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
 .ts-sold { font-size: 12px; color: var(--pm-sub); white-space: nowrap; }
 .ts-empty { padding: 20px; text-align: center; font-size: 13px; color: var(--pm-sub); border: 1px dashed var(--pm-line); border-radius: var(--pm-r); }
-.ts-times { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.ts-times { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.ts-times input { min-width: 0; width: 100%; box-sizing: border-box; }
+@media (max-width: 520px) { .ts-times { grid-template-columns: minmax(0, 1fr); } }
 .ts-edit { max-width: 980px; }
 </style>
 
@@ -91,8 +95,9 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 	$te_rows = [];
 	foreach ($ts_edit_items as $tr)
 	{
-		$te_rows[] = ['item_srl' => (int)$tr->item_srl, 'discount_type' => $tr->discount_type, 'value' => (float)$tr->value, 'qty_limit' => (int)$tr->qty_limit, 'per_member' => (int)$tr->per_member, 'sold_qty' => (int)$tr->sold_qty];
+		$te_rows[] = ['item_srl' => (int)$tr->item_srl, 'discount_type' => $tr->discount_type, 'value' => (float)$tr->value, 'qty_limit' => (int)$tr->qty_limit, 'per_member' => (int)$tr->per_member, 'sold_qty' => (int)$tr->sold_qty, 'tiers' => \Zittme\Modules\Commerce\Models\Timesale::parseTiers($tr->tiers ?? ''), 'show_buyers' => ($tr->show_buyers ?? 'N') === 'Y' ? 'Y' : 'N'];
 	}
+	$ts_group = \Zittme\Modules\Commerce\Models\Timesale::hasGroupColumns();
 	$te_data_json = json_encode($te_data, JSON_UNESCAPED_UNICODE + JSON_HEX_TAG + JSON_HEX_AMP);
 	$te_rows_json = json_encode($te_rows, JSON_UNESCAPED_UNICODE + JSON_HEX_TAG);
 	@endphp
@@ -143,12 +148,13 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 			<h3>{{ lang('commerce.ts_sec_items') }} <small id="tsCount"></small></h3>
 			<div style="overflow-x:auto">
 				<table class="ts-rows">
-					<thead><tr><th>{{ lang('commerce.ts_col_item') }}</th><th>{{ lang('commerce.ts_col_discount') }}</th><th>{{ lang('commerce.ts_col_price') }}</th><th>{{ lang('commerce.ts_col_limit') }}</th><th>{{ lang('commerce.ts_col_per') }}</th><th>{{ lang('commerce.ts_col_sold') }}</th><th></th></tr></thead>
+					<thead><tr><th>{{ lang('commerce.ts_col_item') }}</th><th>{{ lang('commerce.ts_col_discount') }}</th><th>{{ lang('commerce.ts_col_price') }}</th><th>{{ lang('commerce.ts_col_limit') }}</th><th>{{ lang('commerce.ts_col_per') }}</th><th>{{ lang('commerce.ts_col_sold') }}</th>@if ($ts_group)<th>{{ lang('commerce.ts_col_tiers') }}</th><th>{{ lang('commerce.ts_col_buyers') }}</th>@endif<th></th></tr></thead>
 					<tbody id="tsRows"></tbody>
 				</table>
 			</div>
 			<p class="ts-empty" id="tsEmpty">{{ lang('commerce.ts_items_empty') }}</p>
 			<div class="pm-hint" style="margin-top:8px">{{ lang('commerce.ts_items_hint') }}</div>
+			@if ($ts_group)<div class="pm-hint" style="margin-top:4px">{{ lang('commerce.ts_group_hint') }}</div>@endif
 			<div class="pm-finder">
 				<div class="pm-finder-bar" style="grid-template-columns:minmax(0,1fr) 160px">
 					<input type="search" id="tsQ" placeholder="{{ lang('commerce.pm_search_ph') }}" />
@@ -181,8 +187,11 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 			hintOnce: {!! json_encode(lang('commerce.ts_hint_once')) !!},
 			hintDaily: {!! json_encode(lang('commerce.ts_hint_daily')) !!},
 			delAsk: {!! json_encode(lang('commerce.ts_delete_ask')) !!},
-			bad: {!! json_encode(lang('commerce.ts_msg_bad_price')) !!}
+			bad: {!! json_encode(lang('commerce.ts_msg_bad_price')) !!},
+			tiersPh: {!! json_encode(lang('commerce.ts_tiers_ph')) !!},
+			buyersLabel: {!! json_encode(lang('commerce.ts_show_buyers')) !!}
 		};
+		var GROUP = {{ $ts_group ? 'true' : 'false' }};
 		var byId = {}; ITEMS.forEach(function (it) { byId[it.srl] = it; });
 		rows = rows.filter(function (r) { return byId[r.item_srl]; });
 		var $ = function (id) { return document.getElementById(id); };
@@ -219,6 +228,22 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 					n.addEventListener('input', function () { r[k] = +n.value || 0; }); c.appendChild(n); tr.appendChild(c);
 				});
 				tr.appendChild(el('td', 'ts-sold', r.sold_qty ? won(r.sold_qty) : '-'));
+				if (GROUP) {
+					var ct = el('td'), ti = el('input');
+					ti.type = 'text'; ti.className = 'ts-tiers'; ti.placeholder = T.tiersPh;
+					ti.value = (r.tiers || []).map(function (t) { return t.n + ':' + t.v; }).join(', ');
+					ti.addEventListener('input', function () {
+						r.tiers = ti.value.split(',').map(function (part) {
+							var m = part.trim().match(/^(\d+)\s*[:：]\s*(\d+(?:\.\d+)?)$/);
+							return m ? { n: +m[1], v: +m[2] } : null;
+						}).filter(Boolean);
+					});
+					ct.appendChild(ti); tr.appendChild(ct);
+					var cb = el('td'), lab = el('label', 'ts-buyers'), ck = el('input');
+					ck.type = 'checkbox'; ck.checked = r.show_buyers === 'Y';
+					ck.addEventListener('change', function () { r.show_buyers = ck.checked ? 'Y' : 'N'; });
+					lab.appendChild(ck); lab.appendChild(document.createTextNode(' ' + T.buyersLabel)); cb.appendChild(lab); tr.appendChild(cb);
+				}
 				var c7 = el('td'), x = el('button', 'pm-x', '×'); x.type = 'button'; x.setAttribute('aria-label', T.remove + ': ' + it.name);
 				x.addEventListener('click', function () { rows.splice(i, 1); draw(); find(); }); c7.appendChild(x); tr.appendChild(c7);
 				tb.appendChild(tr);
@@ -235,7 +260,7 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 				if (it.thumb) th.style.backgroundImage = "url('" + it.thumb.replace(/'/g, '%27') + "')";
 				nm.appendChild(el('small', '', it.meta)); li.appendChild(th); li.appendChild(nm);
 				var on = picked.indexOf(it.srl) !== -1, b = el('button', 'pm-add', on ? T.added : '+'); b.type = 'button'; b.disabled = on;
-				b.addEventListener('click', function () { rows.push({ item_srl: it.srl, discount_type: 'percent', value: 20, qty_limit: 0, per_member: 0, sold_qty: 0 }); draw(); find(); });
+				b.addEventListener('click', function () { rows.push({ item_srl: it.srl, discount_type: 'percent', value: 20, qty_limit: 0, per_member: 0, sold_qty: 0, tiers: [], show_buyers: 'N' }); draw(); find(); });
 				li.appendChild(b); box.appendChild(li);
 			});
 		}

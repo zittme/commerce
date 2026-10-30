@@ -77,7 +77,7 @@
 </div>
 
 <style>
-.zmi-bulk { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; font-size: 13px; }
+.zmi-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 10px; font-size: 13px; }
 .zmi-bulk label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .zmi-bulk-hint { color: #8b95a1; font-size: 12px; }
 .zmi-expired-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #4e5968; white-space: nowrap; }

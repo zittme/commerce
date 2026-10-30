@@ -48,6 +48,7 @@
 				@endif
 			</p>
 			{!! shop_timesale_badge($item, 'detail') !!}
+			{!! shop_stock_notice($item, $options ?? []) !!}
 
 			@php
 			$shp_ship_type = $item->ship_fee_type ?? 'default';

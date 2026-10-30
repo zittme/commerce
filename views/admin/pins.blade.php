@@ -37,7 +37,8 @@ $pn_st_label = ['stock' => lang('commerce.pin_st_stock'), 'assigned' => lang('co
 .pn-pager { display: flex; justify-content: center; gap: 4px; margin: 12px 0; }
 .pn-pager a, .pn-pager span { min-width: 30px; padding: 5px 8px; border: 1px solid var(--zmc-line, #e6e3dc); border-radius: 4px; text-align: center; font-size: 12.5px; text-decoration: none !important; color: var(--zmc-ink, #232a3b) !important; background: var(--zmc-surface, #fff); }
 .pn-pager span { background: var(--zmc-brand, #26345c); color: #fff !important; }
-@media (max-width: 1100px) { .pn-wrap { grid-template-columns: 1fr; } .pn-form { position: static; } }
+@media (max-width: 1100px) { .pn-wrap { grid-template-columns: minmax(0, 1fr); } .pn-form { position: static; } }
+@media (max-width: 640px) { .pn-wrap > div { min-width: 0; } .pn-table { display: block; overflow-x: auto; } .pn-bar > * { max-width: 100%; min-width: 0; } .pn-sum { grid-template-columns: minmax(0, 1fr); } }
 </style>
 
 <div class="rsva">

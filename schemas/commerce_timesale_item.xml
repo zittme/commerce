@@ -7,5 +7,7 @@
 	<column name="qty_limit" type="int" notnull="notnull" default="0" />
 	<column name="per_member" type="int" notnull="notnull" default="0" />
 	<column name="sold_qty" type="int" notnull="notnull" default="0" />
+	<column name="tiers" type="text" />
+	<column name="show_buyers" type="char" size="1" notnull="notnull" default="N" />
 	<column name="list_order" type="int" notnull="notnull" default="0" />
 </table>

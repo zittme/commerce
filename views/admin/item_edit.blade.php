@@ -27,6 +27,7 @@
 .ie-pills label { position: relative; display: inline-flex; align-items: center; padding: 10px 16px; margin: 0; border: 1px solid #dde3ec; border-radius: 10px; font-size: 13.5px; font-weight: 600; color: #4e5968; cursor: pointer; background: #fff; white-space: nowrap; line-height: 1; transition: border-color .12s, background .12s; }
 .ie-pills label:hover { border-color: #b9c6d8; }
 .ie-pills input { position: absolute; opacity: 0; pointer-events: none; }
+@media (max-width: 640px) { .ie-pills label { max-width: 100%; white-space: normal; line-height: 1.35; } .ie-page .xefu-controll { flex-wrap: wrap; } .ie-page .xefu-controll > div { float: none !important; min-width: 0; max-width: 100%; } .ie-page .xefu-btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; } }
 .ie-pills label:has(input:checked) { border-color: var(--zmc-brand, #2677e3); background: var(--zmc-brand-soft, #eef4fd); color: var(--zmc-brand, #2677e3); box-shadow: inset 0 0 0 1px var(--zmc-brand, #2677e3); }
 .ie-cond { margin-top: 12px; }
 .ie-checks label { display: inline-flex; align-items: center; gap: 7px; margin: 0 14px 0 0; font-size: 13.5px; font-weight: 600; color: #333d4b; cursor: pointer; }

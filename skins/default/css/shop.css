@@ -35,6 +35,9 @@
 .shp-badge.is-soldout { background: #f2f3f5; color: var(--shp-sub); }
 .shp-badge.is-adult { background: #fdeaea; color: #c0392b; }
 .shp-soldout-cover { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255,255,255,.55); font-weight: 800; color: var(--shp-sub); font-size: 15px; }
+.shp-stock-note { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 14px; padding: 10px 12px; border-radius: 9px; background: #fff4e5; color: #8a4b00; font-size: 13px; line-height: 1.5; }
+.shp-stock-note b { font-weight: 700; }
+.shp-stock-note span { min-width: 0; overflow-wrap: anywhere; }
 .shp-empty { padding: 56px 0; text-align: center; color: var(--shp-sub); }
 
 .shp-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; margin-bottom: 32px; }

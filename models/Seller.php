@@ -451,7 +451,7 @@ class Seller
 		return $ok;
 	}
 
-	public static function setStatus(int $seller_srl, string $status, string $reason = ''): bool
+	public static function setStatus(int $seller_srl, string $status, string $reason = '', string $until = ''): bool
 	{
 		$row = self::get($seller_srl);
 		if (!$row || self::isOperator($seller_srl) || !in_array($status, self::STATUSES, true))
@@ -472,6 +472,7 @@ class Seller
 		if ($ok)
 		{
 			$oDB = \Zittme\Framework\DB::getInstance();
+			self::storeSuspendUntil($seller_srl, $status === 'suspended' ? $until : '');
 			$tracked = $oDB->isColumnExists('commerce_item', 'hidden_by_suspend');
 			if (in_array($status, ['suspended', 'rejected'], true))
 			{
@@ -501,6 +502,62 @@ class Seller
 		}
 		self::forget($seller_srl);
 		return $ok;
+	}
+
+	public static function hasSuspendUntil(): bool
+	{
+		static $has = false;
+		if (!$has)
+		{
+			try
+			{
+				$has = (bool)\DB::getInstance()->isColumnExists('commerce_seller', 'suspend_until');
+			}
+			catch (\Throwable $e)
+			{
+			}
+		}
+		return $has;
+	}
+
+	protected static function storeSuspendUntil(int $seller_srl, string $until): void
+	{
+		if (!self::hasSuspendUntil() || (!preg_match('/^\d{14}$/', $until) && $until !== ''))
+		{
+			return;
+		}
+		\Zittme\Framework\DB::getInstance()->query(
+			'UPDATE commerce_seller SET suspend_until = ? WHERE seller_srl = ?',
+			[$until === '' ? null : $until, $seller_srl]
+		);
+	}
+
+	public static function releaseExpired(): int
+	{
+		if (\Zittme\Framework\Cache::get('commerce_suspend_sweep') || !self::hasSuspendUntil())
+		{
+			return 0;
+		}
+		\Zittme\Framework\Cache::set('commerce_suspend_sweep', 1, 300);
+		$rows = \Zittme\Framework\DB::getInstance()->query(
+			"SELECT seller_srl FROM commerce_seller WHERE status = 'suspended' AND suspend_until IS NOT NULL AND suspend_until <> '' AND suspend_until <= ? LIMIT 50",
+			[date('YmdHis')]
+		)->fetchAll();
+		$count = 0;
+		foreach ($rows as $row)
+		{
+			if (self::setStatus((int)$row->seller_srl, 'approved'))
+			{
+				$count++;
+			}
+		}
+		return $count;
+	}
+
+	public static function suspendUntilText(object $row): string
+	{
+		$until = (string)($row->suspend_until ?? '');
+		return ($row->status ?? '') === 'suspended' && strlen($until) === 14 ? zdate($until, 'Y.m.d') : '';
 	}
 
 	public static function setCommission(int $seller_srl, ?float $rate): void

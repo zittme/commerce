@@ -65,6 +65,8 @@ class Config
 
 		'low_stock_default' => 5,
 		'notify_low_stock' => 'Y',
+		'stock_public_low' => 'N',
+		'stock_admin_total' => 'N',
 
 		'notify_admin' => 'N',
 

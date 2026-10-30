@@ -29,8 +29,12 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 .mk-info .mk-store dd { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .mk-intro { margin: 10px 0 0; padding: 10px 12px; border-radius: 5px; background: var(--zmc-bg, #f7f6f3); font-size: 13px; white-space: pre-line; }
 .mk-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--zmc-line, #e6e3dc); }
-.mk-acts form { display: inline-flex; gap: 6px; align-items: center; margin: 0; }
+.mk-acts form { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0; max-width: 100%; }
 .mk-acts input[type=text], .mk-acts input[type=number] { width: auto; padding: 5px 8px !important; font-size: 13px !important; }
+.mk-acts .mk-until { display: inline-flex; flex: 1 1 100%; gap: 6px; align-items: center; margin: 0; font-size: 12.5px; font-weight: 400; color: var(--zmc-sub, #7a7f8c); }
+.mk-acts .mk-until span { flex: 0 0 auto; font-weight: 400; white-space: nowrap; }
+.mk-acts form input[type=text] { flex: 1 1 160px; min-width: 0; }
+.mk-acts .mk-until input { flex: 1 1 auto; min-width: 0; width: auto; padding: 5px 8px !important; font-size: 13px !important; }
 .mk-empty { padding: 40px 20px; text-align: center; color: var(--zmc-sub, #7a7f8c); }
 </style>
 
@@ -58,7 +62,7 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 		<div class="mk-card">
 			<div class="mk-card-head">
 				<b>{{ $s->shop_name }}</b>
-				<span class="mk-badge is-{{ $s->status }}">{{ lang('commerce.mk_st_' . $s->status) }}</span>
+				<span class="mk-badge is-{{ $s->status }}">{{ lang('commerce.mk_st_' . $s->status) }}</span>@if ($s->suspend_until_text !== '')<span class="mk-sub">{{ sprintf(lang('commerce.mk_suspend_until_note'), $s->suspend_until_text) }}</span>@endif
 				<span class="mk-sub">{{ $s->nick_name ?: '#' . $s->member_srl }}@if ($s->user_id) ({{ $s->user_id }})@endif · {{ lang('commerce.mk_applied_at') }} {{ $s->regdate_text }}</span>
 			</div>
 			<dl class="mk-info">
@@ -104,6 +108,7 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 					<input type="hidden" name="module" value="admin" /><input type="hidden" name="act" value="procCommerceAdminSellerStatus" />
 					<input type="hidden" name="seller_srl" value="{{ $s->seller_srl }}" /><input type="hidden" name="status" value="suspended" />@if ($s->carry > 0)<input type="hidden" name="carry_ok" value="Y" />@endif
 					<input type="text" name="reason" maxlength="250" placeholder="{{ lang('commerce.mk_suspend_reason') }}" />
+					@if ($mk_can_until)<label class="mk-until"><span>{{ lang('commerce.mk_suspend_until') }}</span><input type="date" name="suspend_until" min="{{ date('Y-m-d', strtotime('+1 day')) }}" title="{{ lang('commerce.mk_suspend_until_help') }}" /></label>@endif
 					<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.mk_do_suspend') }}</button>
 				</form>
 				<a class="rsva-btn rsva-btn-sm" href="{{ getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole', 'p', 'items', 'f_seller', $s->seller_srl) }}">{{ lang('commerce.mk_see_items') }}</a>

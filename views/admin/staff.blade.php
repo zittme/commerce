@@ -38,7 +38,7 @@ $st_audit_url = getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole'
 .st-perms label.is-key { grid-column: 1 / -1; padding-top: 6px; border-top: 1px dashed var(--zmc-line, #e6e3dc); }
 .st-hint { margin: 0; font-size: 12px; line-height: 1.55; color: var(--zmc-sub, #7a7f8c); }
 .st-empty { padding: 40px 20px; text-align: center; color: var(--zmc-sub, #7a7f8c); }
-@media (max-width: 1100px) { .st-wrap { grid-template-columns: 1fr; } .st-form { position: static; } .st-roles { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .st-wrap { grid-template-columns: minmax(0, 1fr); } .st-form { position: static; } .st-roles { grid-template-columns: minmax(0, 1fr); } }
 </style>
 
 <div class="rsva">
@@ -49,7 +49,7 @@ $st_audit_url = getUrl('', 'module', '', 'mid', '', 'act', 'dispCommerceConsole'
 	</div>
 
 	<div class="st-wrap">
-		<div class="rsva-panel" style="padding:0;overflow:hidden">
+		<div class="rsva-panel" style="padding:0;overflow-x:auto">
 			@if (empty($staff_list))
 			<p class="st-empty">{{ lang('commerce.st_empty') }}</p>
 			@else

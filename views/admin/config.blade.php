@@ -41,7 +41,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 	</style>
 	@php
 	$cfg_guides = [];
-	foreach (['enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes', 'default_ship_fee', 'free_ship_over', 'claim_days', 'sweettracker_api_key', 'shop_main', 'category_layout', 'home_count', 'show_shop_nav', 'show_search', 'show_admin_fab', 'item_sticky', 'currency_code_prefix', 'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo', 'ship_guide', 'claim_guide', 'privacy_text', 'privacy_version', 'retention_days', 'notify_admin', 'notify_low_stock', 'biz_name', 'biz_ceo', 'biz_number', 'biz_tel', 'biz_address', 'biz_note', 'vat_rate'] as $cfg_gk)
+	foreach (['enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes', 'default_ship_fee', 'free_ship_over', 'claim_days', 'sweettracker_api_key', 'shop_main', 'category_layout', 'home_count', 'show_shop_nav', 'show_search', 'show_admin_fab', 'item_sticky', 'currency_code_prefix', 'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo', 'ship_guide', 'claim_guide', 'privacy_text', 'privacy_version', 'retention_days', 'notify_admin', 'notify_low_stock', 'stock_public_low', 'stock_admin_total', 'biz_name', 'biz_ceo', 'biz_number', 'biz_tel', 'biz_address', 'biz_note', 'vat_rate'] as $cfg_gk)
 	{
 		$cfg_gt = lang('commerce.cfg_guide_' . $cfg_gk);
 		if (strpos($cfg_gt, 'cfg_guide_') === false) { $cfg_guides[$cfg_gk] = $cfg_gt; }
@@ -394,6 +394,8 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					<input type="number" name="low_stock_default" min="0" max="9999" value="{{ (int)($shop_config->low_stock_default ?? 0) }}" style="width:110px" />
 					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.cfg_low_stock_default_help') }}</p>
 				</div>
+				<div><label>{{ lang('commerce.cfg_stock_public_low') }}</label><select name="stock_public_low"><option value="Y" @if(($shop_config->stock_public_low ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->stock_public_low ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select></div>
+				<div><label>{{ lang('commerce.cfg_stock_admin_total') }}</label><select name="stock_admin_total"><option value="Y" @if(($shop_config->stock_admin_total ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->stock_admin_total ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select></div>
 			</div>
 
 			<h4 class="cfg-sub">{{ lang('commerce.shop_notify_to_admin') }}</h4>

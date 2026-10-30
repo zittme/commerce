@@ -117,7 +117,7 @@ $il_edit = getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerc
 					{{ shop_money_base((int)$it->price) }}
 					@endif
 				</td>
-				<td class="il-num">{{ $it->use_stock === 'Y' ? number_format($it->stock) : lang('commerce.st_item_unlimited') }}</td>
+				<td class="il-num">@if ($it->use_stock !== 'Y'){{ lang('commerce.st_item_unlimited') }}@elseif (isset($it->stock_total)){{ number_format($it->stock_total) }}<br /><small style="color:var(--zmc-sub, #9aa1ab)">{{ lang('commerce.st_total_stock') }}</small>@else{{ number_format($it->stock) }}@endif</td>
 				<td><span class="rsva-st {{ $il_st_class[$it->status] ?? '' }}">{{ $il_status[$it->status] ?? $it->status }}</span></td>
 				<td>
 					<div class="il-more">

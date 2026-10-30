@@ -92,8 +92,10 @@ class Timesale
 			$rows = [];
 		}
 		$now = time();
+		$counts = self::buyerCounts($rows);
 		foreach ($rows as $row)
 		{
+			self::applyTiers($row, $counts[(int)$row->ts_item_srl] ?? 0);
 			$row->ends_at = self::windowEnd($row, $now);
 			$row->starts_at = $row->ends_at ? 0 : self::nextStart($row, $now);
 			$row->left = (int)$row->qty_limit > 0 ? max(0, (int)$row->qty_limit - (int)$row->sold_qty) : -1;
@@ -104,6 +106,93 @@ class Timesale
 			}
 		}
 		return self::$map;
+	}
+
+	public static function hasGroupColumns(): bool
+	{
+		static $has = false;
+		if (!$has)
+		{
+			try
+			{
+				$has = (bool)\DB::getInstance()->isColumnExists('commerce_timesale_item', 'tiers');
+			}
+			catch (\Throwable $e)
+			{
+			}
+		}
+		return $has;
+	}
+
+	public static function parseTiers($raw): array
+	{
+		$list = is_array($raw) ? $raw : json_decode((string)$raw, true);
+		$out = [];
+		foreach (is_array($list) ? $list : [] as $t)
+		{
+			$n = (int)($t['n'] ?? 0);
+			if ($n >= 2 && isset($t['v']) && is_numeric($t['v']))
+			{
+				$out[$n] = ['n' => $n, 'v' => (float)$t['v']];
+			}
+		}
+		ksort($out);
+		return array_slice(array_values($out), 0, 5);
+	}
+
+	protected static function buyerCounts(array $rows): array
+	{
+		$srls = [];
+		foreach ($rows as $row)
+		{
+			if (($row->show_buyers ?? 'N') === 'Y' || self::parseTiers($row->tiers ?? '') !== [])
+			{
+				$srls[] = (int)$row->ts_item_srl;
+			}
+		}
+		if (!$srls)
+		{
+			return [];
+		}
+		try
+		{
+			$st = \Zittme\Framework\DB::getInstance()->query(
+				"SELECT commerce_order_item.timesale_item_srl AS srl, COUNT(DISTINCT commerce_order_item.order_srl) AS cnt FROM commerce_order_item JOIN commerce_order ON commerce_order.order_srl = commerce_order_item.order_srl WHERE commerce_order_item.timesale_item_srl IN (" . implode(',', $srls) . ") AND commerce_order.status IN ('pending', 'paid') GROUP BY commerce_order_item.timesale_item_srl"
+			);
+			$out = [];
+			foreach ($st ? $st->fetchAll() : [] as $r)
+			{
+				$out[(int)$r->srl] = (int)$r->cnt;
+			}
+			return $out;
+		}
+		catch (\Throwable $e)
+		{
+			return [];
+		}
+	}
+
+	protected static function applyTiers(object $row, int $buyers): void
+	{
+		$row->buyers = $buyers;
+		$row->tier_next = null;
+		$tiers = self::parseTiers($row->tiers ?? '');
+		$row->tier_list = $tiers;
+		if (!$tiers)
+		{
+			return;
+		}
+		foreach ($tiers as $t)
+		{
+			if ($buyers >= $t['n'])
+			{
+				$row->value = $t['v'];
+			}
+			elseif ($row->tier_next === null)
+			{
+				$row->tier_next = (object)$t;
+			}
+		}
 	}
 
 	public static function forItem(object $item): ?object
@@ -277,13 +366,25 @@ class Timesale
 			$type = ($it['discount_type'] ?? 'percent') === 'price' ? 'price' : 'percent';
 			$value = $type === 'percent' ? max(1, min(99, (float)($it['value'] ?? 0))) : max(0, (int)($it['value'] ?? 0));
 			$vals = [$type, $value, max(0, (int)($it['qty_limit'] ?? 0)), max(0, (int)($it['per_member'] ?? 0)), $i];
+			$group_sql = '';
+			if (self::hasGroupColumns())
+			{
+				$tiers = [];
+				foreach (self::parseTiers($it['tiers'] ?? []) as $t)
+				{
+					$t['v'] = $type === 'percent' ? max(1, min(99, $t['v'])) : max(0, (int)$t['v']);
+					$tiers[] = $t;
+				}
+				$group_vals = [$tiers ? json_encode($tiers) : null, ($it['show_buyers'] ?? 'N') === 'Y' ? 'Y' : 'N'];
+				$group_sql = ', tiers = ?, show_buyers = ?';
+			}
 			if (isset($old[$item_srl]))
 			{
-				$db->query('UPDATE commerce_timesale_item SET discount_type = ?, value = ?, qty_limit = ?, per_member = ?, list_order = ? WHERE ts_item_srl = ?', array_merge($vals, [(int)$old[$item_srl]->ts_item_srl]));
+				$db->query('UPDATE commerce_timesale_item SET discount_type = ?, value = ?, qty_limit = ?, per_member = ?, list_order = ?' . $group_sql . ' WHERE ts_item_srl = ?', array_merge($vals, $group_sql !== '' ? $group_vals : [], [(int)$old[$item_srl]->ts_item_srl]));
 			}
 			else
 			{
-				$db->query('INSERT INTO commerce_timesale_item (ts_item_srl, sale_srl, item_srl, discount_type, value, qty_limit, per_member, list_order, sold_qty) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)', array_merge([getNextSequence(), $sale_srl, $item_srl], $vals));
+				$db->query('INSERT INTO commerce_timesale_item (ts_item_srl, sale_srl, item_srl, discount_type, value, qty_limit, per_member, list_order, sold_qty' . ($group_sql !== '' ? ', tiers, show_buyers' : '') . ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0' . ($group_sql !== '' ? ', ?, ?' : '') . ')', array_merge([getNextSequence(), $sale_srl, $item_srl], $vals, $group_sql !== '' ? $group_vals : []));
 			}
 		}
 		foreach ($old as $item_srl => $o)

@@ -58,6 +58,25 @@ if (!function_exists('shop_money_base'))
 	}
 }
 
+if (!function_exists('shop_stock_notice'))
+{
+	function shop_stock_notice(object $item, array $options = []): string
+	{
+		$rows = \Zittme\Modules\Commerce\Models\Stock::publicLowRows($item, $options);
+		if (!$rows)
+		{
+			return '';
+		}
+		$out = '<div class="shp-stock-note"><b>' . escape(lang('commerce.shop_stock_low')) . '</b>';
+		foreach ($rows as $row)
+		{
+			$text = sprintf(lang('commerce.shop_stock_left'), number_format($row->stock));
+			$out .= '<span>' . ($row->label !== '' ? escape($row->label) . ' · ' : '') . escape($text) . '</span>';
+		}
+		return $out . '</div>';
+	}
+}
+
 if (!function_exists('shop_timesale_badge'))
 {
 	function shop_timesale_badge(object $item, string $mode = 'card'): string
@@ -77,6 +96,10 @@ if (!function_exists('shop_timesale_badge'))
 		}
 		$left = ($ts ?: $info)->left;
 		$qty = $left > 0 ? ' <small>' . sprintf(lang('commerce.ts_left_qty'), number_format($left)) . '</small>' : '';
+		if ($ts && ($ts->show_buyers ?? 'N') === 'Y' && (int)$ts->buyers > 0)
+		{
+			$qty .= ' <small>' . sprintf(lang('commerce.ts_buyers'), number_format((int)$ts->buyers)) . '</small>';
+		}
 		if ($ts)
 		{
 			if ($mode === 'detail')
@@ -87,7 +110,24 @@ if (!function_exists('shop_timesale_badge'))
 					$pct = (int)round(min(100, (int)$ts->sold_qty / max(1, (int)$ts->qty_limit) * 100));
 					$bar = '<span class="shp-ts-bar"><i style="width:' . $pct . '%"></i></span>';
 				}
-				return '<div class="shp-ts-box" data-ts-end="' . (int)$ts->ends_at . '"><span>' . escape(lang('commerce.ts_label')) . ' · ' . escape((string)$ts->title) . '</span><span>' . escape(lang('commerce.ts_ends_in')) . ' <b data-ts-clock></b></span>' . ($left > 0 ? '<span>' . sprintf(lang('commerce.ts_left_qty'), number_format($left)) . '</span>' : '') . ($ts->per_member > 0 ? '<span>' . sprintf(lang('commerce.ts_per_member_note'), (int)$ts->per_member) . '</span>' : '') . $bar . '</div>';
+				$group = '';
+				if (($ts->show_buyers ?? 'N') === 'Y')
+				{
+					$group .= '<span>' . sprintf(escape(lang('commerce.ts_buyers')), number_format((int)$ts->buyers)) . '</span>';
+				}
+				if (!empty($ts->tier_list))
+				{
+					if ($ts->tier_next)
+					{
+						$next_value = ($ts->discount_type ?? 'percent') === 'price' ? shop_money_base((int)$ts->tier_next->v) : rtrim(rtrim(number_format((float)$ts->tier_next->v, 1), '0'), '.') . '%';
+						$group .= '<span>' . sprintf(escape(lang('commerce.ts_tier_next')), number_format(max(1, (int)$ts->tier_next->n - (int)$ts->buyers)), escape($next_value)) . '</span>';
+					}
+					else
+					{
+						$group .= '<span>' . escape(lang('commerce.ts_tier_top')) . '</span>';
+					}
+				}
+				return '<div class="shp-ts-box" data-ts-end="' . (int)$ts->ends_at . '"><span>' . escape(lang('commerce.ts_label')) . ' · ' . escape((string)$ts->title) . '</span><span>' . escape(lang('commerce.ts_ends_in')) . ' <b data-ts-clock></b></span>' . ($left > 0 ? '<span>' . sprintf(lang('commerce.ts_left_qty'), number_format($left)) . '</span>' : '') . ($ts->per_member > 0 ? '<span>' . sprintf(lang('commerce.ts_per_member_note'), (int)$ts->per_member) . '</span>' : '') . $group . $bar . '</div>';
 			}
 			return '<span class="shp-ts" data-ts-end="' . (int)$ts->ends_at . '">' . escape(lang('commerce.ts_label')) . ' <span data-ts-clock></span>' . $qty . '</span>';
 		}

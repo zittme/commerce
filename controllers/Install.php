@@ -84,6 +84,9 @@ class Install extends Base
 		['commerce_seller', 'ship_quick_regions', 'text', null],
 		['commerce_seller', 'ship_zone_fees', 'text', null],
 		['commerce_item', 'hidden_by_suspend', 'char', 1],
+		['commerce_seller', 'suspend_until', 'char', 14],
+		['commerce_timesale_item', 'tiers', 'text', null],
+		['commerce_timesale_item', 'show_buyers', 'char', 1],
 	];
 
 	public const ADDED_INDEXES = [
@@ -127,6 +130,7 @@ class Install extends Base
 		['commerce_item', 'is_pin'],
 		['commerce_item', 'hidden_by_market'],
 		['commerce_item', 'hidden_by_suspend'],
+		['commerce_timesale_item', 'show_buyers'],
 		['commerce_item', 'allow_quick'],
 		['commerce_seller', 'ship_quick'],
 	];

@@ -91,7 +91,7 @@
 				@foreach ($stock_items as $si)
 				@php $st_fid = 'stAdj' . $si->item_srl . '_0'; @endphp
 				<tr>
-					<td><strong>{{ $si->item_name }}</strong><br /><small style="color:#8b95a1">{{ ($si->use_stock ?? 'Y') === 'Y' ? lang('commerce.st_item_stock_managed') : lang('commerce.st_item_unlimited_sale') }}</small></td>
+					<td><strong>{{ $si->item_name }}</strong><br /><small style="color:#8b95a1">{{ ($si->use_stock ?? 'Y') === 'Y' ? lang('commerce.st_item_stock_managed') : lang('commerce.st_item_unlimited_sale') }}</small>@if (isset($stock_totals[(int)$si->item_srl]))<br /><small style="color:#8b95a1">{{ lang('commerce.st_total_stock') }}: <b>{{ number_format($stock_totals[(int)$si->item_srl]) }}</b></small>@endif</td>
 					<td>{{ lang('commerce.admin_stock_9') }}</td>
 					<td style="text-align:right;font-weight:700">{{ number_format((int)$si->stock) }}</td>
 					<td style="text-align:right"><input type="number" class="zmi-low-input" min="0" data-item="{{ (int)$si->item_srl }}" data-option="0" value="{{ (int)($si->low_stock ?? 0) }}" placeholder="{{ $stock_low_default }}" style="width:70px;text-align:right" /></td>

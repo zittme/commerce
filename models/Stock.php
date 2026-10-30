@@ -315,6 +315,37 @@ class Stock
 		return $rows;
 	}
 
+	public static function publicLowRows(object $item, array $options): array
+	{
+		$config = Base::config();
+		if (($config->stock_public_low ?? 'N') !== 'Y' || ($item->use_stock ?? 'Y') !== 'Y')
+		{
+			return [];
+		}
+		$fallback = max(0, (int)($config->low_stock_default ?? 0));
+		$rows = [];
+		$basic = array_filter($options, function ($o) { return ($o->option_type ?? 'basic') !== 'extra'; });
+		if (!count($basic))
+		{
+			$limit = (int)($item->low_stock ?? 0) ?: $fallback;
+			$stock = (int)($item->stock ?? 0);
+			if ($limit > 0 && $stock > 0 && $stock <= $limit)
+			{
+				$rows[] = (object)['label' => '', 'stock' => $stock];
+			}
+		}
+		foreach ($options as $opt)
+		{
+			$limit = (int)($opt->low_stock ?? 0) ?: $fallback;
+			$stock = (int)($opt->stock ?? 0);
+			if (($opt->status ?? 'Y') === 'Y' && $limit > 0 && $stock > 0 && $stock <= $limit)
+			{
+				$rows[] = (object)['label' => (string)($opt->option_label ?? ''), 'stock' => $stock];
+			}
+		}
+		return $rows;
+	}
+
 	public static function lowStockCount(): int
 	{
 		return count(self::lowStockRows(500));

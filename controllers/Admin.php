@@ -53,7 +53,7 @@ class Admin extends Base
 		'use_phone_cc', 'require_state', 'use_coupon', 'use_credit', 'auto_confirm_days',
 		'currencies', 'currency_fallback',
 		'notify_admin', 'notify_admin_email', 'notify_admin_group',
-		'notify_low_stock', 'low_stock_default',
+		'notify_low_stock', 'low_stock_default', 'stock_public_low', 'stock_admin_total',
 		'notify_admin_new_order', 'notify_admin_claim',
 		'notify_buyer_received', 'notify_buyer_paid', 'notify_buyer_shipping',
 		'notify_buyer_delivered', 'notify_buyer_claim_done',
@@ -61,7 +61,7 @@ class Admin extends Base
 	];
 
 	protected const BOOLEAN_FIELDS = ['enabled', 'market_apply', 'market_item_review', 'seller_item_in_store', 'show_seller_on_card', 'short_shop_url', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
-		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale', 'ship_types_enabled', 'ship_quick_enabled'];
+		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale', 'ship_types_enabled', 'ship_quick_enabled', 'stock_public_low', 'stock_admin_total'];
 	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100], 'market_commission' => [0, 100]];
 	protected const INT_FIELDS = [
 		'pending_minutes' => [10, 1440],
@@ -279,6 +279,18 @@ class Admin extends Base
 		}
 		\Context::set('stock_items', $items);
 		\Context::set('stock_options_map', $options_map);
+		$stock_totals = [];
+		if ((self::config()->stock_admin_total ?? 'N') === 'Y')
+		{
+			foreach ($options_map as $total_srl => $total_opts)
+			{
+				if (count($total_opts))
+				{
+					$stock_totals[$total_srl] = array_sum(array_map('intval', array_column($total_opts, 'stock')));
+				}
+			}
+		}
+		\Context::set('stock_totals', $stock_totals);
 		\Context::set('stock_categories', self::getCategories());
 		\Context::set('stock_filters', (object)['keyword' => $keyword, 'field' => $field, 'category' => $category_srl, 'from' => $date_from, 'to' => $date_to]);
 		\Context::set('stock_page_navigation', $output->page_navigation);
@@ -771,6 +783,20 @@ class Admin extends Base
 
 		$items = LangModel::textAll($items, ['item_name', 'summary']);
 		BrandModel::attach($items);
+		if ((self::config()->stock_admin_total ?? 'N') === 'Y' && count($items))
+		{
+			$totals = [];
+			$srls = array_map(function ($row) { return (int)$row->item_srl; }, $items);
+			$tot = \Zittme\Framework\DB::getInstance()->query("SELECT item_srl, SUM(stock) AS total FROM commerce_item_option WHERE status = 'Y' AND item_srl IN (" . implode(',', $srls) . ') GROUP BY item_srl');
+			foreach ($tot ? $tot->fetchAll() : [] as $row)
+			{
+				$totals[(int)$row->item_srl] = (int)$row->total;
+			}
+			foreach ($items as $row)
+			{
+				$row->stock_total = $totals[(int)$row->item_srl] ?? null;
+			}
+		}
 		\Context::set('items', $items);
 		\Context::set('page_navigation', $output->page_navigation ?? null);
 		\Context::set('categories', self::getCategories());
@@ -3737,6 +3763,7 @@ class Admin extends Base
 		{
 			throw new \Zittme\Framework\Exceptions\NotPermitted;
 		}
+		SellerModel::releaseExpired();
 		$status = (string)\Context::get('f_status');
 		$status = in_array($status, SellerModel::STATUSES, true) ? $status : '';
 		$keyword = trim((string)\Context::get('q'));
@@ -3765,6 +3792,7 @@ class Admin extends Base
 			$row->carry_text = $row->carry > 0 ? MoneyModel::format($row->carry, MoneyModel::base()) : '';
 			$row->effective_rate = SellerModel::commissionRate($row);
 			$row->regdate_text = $row->regdate ? zdate($row->regdate, 'Y.m.d') : '';
+			$row->suspend_until_text = SellerModel::suspendUntilText($row);
 			$row->ship_fee_text = MoneyModel::format((int)$row->ship_fee, MoneyModel::base());
 			$row->free_over_text = (int)$row->free_ship_over > 0 ? MoneyModel::format((int)$row->free_ship_over, MoneyModel::base()) : '';
 			$row->store_full = (string)($row->shop_id ?? '') !== '' ? \Zittme\Modules\Commerce\Models\Shop::fullUrl((string)$row->shop_id) : '';
@@ -3791,6 +3819,7 @@ class Admin extends Base
 
 		\Context::set('mk_conflicts', \Zittme\Modules\Commerce\Models\Shop::shortEnabled() ? \Zittme\Modules\Commerce\Models\Shop::midConflicts() : []);
 		\Context::set('mk_sellers', $sellers);
+		\Context::set('mk_can_until', SellerModel::hasSuspendUntil());
 		\Context::set('mk_counts', $counts);
 		\Context::set('mk_status', $status);
 		\Context::set('mk_q', $keyword);
@@ -3887,7 +3916,18 @@ class Admin extends Base
 		{
 			return new \BaseObject(-1, sprintf(lang('commerce.sc_warn_carry_status'), MoneyModel::format($carry, MoneyModel::base())));
 		}
-		if (!SellerModel::setStatus($seller_srl, $status, (string)\Context::get('reason')))
+		$until = '';
+		$until_raw = trim((string)\Context::get('suspend_until'));
+		if ($status === 'suspended' && $until_raw !== '')
+		{
+			$until_ts = preg_match('/^\d{4}-\d{2}-\d{2}$/', $until_raw) ? strtotime($until_raw . ' 23:59:59') : false;
+			if ($until_ts === false || $until_ts <= time() || !SellerModel::hasSuspendUntil())
+			{
+				return new \BaseObject(-1, lang('commerce.mk_suspend_until_invalid'));
+			}
+			$until = date('YmdHis', $until_ts);
+		}
+		if (!SellerModel::setStatus($seller_srl, $status, (string)\Context::get('reason'), $until))
 		{
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
