@@ -346,6 +346,20 @@ class Stock
 		return $rows;
 	}
 
+	public static function limitMap(object $item, array $options): array
+	{
+		$map = [];
+		if (($item->use_stock ?? 'Y') === 'Y')
+		{
+			$map['0'] = max(0, (int)($item->stock ?? 0));
+		}
+		foreach ($options as $opt)
+		{
+			$map[(string)(int)($opt->option_srl ?? 0)] = max(0, (int)($opt->stock ?? 0));
+		}
+		return $map;
+	}
+
 	public static function lowStockCount(): int
 	{
 		return count(self::lowStockRows(500));

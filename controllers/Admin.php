@@ -43,7 +43,7 @@ class Admin extends Base
 
 	public const CONFIG_FIELDS = [
 		'enabled', 'market_mode', 'market_commission', 'market_apply', 'market_item_review', 'seller_item_in_store', 'code_prefix', 'allow_guest', 'pending_minutes',
-		'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key', 'couriers',
+		'ship_fee_mode', 'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key', 'couriers',
 		'shop_main', 'category_layout', 'item_image_size', 'show_shop_nav', 'show_search', 'show_admin_fab', 'home_show_recommend', 'home_show_new',
 		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones', 'show_seller_on_card', 'short_shop_url', 'seller_form',
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
@@ -492,6 +492,13 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 
+		$saved = self::saveLowStockRows($rows);
+		$this->setMessage(sprintf(lang('commerce.adm_low_stock_saved'), $saved));
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock'));
+	}
+
+	protected static function saveLowStockRows(array $rows): int
+	{
 		$prefix = \Zittme\Modules\Commerce\Controllers\Install::dbPrefix();
 		$handle = \Zittme\Framework\DB::getInstance()->getHandle();
 		$item_stmt = $handle->prepare('UPDATE `' . $prefix . 'commerce_item` SET low_stock = ? WHERE item_srl = ?');
@@ -527,8 +534,7 @@ class Admin extends Base
 			}
 		}
 
-		$this->setMessage(sprintf(lang('commerce.adm_low_stock_saved'), $saved));
-		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminStock'));
+		return $saved;
 	}
 
 	public function procCommerceAdminDeleteOrders()
@@ -574,6 +580,12 @@ class Admin extends Base
 		if (!$item)
 		{
 			return new \BaseObject(-1, 'msg_shop_no_item');
+		}
+
+		$low_stock = \Context::get('low_stock');
+		if ($low_stock !== null && $low_stock !== '')
+		{
+			self::saveLowStockRows([['item_srl' => $item_srl, 'option_srl' => $option_srl, 'low_stock' => $low_stock]]);
 		}
 
 		$member_srl = (int)(\Context::get('logged_info')->member_srl ?? 0);
@@ -3038,6 +3050,10 @@ class Admin extends Base
 			elseif ($key === 'ship_holidays')
 			{
 				$value = implode("\n", array_map(function ($d) { return substr($d, 0, 4) . '-' . substr($d, 4, 2) . '-' . substr($d, 6, 2); }, array_keys(\Zittme\Modules\Commerce\Models\Delivery::parseHolidays((string)$value))));
+			}
+			elseif ($key === 'ship_fee_mode')
+			{
+				$value = $value === 'flat' ? 'flat' : 'zone';
 			}
 			elseif ($key === 'shop_main')
 			{

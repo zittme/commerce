@@ -71,6 +71,7 @@
 			<input type="hidden" name="f_field" value="{{ Context::get('f_field') }}" />
 			<input type="hidden" name="f_category" value="{{ Context::get('f_category') }}" />
 			<input type="hidden" name="memo" value="" />
+			<input type="hidden" name="low_stock" value="" />
 		</form>
 		@foreach ($stock_options_map[(int)$si->item_srl] ?? [] as $so)
 		<form id="stAdj{{ $si->item_srl }}_{{ $so->option_srl }}" action="./" method="post">
@@ -82,6 +83,7 @@
 			<input type="hidden" name="f_field" value="{{ Context::get('f_field') }}" />
 			<input type="hidden" name="f_category" value="{{ Context::get('f_category') }}" />
 			<input type="hidden" name="memo" value="" />
+			<input type="hidden" name="low_stock" value="" />
 		</form>
 		@endforeach
 		@endforeach
@@ -94,7 +96,7 @@
 					<td><strong>{{ $si->item_name }}</strong><br /><small style="color:#8b95a1">{{ ($si->use_stock ?? 'Y') === 'Y' ? lang('commerce.st_item_stock_managed') : lang('commerce.st_item_unlimited_sale') }}</small>@if (isset($stock_totals[(int)$si->item_srl]))<br /><small style="color:#8b95a1">{{ lang('commerce.st_total_stock') }}: <b>{{ number_format($stock_totals[(int)$si->item_srl]) }}</b></small>@endif</td>
 					<td>{{ lang('commerce.admin_stock_9') }}</td>
 					<td style="text-align:right;font-weight:700">{{ number_format((int)$si->stock) }}</td>
-					<td style="text-align:right"><input type="number" class="zmi-low-input" min="0" data-item="{{ (int)$si->item_srl }}" data-option="0" value="{{ (int)($si->low_stock ?? 0) }}" placeholder="{{ $stock_low_default }}" style="width:70px;text-align:right" /></td>
+					<td style="text-align:right"><input type="number" class="zmi-low-input" min="0" data-item="{{ (int)$si->item_srl }}" data-option="0" value="{{ (int)($si->low_stock ?? 0) ?: '' }}" placeholder="{{ $stock_low_default }}" style="width:70px;text-align:right" /></td>
 					<td style="white-space:nowrap">
 						<select name="adjust_type" form="{{ $st_fid }}">
 							<option value="in">{{ lang('commerce.admin_stock_10') }}</option>
@@ -115,7 +117,7 @@
 					<td style="padding-left:28px;color:#6b7684">{{ $so->option_label }}</td>
 					<td>{{ lang('commerce.admin_stock_15') }}</td>
 					<td style="text-align:right">{{ number_format((int)$so->stock) }}</td>
-					<td style="text-align:right"><input type="number" class="zmi-low-input" min="0" data-item="{{ (int)$si->item_srl }}" data-option="{{ (int)$so->option_srl }}" value="{{ (int)($so->low_stock ?? 0) }}" placeholder="{{ $stock_low_default }}" style="width:70px;text-align:right" /></td>
+					<td style="text-align:right"><input type="number" class="zmi-low-input" min="0" data-item="{{ (int)$si->item_srl }}" data-option="{{ (int)$so->option_srl }}" value="{{ (int)($so->low_stock ?? 0) ?: '' }}" placeholder="{{ $stock_low_default }}" style="width:70px;text-align:right" /></td>
 					<td style="white-space:nowrap">
 						<select name="adjust_type" form="{{ $st_fid }}">
 							<option value="in">{{ lang('commerce.admin_stock_10') }}</option>
@@ -210,6 +212,26 @@
 			});
 		});
 		form.rows.value = JSON.stringify(rows);
+	});
+
+	var savedText = {!! json_encode(lang('commerce.adm_low_stock_autosaved'), JSON_UNESCAPED_UNICODE) !!};
+	document.querySelectorAll('.zmi-low-input').forEach(function (el) {
+		var value = function () { return el.value === '' ? '0' : el.value; };
+		var adjust = document.getElementById('stAdj' + el.getAttribute('data-item') + '_' + el.getAttribute('data-option'));
+		var mark = document.createElement('small');
+		mark.style.cssText = 'display:block;min-height:14px;font-size:11px;opacity:.75';
+		el.parentNode.appendChild(mark);
+		var sync = function () {
+			if (adjust && adjust.low_stock) { adjust.low_stock.value = value(); }
+		};
+		el.addEventListener('input', sync);
+		el.addEventListener('change', function () {
+			sync();
+			mark.textContent = '';
+			exec_json('commerce.procCommerceAdminSaveLowStock', {
+				rows: JSON.stringify([{ item_srl: el.getAttribute('data-item'), option_srl: el.getAttribute('data-option'), low_stock: value() }])
+			}, function () { mark.textContent = savedText; });
+		});
 	});
 })();
 </script>

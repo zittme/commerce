@@ -265,6 +265,10 @@ class Cart
 
 	public static function extraShipZone(string $zipcode, string $address1 = '', string $country = 'KR', string $state = '', string $city = '', int $item_total = 0): array
 	{
+		if ((Base::config()->ship_fee_mode ?? 'zone') === 'flat')
+		{
+			return [-1, 0];
+		}
 		$zipcode = preg_replace('/[^0-9]/', '', $zipcode);
 		$country = strtoupper(trim($country)) ?: Address::baseCountry();
 		$region = $address1 !== '' ? Stats::normalizeRegion(explode(' ', trim($address1))[0]) : '';

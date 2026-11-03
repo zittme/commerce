@@ -20,6 +20,8 @@ class Config
 
 		'pending_minutes' => 60,
 
+		'ship_fee_mode' => 'zone',
+
 		'default_ship_fee' => 3000,
 
 		'free_ship_over' => 50000,

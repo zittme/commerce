@@ -62,18 +62,90 @@ if (!function_exists('shop_stock_notice'))
 {
 	function shop_stock_notice(object $item, array $options = []): string
 	{
+		$out = '';
 		$rows = \Zittme\Modules\Commerce\Models\Stock::publicLowRows($item, $options);
-		if (!$rows)
+		if ($rows)
+		{
+			$out = '<style>:where(.shp-stock-note){display:flex;flex-wrap:wrap;gap:4px 12px;margin:0 0 14px;padding:10px 12px;border-radius:9px;background:var(--shp-brand-soft,#fff4e5);color:var(--shp-text,#8a4b00);font-size:13px;line-height:1.5}:where(.shp-stock-note) b{font-weight:700}:where(.shp-stock-note) span{min-width:0;overflow-wrap:anywhere}</style>'
+				. '<div class="shp-stock-note"><b>' . escape(lang('commerce.shop_stock_low')) . '</b>';
+			foreach ($rows as $row)
+			{
+				$text = sprintf(lang('commerce.shop_stock_left'), number_format($row->stock));
+				$out .= '<span>' . ($row->label !== '' ? escape($row->label) . ' · ' : '') . escape($text) . '</span>';
+			}
+			$out .= '</div>';
+		}
+		return $out . shop_stock_cap_script($item, $options);
+	}
+}
+
+if (!function_exists('shop_stock_cap_script'))
+{
+	function shop_stock_cap_script(object $item, array $options = []): string
+	{
+		static $printed = false;
+		if ($printed)
 		{
 			return '';
 		}
-		$out = '<div class="shp-stock-note"><b>' . escape(lang('commerce.shop_stock_low')) . '</b>';
-		foreach ($rows as $row)
+		$limits = \Zittme\Modules\Commerce\Models\Stock::limitMap($item, $options);
+		if (!$limits)
 		{
-			$text = sprintf(lang('commerce.shop_stock_left'), number_format($row->stock));
-			$out .= '<span>' . ($row->label !== '' ? escape($row->label) . ' · ' : '') . escape($text) . '</span>';
+			return '';
 		}
-		return $out . '</div>';
+		$printed = true;
+		$limit_json = json_encode($limits, JSON_HEX_TAG | JSON_HEX_AMP);
+		$message_json = json_encode(lang('commerce.shop_stock_cap'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
+		return <<<HTML
+<script>
+(function () {
+	var limits = {$limit_json};
+	var message = {$message_json};
+	var note = null;
+	var busy = false;
+	function enforce() {
+		if (busy) { return; }
+		var rows = document.querySelectorAll('#shpRows .shp-select-row');
+		var shown = 0;
+		Array.prototype.forEach.call(rows, function (row) {
+			var max = limits[row.getAttribute('data-opt')];
+			var input = row.querySelector('.shp-qty');
+			if (!input || max === undefined || max < 1) { return; }
+			var current = parseInt(input.getAttribute('max'), 10) || 0;
+			input.setAttribute('max', current > 0 ? Math.min(current, max) : max);
+			if ((parseInt(input.value, 10) || 0) > max) {
+				input.value = max;
+				var hidden = row.querySelector('input[name="qtys[]"]');
+				if (hidden) { hidden.value = max; }
+				busy = true;
+				input.dispatchEvent(new Event('input', { bubbles: true }));
+				busy = false;
+				shown = max;
+			}
+		});
+		if (shown > 0) {
+			var holder = document.getElementById('shpRows');
+			if (!note && holder) {
+				note = document.createElement('p');
+				note.setAttribute('role', 'status');
+				note.style.cssText = 'margin:6px 0 0;font-size:12.5px;line-height:1.5';
+				holder.parentNode.insertBefore(note, holder.nextSibling);
+			}
+			if (note) { note.textContent = message.replace('%s', shown); }
+		} else if (note) {
+			note.textContent = '';
+		}
+	}
+	['click', 'input', 'change'].forEach(function (type) { document.addEventListener(type, enforce); });
+	function start() {
+		var holder = document.getElementById('shpRows');
+		if (holder && window.MutationObserver) { new MutationObserver(enforce).observe(holder, { childList: true }); }
+		enforce();
+	}
+	if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', start); } else { start(); }
+})();
+</script>
+HTML;
 	}
 }
 

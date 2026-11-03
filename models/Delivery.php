@@ -476,6 +476,10 @@ class Delivery
 
 	public static function effectiveZones(array $entries, int $listed_total): string
 	{
+		if ((Config::getConfig()->ship_fee_mode ?? 'zone') === 'flat')
+		{
+			return '[]';
+		}
 		$zones = json_decode((string)(Config::getConfig()->ship_extra_zones ?? '[]'), true);
 		$zones = is_array($zones) ? array_values($zones) : [];
 		$sellers = array_keys(self::parcelGroups($entries));

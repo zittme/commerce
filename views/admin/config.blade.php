@@ -41,7 +41,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 	</style>
 	@php
 	$cfg_guides = [];
-	foreach (['enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes', 'default_ship_fee', 'free_ship_over', 'claim_days', 'sweettracker_api_key', 'shop_main', 'category_layout', 'home_count', 'show_shop_nav', 'show_search', 'show_admin_fab', 'item_sticky', 'currency_code_prefix', 'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo', 'ship_guide', 'claim_guide', 'privacy_text', 'privacy_version', 'retention_days', 'notify_admin', 'notify_low_stock', 'stock_public_low', 'stock_admin_total', 'biz_name', 'biz_ceo', 'biz_number', 'biz_tel', 'biz_address', 'biz_note', 'vat_rate'] as $cfg_gk)
+	foreach (['enabled', 'market_mode', 'code_prefix', 'allow_guest', 'pending_minutes', 'ship_fee_mode', 'default_ship_fee', 'free_ship_over', 'claim_days', 'sweettracker_api_key', 'shop_main', 'category_layout', 'home_count', 'show_shop_nav', 'show_search', 'show_admin_fab', 'item_sticky', 'currency_code_prefix', 'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo', 'ship_guide', 'claim_guide', 'privacy_text', 'privacy_version', 'retention_days', 'notify_admin', 'notify_low_stock', 'stock_public_low', 'stock_admin_total', 'biz_name', 'biz_ceo', 'biz_number', 'biz_tel', 'biz_address', 'biz_note', 'vat_rate'] as $cfg_gk)
 	{
 		$cfg_gt = lang('commerce.cfg_guide_' . $cfg_gk);
 		if (strpos($cfg_gt, 'cfg_guide_') === false) { $cfg_guides[$cfg_gk] = $cfg_gt; }
@@ -160,6 +160,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 		<div class="rsva-panel">
 			<h3>{{ lang('commerce.admin_config_13') }}</h3>
 			<div class="rsva-form-grid">
+				<div><label>{{ lang('commerce.cfg_ship_fee_mode') }}</label><select name="ship_fee_mode"><option value="zone" @if(($shop_config->ship_fee_mode ?? 'zone') !== 'flat') selected @endif>{{ lang('commerce.cfg_ship_fee_mode_zone') }}</option><option value="flat" @if(($shop_config->ship_fee_mode ?? 'zone') === 'flat') selected @endif>{{ lang('commerce.cfg_ship_fee_mode_flat') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_14') }}</label><input type="number" name="default_ship_fee" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$shop_config->default_ship_fee) }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_15') }}</label><input type="number" name="free_ship_over" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$shop_config->free_ship_over) }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_19') }}</label><input type="number" name="claim_days" min="0" max="90" value="{{ $shop_config->claim_days }}" /></div>
