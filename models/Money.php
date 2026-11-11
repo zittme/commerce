@@ -202,7 +202,7 @@ class Money
 		return self::minorToBase($minor, $currency, $rate);
 	}
 
-	public static function inputToMinor($input): int
+	public static function inputToMinor($input, string $currency = ''): int
 	{
 		$raw = str_replace(',', '', trim((string)$input));
 		if ($raw === '' || !preg_match('/^-?\d*\.?\d*$/', $raw))
@@ -213,27 +213,28 @@ class Money
 		{
 			return 0;
 		}
-		if (self::isZeroDecimal())
+		if (self::isZeroDecimal($currency))
 		{
 			return (int)round((float)$raw);
 		}
 		return (int)round((float)$raw * 100);
 	}
 
-	public static function minorToInput(int $minor): string
+	public static function minorToInput(int $minor, string $currency = ''): string
 	{
-		if (self::isZeroDecimal())
+		if (self::isZeroDecimal($currency))
 		{
 			return (string)$minor;
 		}
 		return number_format($minor / 100, 2, '.', '');
 	}
 
-	public static function unitLabel(): string
+	public static function unitLabel(string $currency = ''): string
 	{
-		if (self::base() !== 'KRW')
+		$currency = $currency !== '' ? strtoupper($currency) : self::base();
+		if ($currency !== 'KRW')
 		{
-			return self::base();
+			return $currency;
 		}
 		return self::useWonSuffix() ? '원' : 'KRW';
 	}
@@ -248,10 +249,28 @@ class Money
 		$class = '\\Zittme\\Modules\\Zittme_pay\\Models\\Currency';
 		$map = class_exists($class) ? $class::SYMBOLS : [];
 		$symbol = (string)($map[$currency] ?? ($currency . ' '));
-		if ((Config::getConfig()->currency_code_prefix ?? 'N') !== 'Y' && preg_match('/^[A-Z]{3} (\S+)$/', $symbol, $m))
+		if ((Config::getConfig()->currency_code_prefix ?? 'N') === 'Y')
+		{
+			if (preg_match('/^[$¥]$/u', $symbol) && $currency !== 'USD')
+			{
+				$symbol = $currency . ' ' . $symbol;
+			}
+			return $symbol;
+		}
+		if (isset(self::SHORT_SYMBOLS[$currency]))
+		{
+			return self::SHORT_SYMBOLS[$currency];
+		}
+		if (preg_match('/^[A-Z]{3} (\S+)$/', $symbol, $m))
 		{
 			$symbol = $m[1];
 		}
 		return $symbol;
 	}
+
+	// 같은 기호를 쓰는 통화끼리 섞여도 구분되도록 나라 표시를 붙인 짧은 기호
+	public const SHORT_SYMBOLS = [
+		'TWD' => 'NT$', 'HKD' => 'HK$', 'MXN' => 'MX$', 'AUD' => 'A$', 'CAD' => 'CA$',
+		'SGD' => 'S$', 'NZD' => 'NZ$', 'CNY' => 'CN¥', 'JPY' => 'JP¥',
+	];
 }

@@ -35,7 +35,7 @@
 						<input type="hidden" name="module" value="admin" />
 						<input type="hidden" name="act" value="procCommerceAdminUpdateClaim" />
 						<input type="hidden" name="claim_srl" value="{{ $c->claim_srl }}" />
-						<div><label>{{ lang('commerce.admin_claims_12') }}</label><input type="number" name="refund_amount" min="0" value="{{ $co ? $co->payment_price : 0 }}" style="width:110px" /></div>
+						<div><label>{{ lang('commerce.admin_claims_12') }} ({{ \Zittme\Modules\Commerce\Models\Money::unitLabel($co->currency ?? 'KRW') }})</label><input type="number" name="refund_amount" min="0" step="any" value="{{ $co ? \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$co->payment_price, $co->currency ?? 'KRW') : 0 }}" style="width:110px" /></div>
 						<div><label>{{ lang('commerce.admin_claims_13') }}</label><select name="restock" style="width:80px"><option value="Y">{{ lang('commerce.admin_claims_14') }}</option><option value="N">{{ lang('commerce.admin_claims_15') }}</option></select></div>
 						<div><button type="submit" name="claim_action" value="approve" class="rsva-btn rsva-btn-sm rsva-btn-primary">{{ lang('commerce.admin_claims_16') }}</button></div>
 						<div><button type="submit" name="claim_action" value="reject" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.admin_claims_4') }}</button></div>
