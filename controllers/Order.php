@@ -625,6 +625,29 @@ class Order extends Base
 		$this->setRedirectUrl(getNotEncodedFullUrl('', 'mid', $mid, 'act', 'dispCommerceOrderResult', 'code', $order->order_code, 'gp', $raw));
 	}
 
+	public function procCommerceAddressDelete()
+	{
+		if ((self::config()->address_delete ?? 'N') !== 'Y')
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+
+		$logged_info = \Context::get('logged_info');
+		$member_srl = ($logged_info && $logged_info->member_srl) ? (int)$logged_info->member_srl : 0;
+		$address_srl = (int)\Context::get('address_srl');
+		if ($member_srl <= 0 || $address_srl <= 0)
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+
+		$output = executeQuery('commerce.deleteAddress', (object)['address_srl' => $address_srl, 'member_srl' => $member_srl]);
+		if (!$output->toBool())
+		{
+			return $output;
+		}
+		$this->add('address_srl', $address_srl);
+	}
+
 	public function procCommerceConfirmPurchase()
 	{
 		$code = trim((string)\Context::get('order_code'));

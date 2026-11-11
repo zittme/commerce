@@ -49,7 +49,7 @@ class Admin extends Base
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
 		'privacy_text', 'privacy_version', 'retention_days',
 		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note', 'biz_logo',
-		'biz_tax_mode', 'vat_rate', 'price_includes_tax', 'base_country', 'allow_overseas', 'address_mode',
+		'biz_tax_mode', 'vat_rate', 'price_includes_tax', 'base_country', 'allow_overseas', 'address_mode', 'address_delete', 'category_cascade',
 		'use_phone_cc', 'require_state', 'use_coupon', 'use_credit', 'auto_confirm_days',
 		'currencies', 'currency_fallback',
 		'notify_admin', 'notify_admin_email', 'notify_admin_group',
@@ -1586,6 +1586,7 @@ class Admin extends Base
 		}
 		$srls = array_slice(array_values($srls), 0, 50);
 
+		$print_seller = StaffModel::seller();
 		$invoices = [];
 		foreach ($srls as $srl)
 		{
@@ -1595,11 +1596,37 @@ class Admin extends Base
 				continue;
 			}
 
+			$order_sellers = OrderModel::getSellerOrders($srl);
+			if ($print_seller)
+			{
+				$order_sellers = array_values(array_filter($order_sellers, function ($os) use ($print_seller) {
+					return (int)$os->seller_srl === (int)$print_seller->seller_srl;
+				}));
+				if (!count($order_sellers))
+				{
+					continue;
+				}
+			}
+
 			$address_output = executeQuery('commerce.getOrderAddress', (object)['order_srl' => $srl]);
 			$address = ($address_output->toBool() && !empty($address_output->data)) ?
 				(is_array($address_output->data) ? $address_output->data[0] : $address_output->data) : null;
 
 			$items = OrderModel::getItems($srl);
+			if ($print_seller)
+			{
+				$own_os = (int)$order_sellers[0]->order_seller_srl;
+				$items = array_values(array_filter($items, function ($oi) use ($own_os) {
+					return (int)$oi->order_seller_srl === $own_os;
+				}));
+				$order = clone $order;
+				$order->item_total = (int)$order_sellers[0]->item_total;
+				$order->delivery_fee_total = (int)$order_sellers[0]->delivery_fee;
+				$order->discount_total = (int)$order_sellers[0]->discount;
+				$order->credit_used = 0;
+				$order->payment_price = max(0, $order->item_total + $order->delivery_fee_total - $order->discount_total);
+				$order->orderer_email = '';
+			}
 			foreach ($items as $oi)
 			{
 				if (empty($oi->tax_type))
@@ -1616,7 +1643,7 @@ class Admin extends Base
 				'address_text' => $address ? AddressModel::format($address) : '',
 				'phone_text' => $address ? AddressModel::formatPhone($address) : '',
 				'country_name' => $address ? AddressModel::countryName((string)($address->country ?? 'KR')) : '',
-				'sellers' => OrderModel::getSellerOrders($srl),
+				'sellers' => $order_sellers,
 				'tax' => TaxModel::breakdown(
 					self::config(),
 					$items,

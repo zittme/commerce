@@ -2196,3 +2196,14 @@ $lang->cfg_ship_fee_mode = 'Tipo de gastos de envío';
 $lang->cfg_ship_fee_mode_zone = 'Aplicar recargo por zona (solo tarifa base fuera de ellas)';
 $lang->cfg_ship_fee_mode_flat = 'Tarifa base única en todas partes (sin recargo por zona)';
 $lang->cfg_guide_ship_fee_mode = 'Elija cómo se cobra el envío. "Aplicar recargo por zona" suma a la tarifa base el recargo definido abajo en las zonas indicadas y cobra solo la tarifa base en el resto. "Tarifa base única" cobra siempre solo la tarifa base e ignora los recargos por zona. Por defecto se aplica el recargo por zona.';
+
+$lang->shop_saved_address_delete = 'Eliminar la dirección seleccionada';
+$lang->shop_saved_address_delete_ask = '¿Eliminar la dirección seleccionada?';
+$lang->cfg_address_delete = 'Eliminar direcciones guardadas';
+$lang->cfg_address_delete_off = 'El comprador no puede eliminar (predeterminado)';
+$lang->cfg_address_delete_on = 'El comprador puede eliminar en el pago';
+$lang->cfg_guide_address_delete = 'Si se activa, los miembros pueden eliminar una dirección guardada desde la lista del pago. Desactivado por defecto.';
+$lang->cfg_category_cascade = 'Selector de categoría del producto';
+$lang->cfg_category_cascade_off = 'Una sola lista (predeterminado)';
+$lang->cfg_category_cascade_on = 'Por niveles (1, 2 y 3)';
+$lang->cfg_guide_category_cascade = 'Si se activa, el formulario del producto elige la categoría mediante listas por niveles. Desactivado por defecto.';

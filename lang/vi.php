@@ -2196,3 +2196,14 @@ $lang->cfg_ship_fee_mode = 'Kiểu phí vận chuyển';
 $lang->cfg_ship_fee_mode_zone = 'Áp dụng phụ phí theo khu vực (nơi khác chỉ tính phí cơ bản)';
 $lang->cfg_ship_fee_mode_flat = 'Áp dụng phí cơ bản cho mọi nơi (không phụ phí khu vực)';
 $lang->cfg_guide_ship_fee_mode = 'Chọn cách tính phí vận chuyển. "Áp dụng phụ phí theo khu vực" cộng phụ phí đã đặt bên dưới vào phí cơ bản ở các khu vực tương ứng và chỉ tính phí cơ bản ở nơi khác. "Phí cơ bản cho mọi nơi" luôn chỉ tính phí cơ bản và bỏ qua phụ phí khu vực. Mặc định là áp dụng phụ phí theo khu vực.';
+
+$lang->shop_saved_address_delete = 'Xóa địa chỉ đã chọn';
+$lang->shop_saved_address_delete_ask = 'Xóa địa chỉ đã chọn?';
+$lang->cfg_address_delete = 'Xóa địa chỉ đã lưu';
+$lang->cfg_address_delete_off = 'Người mua không thể xóa (mặc định)';
+$lang->cfg_address_delete_on = 'Người mua có thể xóa tại trang thanh toán';
+$lang->cfg_guide_address_delete = 'Khi bật, thành viên có thể tự xóa địa chỉ đã lưu trong danh sách ở trang thanh toán. Mặc định là tắt.';
+$lang->cfg_category_cascade = 'Cách chọn danh mục khi đăng sản phẩm';
+$lang->cfg_category_cascade_off = 'Một danh sách duy nhất (mặc định)';
+$lang->cfg_category_cascade_on = 'Chọn từng cấp 1, 2, 3';
+$lang->cfg_guide_category_cascade = 'Khi bật, biểu mẫu sản phẩm chọn danh mục qua các danh sách theo từng cấp. Mặc định là tắt.';

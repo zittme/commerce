@@ -495,6 +495,22 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 					</select>
 				</div>
 				<div>
+					<label>{{ lang('commerce.cfg_address_delete') }}</label>
+					<select name="address_delete">
+						<option value="N" @if(($shop_config->address_delete ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.cfg_address_delete_off') }}</option>
+						<option value="Y" @if(($shop_config->address_delete ?? 'N') === 'Y') selected @endif>{{ lang('commerce.cfg_address_delete_on') }}</option>
+					</select>
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.cfg_guide_address_delete') }}</p>
+				</div>
+				<div>
+					<label>{{ lang('commerce.cfg_category_cascade') }}</label>
+					<select name="category_cascade">
+						<option value="N" @if(($shop_config->category_cascade ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.cfg_category_cascade_off') }}</option>
+						<option value="Y" @if(($shop_config->category_cascade ?? 'N') === 'Y') selected @endif>{{ lang('commerce.cfg_category_cascade_on') }}</option>
+					</select>
+					<p class="zmc-help" style="margin:4px 0 8px;font-size:12.5px;color:#8b95a1">{{ lang('commerce.cfg_guide_category_cascade') }}</p>
+				</div>
+				<div>
 					<label>{{ lang('commerce.shop_use_phone_cc') }}</label>
 					<select name="use_phone_cc">
 						<option value="auto" @if(($shop_config->use_phone_cc ?? 'auto') === 'auto') selected @endif>{{ lang('commerce.shop_use_phone_cc_auto') }}</option>

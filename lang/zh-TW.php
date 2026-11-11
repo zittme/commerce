@@ -2196,3 +2196,14 @@ $lang->cfg_ship_fee_mode = '運費類型';
 $lang->cfg_ship_fee_mode_zone = '套用地區加收運費(非該地區僅收基本運費)';
 $lang->cfg_ship_fee_mode_flat = '一律收基本運費(不加收地區運費)';
 $lang->cfg_guide_ship_fee_mode = '選擇運費的收取方式。「套用地區加收運費」會在基本運費之外，對下方設定的地區加收運費，其他地區只收基本運費。「一律收基本運費」不論哪個地區都只收基本運費，並忽略地區加收運費。預設為套用地區加收運費。';
+
+$lang->shop_saved_address_delete = '刪除所選收件地址';
+$lang->shop_saved_address_delete_ask = '要刪除所選的收件地址嗎？';
+$lang->cfg_address_delete = '刪除已儲存的收件地址';
+$lang->cfg_address_delete_off = '買家不可刪除（預設）';
+$lang->cfg_address_delete_on = '買家可在結帳頁刪除';
+$lang->cfg_guide_address_delete = '開啟後，會員可在結帳頁的已儲存地址清單中自行刪除地址。預設為關閉。';
+$lang->cfg_category_cascade = '商品分類選擇方式';
+$lang->cfg_category_cascade_off = '單一清單（預設）';
+$lang->cfg_category_cascade_on = '依第1、2、3層逐步選擇';
+$lang->cfg_guide_category_cascade = '開啟後，商品登入頁以逐層清單選擇分類。預設為關閉。';

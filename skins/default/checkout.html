@@ -46,6 +46,9 @@
 							</option>
 							@endforeach
 						</select>
+						@if (($shop_config->address_delete ?? 'N') === 'Y')
+						<button type="button" id="shpAddrDelete" class="shp-btn-sm" style="margin-top:8px" hidden>{{ $lang->shop_saved_address_delete ?? '선택한 배송지 삭제' }}</button>
+						@endif
 					</div>
 					@endif
 					<div class="shp-form-grid">
@@ -219,6 +222,27 @@
 		function setVal(name, value) {
 			var el = document.querySelector('input[name="' + name + '"]');
 			if (el) el.value = value || '';
+		}
+		var addrDel = document.getElementById('shpAddrDelete');
+		if (addrSel && addrDel) {
+			addrSel.addEventListener('change', function () { addrDel.hidden = !addrSel.value; });
+			addrDel.addEventListener('click', function () {
+				if (!addrSel.value || !confirm({!! json_encode($lang->shop_saved_address_delete_ask ?? '선택한 배송지를 삭제할까요?') !!})) return;
+				var body = new URLSearchParams({ module: 'commerce', act: 'procCommerceAddressDelete', address_srl: addrSel.value });
+				var tok = document.querySelector('input[name="_rx_csrf_token"]');
+				if (tok) body.set('_rx_csrf_token', tok.value);
+				fetch({!! json_encode(getUrl('')) !!}, { method: 'POST', body: body, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' })
+					.then(function (r) { return r.json(); })
+					.then(function (res) {
+						if (res && Number(res.error) === 0) {
+							addrSel.remove(addrSel.selectedIndex);
+							addrSel.selectedIndex = 0;
+							addrDel.hidden = true;
+						} else {
+							alert((res && res.message) || 'error');
+						}
+					});
+			});
 		}
 		if (addrSel) {
 			addrSel.addEventListener('change', function () {

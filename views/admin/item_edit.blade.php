@@ -159,12 +159,56 @@
 				</div>
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_11') }}</label>
-					<select name="category_srl" style="width:100%">
+					<select name="category_srl" id="ieCatSel" style="width:100%">
 						<option value="0">{{ lang('commerce.admin_item_edit_12') }}</option>
 						@foreach ($categories as $srl => $c)
 						<option value="{{ $srl }}" @if((int)($ie_form->category_srl ?? 0) === $srl) selected @endif>{{ ($c->depth ?? 0) > 0 ? str_repeat('&nbsp;&nbsp;', $c->depth) . '└ ' : '' }}{{ $c->title }}</option>
 						@endforeach
 					</select>
+					@if (($shop_config->category_cascade ?? 'N') === 'Y')
+					@php
+						$ie_cat_tree = [];
+						foreach ($categories as $ie_cs => $ie_cc) { $ie_cat_tree[] = ['s' => (int)$ie_cs, 'p' => (int)($ie_cc->parent_srl ?? 0), 't' => (string)$ie_cc->title]; }
+					@endphp
+					<div id="ieCatCascade" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px" data-none="{{ lang('commerce.admin_item_edit_12') }}" data-tree="{{ json_encode($ie_cat_tree, JSON_UNESCAPED_UNICODE) }}"></div>
+					<script>
+					(function () {
+						var box = document.getElementById('ieCatCascade'), real = document.getElementById('ieCatSel');
+						if (!box || !real) return;
+						var tree = JSON.parse(box.getAttribute('data-tree')), none = box.getAttribute('data-none');
+						var byId = {}; tree.forEach(function (c) { byId[c.s] = c; });
+						function kids(p) { return tree.filter(function (c) { return c.p === p; }); }
+						function chain(srl) { var out = []; while (srl && byId[srl]) { out.unshift(srl); srl = byId[srl].p; } return out; }
+						function render(sel) {
+							var path = chain(sel);
+							box.innerHTML = '';
+							var parent = 0;
+							for (var lv = 0; lv <= path.length; lv++) {
+								var opts = kids(parent);
+								if (!opts.length) break;
+								var el = document.createElement('select');
+								el.style.cssText = 'flex:1 1 150px;min-width:0';
+								el.setAttribute('data-lv', lv);
+								var o0 = document.createElement('option'); o0.value = ''; o0.textContent = (lv + 1) + ' / ' + none; el.appendChild(o0);
+								opts.forEach(function (c) { var o = document.createElement('option'); o.value = c.s; o.textContent = c.t; if (path[lv] === c.s) o.selected = true; el.appendChild(o); });
+								box.appendChild(el);
+								parent = path[lv] || 0;
+								if (!path[lv]) break;
+							}
+						}
+						box.addEventListener('change', function (e) {
+							var lv = parseInt(e.target.getAttribute('data-lv'), 10), pick = parseInt(e.target.value, 10) || 0;
+							var path = chain(parseInt(real.value, 10) || 0).slice(0, lv);
+							if (pick) path.push(pick);
+							var val = path.length ? path[path.length - 1] : 0;
+							real.value = String(val);
+							render(val);
+						});
+						real.style.display = 'none';
+						render(parseInt(real.value, 10) || 0);
+					})();
+					</script>
+					@endif
 					@if (!$ie_seller)<span class="ie-help">{{ lang('commerce.admin_item_edit_13') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminCategories') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_14') }}</a>{{ lang('commerce.admin_item_edit_15') }}</span>@endif
 				</div>
 				<div>

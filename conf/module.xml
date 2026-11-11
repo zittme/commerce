@@ -32,6 +32,7 @@
 		<action name="procCommerceCartUpdate" class="Controllers\Cart" standalone="true" />
 		<action name="procCommerceCartDelete" class="Controllers\Cart" standalone="true" />
 		<action name="procCommerceOrder" class="Controllers\Order" standalone="true" />
+		<action name="procCommerceAddressDelete" class="Controllers\Order" standalone="true" />
 		<action name="procCommerceGuestLookup" class="Controllers\Order" standalone="true" />
 		<action name="procCommerceClaim" class="Controllers\Order" standalone="true" />
 		<action name="procCommercePinReveal" class="Controllers\Order" standalone="true" />

@@ -2196,3 +2196,14 @@ $lang->cfg_ship_fee_mode = 'Shipping fee type';
 $lang->cfg_ship_fee_mode_zone = 'Apply regional surcharge (base fee only elsewhere)';
 $lang->cfg_ship_fee_mode_flat = 'Flat base fee everywhere (no regional surcharge)';
 $lang->cfg_guide_ship_fee_mode = 'Choose how shipping is charged. "Apply regional surcharge" adds the surcharge you set below to the base fee for matching regions and charges the base fee alone elsewhere. "Flat base fee" always charges the base fee only and ignores regional surcharges. The default is to apply the regional surcharge.';
+
+$lang->shop_saved_address_delete = 'Delete selected address';
+$lang->shop_saved_address_delete_ask = 'Delete the selected address?';
+$lang->cfg_address_delete = 'Delete saved addresses';
+$lang->cfg_address_delete_off = 'Buyers cannot delete (default)';
+$lang->cfg_address_delete_on = 'Buyers can delete at checkout';
+$lang->cfg_guide_address_delete = 'When on, members can delete a saved address from the checkout address list. Off by default.';
+$lang->cfg_category_cascade = 'Item category picker';
+$lang->cfg_category_cascade_off = 'Single list (default)';
+$lang->cfg_category_cascade_on = 'Step by step (level 1, 2, 3)';
+$lang->cfg_guide_category_cascade = 'When on, the item form picks the category through step-by-step lists. Off by default.';

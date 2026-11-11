@@ -2196,3 +2196,14 @@ $lang->cfg_ship_fee_mode = '배송비 형태';
 $lang->cfg_ship_fee_mode_zone = '지역 추가 배송비 적용 (해당 지역이 아니면 기본 배송비만)';
 $lang->cfg_ship_fee_mode_flat = '기본 배송비 일괄 적용 (지역 추가 배송비 안 받음)';
 $lang->cfg_guide_ship_fee_mode = '배송비를 받는 방식을 고릅니다. "지역 추가 배송비 적용"은 기본 배송비에 아래에서 정한 지역 추가 배송비를 더하고, 해당 지역이 아니면 기본 배송비만 받습니다. "기본 배송비 일괄 적용"은 어느 지역이든 기본 배송비만 받고 지역 추가 배송비는 무시합니다. 기본은 지역 추가 배송비 적용입니다.';
+
+$lang->shop_saved_address_delete = '선택한 배송지 삭제';
+$lang->shop_saved_address_delete_ask = '선택한 배송지를 삭제할까요?';
+$lang->cfg_address_delete = '저장된 배송지 삭제';
+$lang->cfg_address_delete_off = '구매자가 삭제할 수 없음 (기본)';
+$lang->cfg_address_delete_on = '구매자가 주문서에서 삭제할 수 있음';
+$lang->cfg_guide_address_delete = '켜면 회원이 주문서의 저장된 배송지 목록에서 선택한 배송지를 직접 삭제할 수 있습니다. 기본은 꺼짐입니다.';
+$lang->cfg_category_cascade = '상품 등록 카테고리 선택 방식';
+$lang->cfg_category_cascade_off = '한 개의 목록에서 고르기 (기본)';
+$lang->cfg_category_cascade_on = '1차·2차·3차 단계별로 고르기';
+$lang->cfg_guide_category_cascade = '켜면 상품 등록 화면에서 카테고리를 단계별 목록으로 고릅니다. 기본은 꺼짐입니다.';

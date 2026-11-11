@@ -2196,3 +2196,14 @@ $lang->cfg_ship_fee_mode = '送料の方式';
 $lang->cfg_ship_fee_mode_zone = '地域別追加送料を適用(該当しない地域は基本送料のみ)';
 $lang->cfg_ship_fee_mode_flat = '基本送料を一律適用(地域別追加送料は取らない)';
 $lang->cfg_guide_ship_fee_mode = '送料の取り方を選びます。「地域別追加送料を適用」は、基本送料に下で決めた地域別追加送料を加え、該当しない地域では基本送料のみとします。「基本送料を一律適用」は、どの地域でも基本送料のみで地域別追加送料は無視します。初期値は地域別追加送料の適用です。';
+
+$lang->shop_saved_address_delete = '選択した配送先を削除';
+$lang->shop_saved_address_delete_ask = '選択した配送先を削除しますか？';
+$lang->cfg_address_delete = '保存済み配送先の削除';
+$lang->cfg_address_delete_off = '購入者は削除できない（既定）';
+$lang->cfg_address_delete_on = '購入者が注文画面で削除できる';
+$lang->cfg_guide_address_delete = 'オンにすると、会員が注文画面の保存済み配送先を自分で削除できます。既定はオフです。';
+$lang->cfg_category_cascade = '商品登録のカテゴリ選択方式';
+$lang->cfg_category_cascade_off = '1つの一覧から選ぶ（既定）';
+$lang->cfg_category_cascade_on = '1次・2次・3次の段階式で選ぶ';
+$lang->cfg_guide_category_cascade = 'オンにすると、商品登録画面でカテゴリを段階式の一覧で選びます。既定はオフです。';

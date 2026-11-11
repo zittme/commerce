@@ -130,6 +130,7 @@ $sh_base = getUrl('', 'module', '', 'mid', '', 'act', $zmc_entry ?? 'dispCommerc
 					@if (($seller_mode ?? '') === 'seller')<b>{{ $r->order_code }}</b>@else<a href="{{ getUrl('', 'module', 'admin', 'act', 'dispCommerceAdminOrderView', 'order_srl', $r->order_srl) }}">{{ $r->order_code }}</a>@endif
 					<span class="sh-sub">{{ zdate($r->paid_date ?: $r->regdate, 'm.d H:i') }} · {{ $r->orderer_name }}</span>
 					@if (($seller_mode ?? '') === 'operator')<span class="sh-sub">{{ $seller_names[(int)$r->seller_srl] ?? lang('commerce.mk_direct') }}</span>@endif
+					@if (($seller_mode ?? '') === 'seller')<a class="sh-sub" href="{{ getUrl('', 'module', 'commerce', 'act', 'dispCommerceAdminOrderInvoice', 'order_srl', $r->order_srl) }}" target="_blank" rel="noopener" data-zmc-keep>{{ lang('commerce.admin_orders_15') }}</a>@endif
 				</td>
 				<td>
 					<div class="sh-item">
