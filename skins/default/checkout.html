@@ -40,6 +40,7 @@
 							@foreach ($my_addresses as $addr)
 							<option value="{{ $addr->address_srl }}"
 								data-name="{{ $addr->receiver_name }}" data-phone="{{ $addr->receiver_phone }}"
+								data-country="{{ $addr->country }}" data-state="{{ $addr->state }}" data-city="{{ $addr->city }}" data-phone-cc="{{ $addr->phone_cc }}"
 								data-zipcode="{{ $addr->zipcode }}" data-address1="{{ $addr->address1 }}" data-address2="{{ $addr->address2 }}">
 								{{ $addr->title !== '' && $addr->title !== null ? $addr->title : $addr->address1 }} ({{ $addr->receiver_name }})
 							</option>
@@ -510,14 +511,15 @@
 		return country ? country.value.toUpperCase() !== baseCountry : false;
 	}
 
+	var zip = form.querySelector('[name="zipcode"]');
+	var zipIntl = form.querySelector('[name="zipcode_intl"]');
+
 	function apply() {
 		var overseas = isOverseas();
 		form.querySelectorAll('.shp-kr-only').forEach(function (el) { el.hidden = overseas; });
 		form.querySelectorAll('.shp-intl-only').forEach(function (el) { el.hidden = !overseas; });
 		var city = form.querySelector('[name="city"]');
 		if (city) city.required = overseas;
-		var zip = form.querySelector('[name="zipcode"]');
-		var zipIntl = form.querySelector('[name="zipcode_intl"]');
 		if (zip && zipIntl) {
 			if (overseas) { zipIntl.name = 'zipcode'; zip.name = 'zipcode_kr'; }
 			else { zip.name = 'zipcode'; zipIntl.name = 'zipcode_intl'; }
