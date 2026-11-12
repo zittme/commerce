@@ -1426,6 +1426,8 @@ class Front extends Base
 		\Context::set('store_browsing', true);
 		\Context::set('item_srl', $item_srl);
 		$output = $this->dispCommerceItem();
+		// The store route carries the item number as "item", and dispCommerceItem() sets the item object under the same name, which would leak into every URL built from the current request.
+		\Context::getCurrentRequest()->args['item'] = $item_srl;
 		if ($output instanceof \BaseObject && !$output->toBool())
 		{
 			return $output;
