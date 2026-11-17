@@ -2208,3 +2208,7 @@ $lang->cfg_category_cascade = 'Selector de categoría del producto';
 $lang->cfg_category_cascade_off = 'Una sola lista (predeterminado)';
 $lang->cfg_category_cascade_on = 'Por niveles (1, 2 y 3)';
 $lang->cfg_guide_category_cascade = 'Si se activa, el formulario del producto elige la categoría mediante listas por niveles. Desactivado por defecto.';
+$lang->sc_cfg_seller_badge = 'Los vendedores pueden marcar NEW';
+$lang->sc_cfg_adult_verify_button = 'Botón de verificación de edad en productos para adultos';
+$lang->sc_cfg_adult_verify_help = 'Solo aparece si la verificación de identidad está activada en los ajustes de miembros. Tras verificar, vuelve al producto.';
+$lang->shop_adult_verify_btn = 'Verificar edad';

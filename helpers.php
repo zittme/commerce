@@ -205,7 +205,7 @@ if (!function_exists('shop_timesale_badge'))
 		}
 		if ($info->starts_at > 0 && $info->starts_at - time() < 86400 * 2)
 		{
-			$when = date('m.d H:i', (int)$info->starts_at);
+			$when = \Zittme\Modules\Commerce\Models\Timesale::localDate('m.d H:i', (int)$info->starts_at);
 			return $mode === 'detail'
 				? '<div class="shp-ts-box is-soon"><span>' . escape(lang('commerce.ts_label')) . ' · ' . escape((string)$info->title) . '</span><span>' . sprintf(escape(lang('commerce.ts_soon')), $when) . '</span></div>'
 				: '<span class="shp-ts is-soon">' . sprintf(escape(lang('commerce.ts_soon')), $when) . '</span>';

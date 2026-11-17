@@ -19,8 +19,8 @@ class Timesale
 		{
 			return ($start <= $now && $now < $end) ? $end : 0;
 		}
-		$today = date('Ymd', $now);
-		foreach ([date('Ymd', $now - 86400), $today] as $day)
+		$today = self::localDate('Ymd', $now);
+		foreach ([self::localDate('Ymd', $now - 86400), $today] as $day)
 		{
 			$ws = self::ts($day . str_pad((string)$sale->daily_start, 4, '0', STR_PAD_LEFT) . '00');
 			$we = self::ts($day . str_pad((string)$sale->daily_end, 4, '0', STR_PAD_LEFT) . '00');
@@ -51,7 +51,7 @@ class Timesale
 		}
 		for ($i = 0; $i < 400; $i++)
 		{
-			$day = date('Ymd', $now + $i * 86400);
+			$day = self::localDate('Ymd', $now + $i * 86400);
 			$ws = self::ts($day . str_pad((string)$sale->daily_start, 4, '0', STR_PAD_LEFT) . '00');
 			if ($ws > $now && $ws >= $start && $ws < $end)
 			{
@@ -65,11 +65,43 @@ class Timesale
 		return 0;
 	}
 
+	public static function zone(): \DateTimeZone
+	{
+		static $zone = null;
+		if ($zone === null)
+		{
+			$id = (string)(\Context::get('_default_timezone') ?: config('locale.default_timezone') ?: date_default_timezone_get());
+			try
+			{
+				$zone = new \DateTimeZone($id);
+			}
+			catch (\Throwable $e)
+			{
+				$zone = new \DateTimeZone(date_default_timezone_get());
+			}
+		}
+		return $zone;
+	}
+
+	public static function localDate(string $format, int $timestamp = 0): string
+	{
+		$dt = new \DateTime('@' . ($timestamp ?: time()));
+		$dt->setTimezone(self::zone());
+		return $dt->format($format);
+	}
+
 	protected static function ts(string $ymdhis): int
 	{
 		$ymdhis = str_pad(preg_replace('/\D/', '', $ymdhis), 14, '0');
-		$t = strtotime(substr($ymdhis, 0, 4) . '-' . substr($ymdhis, 4, 2) . '-' . substr($ymdhis, 6, 2) . ' ' . substr($ymdhis, 8, 2) . ':' . substr($ymdhis, 10, 2) . ':' . substr($ymdhis, 12, 2));
-		return $t ?: 0;
+		try
+		{
+			$dt = new \DateTime(substr($ymdhis, 0, 4) . '-' . substr($ymdhis, 4, 2) . '-' . substr($ymdhis, 6, 2) . ' ' . substr($ymdhis, 8, 2) . ':' . substr($ymdhis, 10, 2) . ':' . substr($ymdhis, 12, 2), self::zone());
+			return $dt->getTimestamp();
+		}
+		catch (\Throwable $e)
+		{
+			return 0;
+		}
 	}
 
 	public static function activeMap(): array
@@ -84,7 +116,7 @@ class Timesale
 			$db = \Zittme\Framework\DB::getInstance();
 			$st = $db->query('SELECT commerce_timesale_item.*, commerce_timesale.title, commerce_timesale.mode, commerce_timesale.start_date, commerce_timesale.end_date, commerce_timesale.daily_start, commerce_timesale.daily_end, commerce_timesale.status'
 				. ' FROM commerce_timesale_item JOIN commerce_timesale ON commerce_timesale.sale_srl = commerce_timesale_item.sale_srl'
-				. ' WHERE commerce_timesale.status = ? AND commerce_timesale.end_date >= ?', ['Y', date('YmdHis')]);
+				. ' WHERE commerce_timesale.status = ? AND commerce_timesale.end_date >= ?', ['Y', self::localDate('YmdHis')]);
 			$rows = $st ? $st->fetchAll() : [];
 		}
 		catch (\Throwable $e)

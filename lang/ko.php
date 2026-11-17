@@ -2208,3 +2208,7 @@ $lang->cfg_category_cascade = '상품 등록 카테고리 선택 방식';
 $lang->cfg_category_cascade_off = '한 개의 목록에서 고르기 (기본)';
 $lang->cfg_category_cascade_on = '1차·2차·3차 단계별로 고르기';
 $lang->cfg_guide_category_cascade = '켜면 상품 등록 화면에서 카테고리를 단계별 목록으로 고릅니다. 기본은 꺼짐입니다.';
+$lang->sc_cfg_seller_badge = '입점 업체의 NEW 뱃지 선택';
+$lang->sc_cfg_adult_verify_button = '성인 상품 화면에 성인 인증 버튼';
+$lang->sc_cfg_adult_verify_help = '회원 설정의 본인인증이 켜져 있을 때만 보입니다. 인증을 마치면 상품 화면으로 돌아옵니다.';
+$lang->shop_adult_verify_btn = '성인 인증하기';

@@ -42,7 +42,7 @@ class Admin extends Base
 	}
 
 	public const CONFIG_FIELDS = [
-		'enabled', 'market_mode', 'market_commission', 'market_apply', 'market_item_review', 'seller_item_in_store', 'code_prefix', 'allow_guest', 'pending_minutes',
+		'enabled', 'market_mode', 'market_commission', 'market_apply', 'market_item_review', 'seller_item_in_store', 'seller_badge', 'adult_verify_button', 'code_prefix', 'allow_guest', 'pending_minutes',
 		'ship_fee_mode', 'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key', 'couriers',
 		'shop_main', 'category_layout', 'item_image_size', 'show_shop_nav', 'show_search', 'show_admin_fab', 'home_show_recommend', 'home_show_new',
 		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones', 'show_seller_on_card', 'short_shop_url', 'seller_form',
@@ -60,7 +60,7 @@ class Admin extends Base
 		'ship_types_enabled', 'ship_cutoff_normal', 'ship_cutoff_fast', 'ship_cutoff_dawn', 'ship_cutoff_today', 'ship_days_normal', 'ship_workdays', 'ship_holidays', 'ship_quick_enabled', 'ship_regions', 'ship_quick_regions',
 	];
 
-	protected const BOOLEAN_FIELDS = ['enabled', 'market_apply', 'market_item_review', 'seller_item_in_store', 'show_seller_on_card', 'short_shop_url', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
+	protected const BOOLEAN_FIELDS = ['enabled', 'market_apply', 'market_item_review', 'seller_item_in_store', 'seller_badge', 'adult_verify_button', 'show_seller_on_card', 'short_shop_url', 'allow_guest', 'notify_admin', 'item_sticky', 'currency_code_prefix',
 		'home_show_recommend', 'home_show_new', 'home_show_popular', 'home_show_sale', 'ship_types_enabled', 'ship_quick_enabled', 'stock_public_low', 'stock_admin_total'];
 	protected const FLOAT_FIELDS = ['credit_rate' => [0, 100], 'market_commission' => [0, 100]];
 	protected const INT_FIELDS = [
@@ -2452,6 +2452,11 @@ class Admin extends Base
 			$fields->seller_srl = (int)$my_seller->seller_srl;
 			$fields->is_recommend = 'N';
 			$fields->badges = '';
+			$seller_badge = (self::config()->seller_badge ?? 'Y') !== 'N';
+			if (!$seller_badge)
+			{
+				$fields->is_new = 'N';
+			}
 			if (SellerModel::needsReview() && in_array($fields->status, ['sale', 'soldout'], true))
 			{
 				$fields->status = 'review';
@@ -2465,6 +2470,10 @@ class Admin extends Base
 			if (!$is_new)
 			{
 				unset($fields->seller_srl, $fields->is_recommend, $fields->badges, $fields->list_order);
+				if (!$seller_badge)
+				{
+					unset($fields->is_new);
+				}
 			}
 		}
 		elseif (!$is_new)

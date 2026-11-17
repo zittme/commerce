@@ -304,13 +304,15 @@
 					</div>
 					<span class="ie-help">{{ lang('commerce.admin_item_edit_51') }}</span>
 				</div>
+				@php $ie_seller_badge = !$ie_seller || (($shop_config->seller_badge ?? 'Y') !== 'N'); @endphp
+				@if ($ie_seller_badge)
 				<div>
 					<label>{{ lang('commerce.admin_item_edit_54') }}</label>
 					<div class="ie-checks" style="padding-top:8px">
-						<label><input type="checkbox" name="is_recommend" value="Y" @if(($ie_form->is_recommend ?? '') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_55') }}</label>
+						@if (!$ie_seller)<label><input type="checkbox" name="is_recommend" value="Y" @if(($ie_form->is_recommend ?? '') === 'Y') checked @endif /> {{ lang('commerce.admin_item_edit_55') }}</label>@endif
 						<label><input type="checkbox" name="is_new" value="Y" @if(($ie_form->is_new ?? '') === 'Y') checked @endif /> NEW</label>
 						@php $ie_badge_srls = \Zittme\Modules\Commerce\Models\Badge::parseSrls($ie_form->badges ?? ''); @endphp
-						@foreach ($badges ?? [] as $ie_badge)
+						@foreach ($ie_seller ? [] : ($badges ?? []) as $ie_badge)
 						@php
 							$ie_b_style = '';
 							if (!empty($ie_badge->bg_color)) { $ie_b_style .= 'background:' . $ie_badge->bg_color . ';'; }
@@ -324,6 +326,7 @@
 					</div>
 					@if (!$ie_seller)<p class="ie-help">{{ lang('commerce.admin_item_edit_56') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminBadges') }}">{{ lang('commerce.admin_item_edit_57') }}</a>{{ lang('commerce.admin_item_edit_58') }}</p>@endif
 				</div>
+				@endif
 			</div>
 			<details class="ie-adv">
 				<summary>{{ lang('commerce.ie_advanced') }}</summary>

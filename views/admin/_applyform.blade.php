@@ -20,6 +20,7 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 .af-wrap { overflow-x: auto; }
 .af-custom td { min-width: 110px; }
 .af-custom td.af-del { min-width: 0; width: 1%; }
+.af-custom td:first-child { min-width: 200px; }
 .af-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .af-empty { padding: 14px 10px; font-size: 13px; color: var(--zmc-sub, #7a7f8c); }
 .cfg-page .af-h4 { margin: 22px 0 8px; font-size: 14px; font-weight: 700; }
@@ -53,7 +54,8 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 			<tbody id="afRows">
 				@foreach ($af_cfg['custom'] as $af_c)
 				<tr class="af-row">
-					<td><input type="hidden" name="xc_key[]" value="{{ $af_c['key'] }}" /><input type="text" name="xc_label[]" maxlength="60" value="{{ $af_c['label'] }}" required /></td>
+					@php $af_lc = Zittme\Modules\Commerce\Models\Lang::codeOf($af_c['label_raw'] ?? ''); @endphp
+					<td><input type="hidden" name="xc_key[]" value="{{ $af_c['key'] }}" /><div class="zlf-row-wrap"><input type="text" name="xc_label[]" maxlength="60" value="{{ $af_c['label'] }}" required /><input type="hidden" name="xc_label_langcode[]" value="{{ $af_lc }}" data-lf-code /><button type="button" class="zlf-btn" data-lf-open data-lf-display="{{ $af_lc !== '' ? Zittme\Modules\Commerce\Models\Lang::display($af_lc) : '' }}" title="{{ lang('commerce.adm_lang_link') }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.3 2.6 2.3 14.4 0 17"/><path d="M12 3.5c-2.3 2.6-2.3 14.4 0 17"/></svg></button></div></td>
 					<td><select name="xc_type[]">@foreach ($af_types as $af_tk => $af_tl)<option value="{{ $af_tk }}" @if ($af_c['type'] === $af_tk) selected @endif>{{ $af_tl }}</option>@endforeach</select></td>
 					<td><select name="xc_section[]">@foreach ($af_sections as $af_sk => $af_sl)<option value="{{ $af_sk }}" @if ($af_c['section'] === $af_sk) selected @endif>{{ $af_sl }}</option>@endforeach</select></td>
 					<td><select name="xc_format[]">@foreach ($af_formats as $af_fk => $af_fl)<option value="{{ $af_fk }}" @if ($af_c['format'] === $af_fk) selected @endif>{{ $af_fl }}</option>@endforeach</select></td>
@@ -74,7 +76,7 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 	</div>
 	<template id="afTpl">
 		<tr class="af-row">
-			<td><input type="hidden" name="xc_key[]" value="" /><input type="text" name="xc_label[]" maxlength="60" value="" required /></td>
+			<td><input type="hidden" name="xc_key[]" value="" /><div class="zlf-row-wrap"><input type="text" name="xc_label[]" maxlength="60" value="" required /><input type="hidden" name="xc_label_langcode[]" value="" data-lf-code /><button type="button" class="zlf-btn" data-lf-open data-lf-display="" title="{{ lang('commerce.adm_lang_link') }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.3 2.6 2.3 14.4 0 17"/><path d="M12 3.5c-2.3 2.6-2.3 14.4 0 17"/></svg></button></div></td>
 			<td><select name="xc_type[]">@foreach ($af_types as $af_tk => $af_tl)<option value="{{ $af_tk }}">{{ $af_tl }}</option>@endforeach</select></td>
 			<td><select name="xc_section[]">@foreach ($af_sections as $af_sk => $af_sl)<option value="{{ $af_sk }}">{{ $af_sl }}</option>@endforeach</select></td>
 			<td><select name="xc_format[]">@foreach ($af_formats as $af_fk => $af_fl)<option value="{{ $af_fk }}">{{ $af_fl }}</option>@endforeach</select></td>
@@ -117,6 +119,7 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 				tr.querySelector('[name="xc_req[]"]').value = p.req ? 'Y' : 'N';
 			}
 			rows.appendChild(frag);
+			if (window.zlfBind) window.zlfBind(rows.querySelector('.af-row:last-child [data-lf-open]'));
 			sync();
 			var last = rows.querySelector('.af-row:last-child [name="xc_label[]"]');
 			if (last) last.focus();

@@ -2208,3 +2208,7 @@ $lang->cfg_category_cascade = 'Cách chọn danh mục khi đăng sản phẩm';
 $lang->cfg_category_cascade_off = 'Một danh sách duy nhất (mặc định)';
 $lang->cfg_category_cascade_on = 'Chọn từng cấp 1, 2, 3';
 $lang->cfg_guide_category_cascade = 'Khi bật, biểu mẫu sản phẩm chọn danh mục qua các danh sách theo từng cấp. Mặc định là tắt.';
+$lang->sc_cfg_seller_badge = 'Người bán được chọn huy hiệu NEW';
+$lang->sc_cfg_adult_verify_button = 'Nút xác minh tuổi trên sản phẩm người lớn';
+$lang->sc_cfg_adult_verify_help = 'Chỉ hiện khi xác minh danh tính được bật trong cài đặt thành viên. Sau khi xác minh sẽ quay lại trang sản phẩm.';
+$lang->shop_adult_verify_btn = 'Xác minh tuổi';

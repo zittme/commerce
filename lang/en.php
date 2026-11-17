@@ -2208,3 +2208,7 @@ $lang->cfg_category_cascade = 'Item category picker';
 $lang->cfg_category_cascade_off = 'Single list (default)';
 $lang->cfg_category_cascade_on = 'Step by step (level 1, 2, 3)';
 $lang->cfg_guide_category_cascade = 'When on, the item form picks the category through step-by-step lists. Off by default.';
+$lang->sc_cfg_seller_badge = 'Sellers can set the NEW badge';
+$lang->sc_cfg_adult_verify_button = 'Adult verification button on adult items';
+$lang->sc_cfg_adult_verify_help = 'Shown only when identity verification is enabled in member settings. Returns to the item after verification.';
+$lang->shop_adult_verify_btn = 'Verify age';

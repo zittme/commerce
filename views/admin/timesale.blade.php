@@ -51,7 +51,7 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 			<tbody>
 			@foreach ($ts_list as $t)
 			@php
-			$t_now = date('YmdHis');
+			$t_now = \Zittme\Modules\Commerce\Models\Timesale::localDate('YmdHis');
 			if ($t->status !== 'Y') { $t_st = 'off'; }
 			elseif ($t->ends_at) { $t_st = 'on'; }
 			elseif ($t->starts_at) { $t_st = 'soon'; }
@@ -62,9 +62,9 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 				<td><a class="ts-name" href="{{ $ts_base_url }}{{ $ts_join }}sale_srl={{ $t->sale_srl }}">{{ $t->title }}</a></td>
 				<td class="ts-when">
 					@if ($t->mode === 'daily')
-					{{ zdate($t->start_date, 'Y.m.d') }} ~ {{ zdate($t->end_date, 'Y.m.d') }} · {{ lang('commerce.ts_daily') }} {{ substr($t->daily_start, 0, 2) }}:{{ substr($t->daily_start, 2, 2) }}~{{ substr($t->daily_end, 0, 2) }}:{{ substr($t->daily_end, 2, 2) }}
+					{{ substr($t->start_date, 0, 4) }}.{{ substr($t->start_date, 4, 2) }}.{{ substr($t->start_date, 6, 2) }} ~ {{ substr($t->end_date, 0, 4) }}.{{ substr($t->end_date, 4, 2) }}.{{ substr($t->end_date, 6, 2) }} · {{ lang('commerce.ts_daily') }} {{ substr($t->daily_start, 0, 2) }}:{{ substr($t->daily_start, 2, 2) }}~{{ substr($t->daily_end, 0, 2) }}:{{ substr($t->daily_end, 2, 2) }}
 					@else
-					{{ zdate($t->start_date, 'Y.m.d H:i') }} ~ {{ zdate($t->end_date, 'Y.m.d H:i') }}
+					{{ substr($t->start_date, 0, 4) }}.{{ substr($t->start_date, 4, 2) }}.{{ substr($t->start_date, 6, 2) }} {{ substr($t->start_date, 8, 2) }}:{{ substr($t->start_date, 10, 2) }} ~ {{ substr($t->end_date, 0, 4) }}.{{ substr($t->end_date, 4, 2) }}.{{ substr($t->end_date, 6, 2) }} {{ substr($t->end_date, 8, 2) }}:{{ substr($t->end_date, 10, 2) }}
 					@endif
 				</td>
 				<td><span class="ts-st is-{{ $t_st }}">{{ lang('commerce.ts_st_' . $t_st) }}</span></td>
@@ -80,10 +80,10 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 	@php
 	$te = $ts_edit;
 	$te_mode = $te->mode ?? 'once';
-	$te_start_at = $te && $te_mode === 'once' ? substr($te->start_date, 0, 4) . '-' . substr($te->start_date, 4, 2) . '-' . substr($te->start_date, 6, 2) . 'T' . substr($te->start_date, 8, 2) . ':' . substr($te->start_date, 10, 2) : date('Y-m-d\TH:00', time() + 3600);
-	$te_end_at = $te && $te_mode === 'once' ? substr($te->end_date, 0, 4) . '-' . substr($te->end_date, 4, 2) . '-' . substr($te->end_date, 6, 2) . 'T' . substr($te->end_date, 8, 2) . ':' . substr($te->end_date, 10, 2) : date('Y-m-d\TH:00', time() + 3600 * 25);
-	$te_start_day = $te ? substr($te->start_date, 0, 4) . '-' . substr($te->start_date, 4, 2) . '-' . substr($te->start_date, 6, 2) : date('Y-m-d');
-	$te_end_day = $te ? substr($te->end_date, 0, 4) . '-' . substr($te->end_date, 4, 2) . '-' . substr($te->end_date, 6, 2) : date('Y-m-d', time() + 86400 * 6);
+	$te_start_at = $te && $te_mode === 'once' ? substr($te->start_date, 0, 4) . '-' . substr($te->start_date, 4, 2) . '-' . substr($te->start_date, 6, 2) . 'T' . substr($te->start_date, 8, 2) . ':' . substr($te->start_date, 10, 2) : \Zittme\Modules\Commerce\Models\Timesale::localDate('Y-m-d\TH:00', time() + 3600);
+	$te_end_at = $te && $te_mode === 'once' ? substr($te->end_date, 0, 4) . '-' . substr($te->end_date, 4, 2) . '-' . substr($te->end_date, 6, 2) . 'T' . substr($te->end_date, 8, 2) . ':' . substr($te->end_date, 10, 2) : \Zittme\Modules\Commerce\Models\Timesale::localDate('Y-m-d\TH:00', time() + 3600 * 25);
+	$te_start_day = $te ? substr($te->start_date, 0, 4) . '-' . substr($te->start_date, 4, 2) . '-' . substr($te->start_date, 6, 2) : \Zittme\Modules\Commerce\Models\Timesale::localDate('Y-m-d');
+	$te_end_day = $te ? substr($te->end_date, 0, 4) . '-' . substr($te->end_date, 4, 2) . '-' . substr($te->end_date, 6, 2) : \Zittme\Modules\Commerce\Models\Timesale::localDate('Y-m-d', time() + 86400 * 6);
 	$te_ds = $te && $te->daily_start ? substr($te->daily_start, 0, 2) . ':' . substr($te->daily_start, 2, 2) : '12:00';
 	$te_de = $te && $te->daily_end ? substr($te->daily_end, 0, 2) . ':' . substr($te->daily_end, 2, 2) : '13:00';
 	$te_data = [];
@@ -234,7 +234,7 @@ $ts_join = strpos($ts_base_url, '?') === false ? '?' : '&';
 					ti.value = (r.tiers || []).map(function (t) { return t.n + ':' + t.v; }).join(', ');
 					ti.addEventListener('input', function () {
 						r.tiers = ti.value.split(',').map(function (part) {
-							var m = part.trim().match(/^(\d+)\s*[:：]\s*(\d+(?:\.\d+)?)$/);
+							var m = part.trim().match(/^(\d+)\s*명?\s*[:：]\s*(\d+(?:\.\d+)?)\s*(?:%|원)?$/);
 							return m ? { n: +m[1], v: +m[2] } : null;
 						}).filter(Boolean);
 					});

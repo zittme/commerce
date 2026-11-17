@@ -2208,3 +2208,7 @@ $lang->cfg_category_cascade = '商品分類選擇方式';
 $lang->cfg_category_cascade_off = '單一清單（預設）';
 $lang->cfg_category_cascade_on = '依第1、2、3層逐步選擇';
 $lang->cfg_guide_category_cascade = '開啟後，商品登入頁以逐層清單選擇分類。預設為關閉。';
+$lang->sc_cfg_seller_badge = '入駐商家可選 NEW 徽章';
+$lang->sc_cfg_adult_verify_button = '成人商品顯示成人認證按鈕';
+$lang->sc_cfg_adult_verify_help = '僅在會員設定已啟用身分驗證時顯示。完成驗證後會回到商品頁。';
+$lang->shop_adult_verify_btn = '進行成人認證';

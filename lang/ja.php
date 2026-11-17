@@ -2208,3 +2208,7 @@ $lang->cfg_category_cascade = '商品登録のカテゴリ選択方式';
 $lang->cfg_category_cascade_off = '1つの一覧から選ぶ（既定）';
 $lang->cfg_category_cascade_on = '1次・2次・3次の段階式で選ぶ';
 $lang->cfg_guide_category_cascade = 'オンにすると、商品登録画面でカテゴリを段階式の一覧で選びます。既定はオフです。';
+$lang->sc_cfg_seller_badge = '出店者のNEWバッジ選択';
+$lang->sc_cfg_adult_verify_button = '成人商品に成人認証ボタン';
+$lang->sc_cfg_adult_verify_help = '会員設定の本人認証が有効なときだけ表示されます。認証後は商品ページに戻ります。';
+$lang->shop_adult_verify_btn = '成人認証する';

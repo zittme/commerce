@@ -846,7 +846,15 @@ class Front extends Base
 				? (int)$shop_option->price_add
 				: (int)MoneyModel::convertMinor((int)$shop_option->price_add, $item_disp_currency);
 		}
-		\Context::set('adult_ok', ($item->is_adult ?? 'N') !== 'Y' || Order::isAdultVerified($member_srl));
+		$adult_ok = ($item->is_adult ?? 'N') !== 'Y' || Order::isAdultVerified($member_srl);
+		\Context::set('adult_ok', $adult_ok);
+		$adult_verify_url = '';
+		if (!$adult_ok && (self::config()->adult_verify_button ?? 'N') === 'Y'
+			&& class_exists('\\Zittme\\Modules\\Member\\Identity\\Base') && \Zittme\Modules\Member\Identity\Base::isEnabled())
+		{
+			$adult_verify_url = getNotEncodedUrl('', 'act', 'dispMemberIdentityGate', 'return_url', getNotEncodedFullUrl('', 'mid', \Context::get('mid'), 'act', 'dispCommerceItem', 'item_srl', (int)$item->item_srl));
+		}
+		\Context::set('adult_verify_url', $adult_verify_url);
 		\Context::set('cart_count', count(CartModel::rows()));
 		\Context::set('shop_config', self::viewConfig());
 		$this->setShopContext([$item]);

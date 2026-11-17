@@ -34,6 +34,7 @@ class Seller
 		'procCommerceAdminStockAdjust',
 		'dispCommerceAdminShipping',
 		'procCommerceAdminBulkShipping',
+		'dispCommerceAdminOrderInvoice',
 		'dispCommerceAdminSettlements',
 		'dispCommerceAdminExportSettlement',
 		'dispCommerceAdminSellerProfile',
@@ -741,6 +742,26 @@ class Seller
 			if (!$st || (int)$st->seller_srl !== $seller_srl)
 			{
 				return false;
+			}
+		}
+
+		if ($act === 'dispCommerceAdminOrderInvoice')
+		{
+			$order_srls = preg_split('/[\s,]+/', (string)\Context::get('order_srls') . ',' . (string)\Context::get('order_srl'));
+			foreach ($order_srls as $one)
+			{
+				$one = (int)$one;
+				if ($one <= 0)
+				{
+					continue;
+				}
+				$mine = array_filter(Order::getSellerOrders($one), function ($os) use ($seller_srl) {
+					return (int)$os->seller_srl === $seller_srl;
+				});
+				if (!count($mine))
+				{
+					return false;
+				}
 			}
 		}
 		self::scrubLangCodes();

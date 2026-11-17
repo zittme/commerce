@@ -215,6 +215,10 @@
 .zmi-count { margin-right: auto; font-size: 13px; color: var(--zmi-sub); }
 .zmi-btn { padding: 9px 18px; border: 1px solid #dfe3e9; border-radius: 8px; background: #fff; color: var(--zmi-ink); font-family: inherit; font-size: 14px; cursor: pointer; }
 .zmi-btn:hover { border-color: #b9c0ca; }
+.zmi-page h1,
+.zmi-page h2,
+.zmi-page table,
+.zmi-page .zmi-btn { color: var(--zmi-ink); }
 .zmi-page button.zmi-btn-primary,
 .zmi-page button.zmi-btn-primary:hover,
 .zmi-page button.zmi-btn-primary:focus { border-color: var(--zmi-accent); background: var(--zmi-accent); color: #fff; font-weight: 700; }

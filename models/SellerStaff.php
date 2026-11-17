@@ -38,6 +38,7 @@ class SellerStaff
 		'procCommerceAdminStockAdjust' => 'items',
 		'dispCommerceAdminShipping' => 'shipping',
 		'procCommerceAdminBulkShipping' => 'shipping',
+		'dispCommerceAdminOrderInvoice' => 'shipping',
 		'dispCommerceAdminSettlements' => 'settlements',
 		'dispCommerceAdminExportSettlement' => 'settlements',
 		'dispCommerceAdminSellerProfile' => 'seller_profile',

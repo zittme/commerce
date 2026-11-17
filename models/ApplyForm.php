@@ -69,6 +69,8 @@ class ApplyForm
 			$one = self::normalizeCustom(is_array($row) ? $row : []);
 			if ($one && !isset($custom[$one['key']]))
 			{
+				$one['label_raw'] = $one['label'];
+				$one['label'] = Lang::text($one['label']);
 				$custom[$one['key']] = $one;
 			}
 			if (count($custom) >= self::MAX_CUSTOM)
@@ -82,7 +84,8 @@ class ApplyForm
 	protected static function normalizeCustom(array $row): ?array
 	{
 		$key = strtolower(trim((string)($row['key'] ?? '')));
-		$label = mb_substr(trim(strip_tags((string)($row['label'] ?? ''))), 0, 60);
+		$label = trim(strip_tags((string)($row['label'] ?? '')));
+		$label = Lang::codeOf($label) !== '' ? $label : mb_substr($label, 0, 60);
 		if (!preg_match('/^[a-z][a-z0-9_]{1,30}$/', $key) || $label === '')
 		{
 			return null;
@@ -133,6 +136,7 @@ class ApplyForm
 		}
 		$c = [];
 		$keys = (array)\Context::get('xc_key');
+		$label_codes = (array)\Context::get('xc_label_langcode');
 		foreach ($keys as $i => $key)
 		{
 			$key = strtolower(trim((string)$key));
@@ -142,7 +146,7 @@ class ApplyForm
 			}
 			$one = self::normalizeCustom([
 				'key' => $key,
-				'label' => ((array)\Context::get('xc_label'))[$i] ?? '',
+				'label' => Lang::filterCode((string)($label_codes[$i] ?? '')) !== '' ? Lang::toValue((string)$label_codes[$i]) : (((array)\Context::get('xc_label'))[$i] ?? ''),
 				'type' => ((array)\Context::get('xc_type'))[$i] ?? 'text',
 				'section' => ((array)\Context::get('xc_section'))[$i] ?? 'biz',
 				'req' => (((array)\Context::get('xc_req'))[$i] ?? 'N') === 'Y',

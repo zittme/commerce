@@ -35,6 +35,11 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 	.cfg-page form > .rsva-btn-primary { position: sticky; bottom: 16px; z-index: 5; padding: 10px 26px; box-shadow: 0 8px 20px -10px rgba(38,52,92,.6); }
 	@media (max-width: 1100px) { .cfg-page .rsva-panel > .rsva-form-grid > div { grid-template-columns: 200px minmax(0, 1fr); } .cfg-page .rsva-panel > .rsva-form-grid > div > .cfg-guide, .cfg-page .rsva-panel > .rsva-form-grid > div > .zmc-help { grid-column: 2; grid-row: auto; padding-left: 0; border-left: 0; } }
 	@media (max-width: 760px) { .cfg-page .rsva-panel > .rsva-form-grid > div { grid-template-columns: 1fr; } .cfg-page .rsva-panel > .rsva-form-grid > div > * { grid-column: 1 !important; } }
+	@media (max-width: 1100px) {
+		html:has(.cfg-page) { scroll-padding-bottom: 88px; }
+		.cfg-page form { padding-bottom: 12px; }
+		.cfg-page form > .rsva-btn-primary { display: block; width: 100%; margin-top: 16px; bottom: 12px; }
+	}
 	.zmc-cfg-bar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 	.zmc-cfg-help-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #6b7684; cursor: pointer; }
 	.rsva:not(.zmc-show-help) .zmc-help { display: none !important; }
@@ -93,6 +98,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 				<div><label>{{ lang('commerce.admin_config_8') }}</label><input type="text" name="code_prefix" maxlength="5" value="{{ $shop_config->code_prefix }}" /></div>
 				<div><label>{{ lang('commerce.admin_config_9') }}</label><select name="allow_guest"><option value="Y" @if($shop_config->allow_guest === 'Y') selected @endif>{{ lang('commerce.admin_config_10') }}</option><option value="N" @if($shop_config->allow_guest === 'N') selected @endif>{{ lang('commerce.admin_config_11') }}</option></select></div>
 				<div><label>{{ lang('commerce.admin_config_12') }}</label><input type="number" name="pending_minutes" min="10" max="1440" value="{{ $shop_config->pending_minutes }}" /></div>
+				<div><label>{{ lang('commerce.sc_cfg_adult_verify_button') }}</label><select name="adult_verify_button"><option value="N" @if(($shop_config->adult_verify_button ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->adult_verify_button ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select><span class="zmc-help" style="display:block;margin-top:4px;font-size:12px;color:var(--zmc-sub, #6b7684)">{{ lang('commerce.sc_cfg_adult_verify_help') }}</span></div>
 			</div>
 		</div>
 		@php $cfg_mk_ready = Zittme\Modules\Commerce\Models\Seller::schemaReady(); @endphp
@@ -103,6 +109,7 @@ $cfg_section = $cfg_section_map[$zmc_page ?? 'config'] ?? 'general';
 			<div class="rsva-form-grid">
 				<div><label>{{ lang('commerce.mk_cfg_commission') }}</label><input type="number" name="market_commission" min="0" max="100" step="0.01" value="{{ $shop_config->market_commission ?? 10 }}" /></div>
 				<div><label>{{ lang('commerce.sc_cfg_item_in_store') }}</label><select name="seller_item_in_store"><option value="Y" @if(($shop_config->seller_item_in_store ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->seller_item_in_store ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select></div>
+				<div><label>{{ lang('commerce.sc_cfg_seller_badge') }}</label><select name="seller_badge"><option value="Y" @if(($shop_config->seller_badge ?? 'Y') !== 'N') selected @endif>{{ lang('commerce.admin_config_57') }}</option><option value="N" @if(($shop_config->seller_badge ?? 'Y') === 'N') selected @endif>{{ lang('commerce.admin_config_56') }}</option></select></div>
 				<div><label>{{ lang('commerce.sc_cfg_item_review') }}</label><select name="market_item_review"><option value="N" @if(($shop_config->market_item_review ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->market_item_review ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></div>
 				<div><label>{{ lang('commerce.mk_cfg_apply') }}</label><select name="market_apply"><option value="N" @if(($shop_config->market_apply ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->market_apply ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></div>
 				<div><label>{{ lang('commerce.su_cfg_short') }}</label><select name="short_shop_url"><option value="N" @if(($shop_config->short_shop_url ?? 'N') !== 'Y') selected @endif>{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if(($shop_config->short_shop_url ?? 'N') === 'Y') selected @endif>{{ lang('commerce.admin_config_57') }}</option></select><p class="cfg-guide">{{ sprintf(lang('commerce.su_cfg_short_desc'), rtrim(getFullUrl(''), '/') . '/' . lang('commerce.su_cfg_short_sample')) }}</p></div>

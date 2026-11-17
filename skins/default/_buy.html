@@ -77,6 +77,7 @@
 			<p class="shp-warn">{{ $lang->shop_not_purchasable }}</p>
 			@elseif (!$adult_ok)
 			<p class="shp-warn">{{ $lang->shop_adult_gate }}</p>
+			@if (!empty($adult_verify_url))<div class="shp-actions"><a class="shp-btn shp-btn-primary" href="{{ $adult_verify_url }}">{{ $lang->shop_adult_verify_btn }}</a></div>@endif
 			@else
 			<form action="{{ getUrl('') }}" method="post" id="shpBuyForm">
 				<input type="hidden" name="act" value="procCommerceCartAdd" />
