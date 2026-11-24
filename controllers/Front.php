@@ -791,6 +791,7 @@ class Front extends Base
 			$item_seller->store_url = $item_seller->shop_id !== ''
 				? \Zittme\Modules\Commerce\Models\Shop::url($item_seller->shop_id, (string)($this->module_info->mid ?? ''))
 				: getUrl('', 'mid', (string)($this->module_info->mid ?? ''), 'v', 'list', 'seller', $item_seller->seller_srl);
+			\Zittme\Modules\Commerce\Models\ApplyForm::filterPublic($item_seller, $is_admin);
 		}
 		\Context::set('item_seller', $item_seller);
 		\Zittme\Modules\Commerce\Models\Delivery::attach([$item]);
@@ -1409,7 +1410,7 @@ class Front extends Base
 			'all_url' => \Zittme\Modules\Commerce\Models\Shop::url($shop_id, $mid, ['sort' => 'display']),
 		];
 		\Context::set('store', $store);
-		\Context::set('store_info', \Zittme\Modules\Commerce\Models\Seller::publicInfo((int)$seller->seller_srl));
+		\Context::set('store_info', \Zittme\Modules\Commerce\Models\ApplyForm::filterPublic(\Zittme\Modules\Commerce\Models\Seller::publicInfo((int)$seller->seller_srl), (\Context::get('logged_info')->is_admin ?? 'N') === 'Y'));
 		\Context::set('store_design', $design);
 		\Context::set('store_color', $design['color']);
 		\Context::set('store_cats', $cats);
@@ -1627,7 +1628,7 @@ class Front extends Base
 		];
 		\Context::setBrowserTitle($store->shop_name);
 		\Context::set('store', $store);
-		\Context::set('store_info', \Zittme\Modules\Commerce\Models\Seller::publicInfo($seller_srl));
+		\Context::set('store_info', \Zittme\Modules\Commerce\Models\ApplyForm::filterPublic(\Zittme\Modules\Commerce\Models\Seller::publicInfo($seller_srl), (\Context::get('logged_info')->is_admin ?? 'N') === 'Y'));
 		\Context::set('store_design', $design);
 		\Context::set('store_sections', $sections);
 		\Context::set('store_cats', $cats);
@@ -1682,6 +1683,7 @@ class Front extends Base
 		\Context::set('apply_is_staff', !$mine && $member_srl > 0 && \Zittme\Modules\Commerce\Models\SellerStaff::get($member_srl) !== null);
 		\Context::set('apply_open', (self::config()->market_apply ?? 'N') === 'Y');
 		\Context::set('apply_rate', (float)(self::config()->market_commission ?? 0));
+		\Context::set('apply_terms', trim((string)(self::config()->apply_terms ?? '')));
 		\Context::set('console_url', getNotEncodedUrl('', 'mid', '', 'act', 'dispCommerceSellerCenter'));
 		\Context::set('shop_config', self::viewConfig());
 		$skin_path = $this->getSkinPath();

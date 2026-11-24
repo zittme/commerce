@@ -128,6 +128,8 @@
 		<action name="dispCommerceAdminSellers" class="Controllers\Admin" permission="member" />
 		<action name="procCommerceAdminSellerStatus" class="Controllers\Admin" permission="member" />
 		<action name="procCommerceAdminSellerCommission" class="Controllers\Admin" permission="member" />
+		<action name="procCommerceAdminUpdateSeller" class="Controllers\Admin" permission="member" />
+		<action name="procCommerceAdminDeleteSeller" class="Controllers\Admin" permission="member" />
 		<action name="dispCommerceAdminExportSellers" class="Controllers\Admin" permission="member" />
 		<action name="dispCommerceAdminSettlements" class="Controllers\Admin" permission="member" />
 		<action name="procCommerceAdminCreateSettlement" class="Controllers\Admin" permission="member" />

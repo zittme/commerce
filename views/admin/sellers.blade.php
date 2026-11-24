@@ -35,6 +35,19 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 .mk-acts .mk-until span { flex: 0 0 auto; font-weight: 400; white-space: nowrap; }
 .mk-acts form input[type=text] { flex: 1 1 160px; min-width: 0; }
 .mk-acts .mk-until input { flex: 1 1 auto; min-width: 0; width: auto; padding: 5px 8px !important; font-size: 13px !important; }
+.mk-manage { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--zmc-line, #e6e3dc); }
+.mk-manage > summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--zmc-ink, #232a3b); }
+.mk-manage h4 { margin: 16px 0 8px; font-size: 13px; font-weight: 700; }
+.mk-edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 14px; }
+.mk-edit-grid label { display: flex; flex-direction: column; gap: 4px; margin: 0; font-size: 12.5px; color: var(--zmc-sub, #7a7f8c); }
+.mk-edit-grid label.is-wide { grid-column: 1 / -1; }
+.mk-edit-grid input, .mk-edit-grid select, .mk-edit-grid textarea { width: 100%; box-sizing: border-box; font-size: 13px; color: var(--zmc-ink, #232a3b); }
+.mk-edit-foot { margin-top: 12px; }
+.mk-delete { margin-top: 16px; padding: 12px 14px; border: 1px solid var(--zmc-bad-soft, #fbe6e2); border-radius: var(--zmc-r, 6px); }
+.mk-delete h4 { margin: 0 0 6px; color: var(--zmc-bad, #b33a2e); }
+.mk-delete p { margin: 0 0 8px; }
+.mk-delete form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0; }
+.mk-delete input[type=text] { flex: 1 1 200px; min-width: 0; max-width: 320px; padding: 5px 8px !important; font-size: 13px !important; }
 .mk-empty { padding: 40px 20px; text-align: center; color: var(--zmc-sub, #7a7f8c); }
 </style>
 
@@ -123,6 +136,53 @@ $mk_default_text = rtrim(rtrim(number_format((float)$mk_default_rate, 2, '.', ''
 					<button type="submit" class="rsva-btn rsva-btn-sm">{{ lang('commerce.mk_save') }}</button>
 				</form>
 			</div>
+			@if ($mk_is_root && !empty($s->edit_fields))
+			<details class="mk-manage">
+				<summary>{{ lang('commerce.mk_manage') }}</summary>
+				<form action="{{ getUrl('') }}" method="post" enctype="multipart/form-data" class="mk-edit">
+					<input type="hidden" name="module" value="admin" /><input type="hidden" name="act" value="procCommerceAdminUpdateSeller" />
+					<input type="hidden" name="seller_srl" value="{{ $s->seller_srl }}" />
+					@foreach ($s->edit_fields as $mk_sec => $mk_list)
+					@if (count($mk_list))
+					<h4>{{ Zittme\Modules\Commerce\Models\ApplyForm::sectionLabel($mk_sec) }}</h4>
+					<div class="mk-edit-grid">
+						@foreach ($mk_list as $mk_f)
+						@if ($mk_f->key !== 'shop_id')
+						<label class="{{ $mk_f->type === 'textarea' ? 'is-wide' : '' }}"><span>{{ $mk_f->label }}</span>
+							@if ($mk_f->type === 'textarea')
+							<textarea name="{{ $mk_f->name }}" rows="3" maxlength="{{ $mk_f->max }}">{{ $mk_f->value }}</textarea>
+							@elseif ($mk_f->type === 'select')
+							<select name="{{ $mk_f->name }}"><option value=""></option>@foreach ($mk_f->options as $mk_o)<option value="{{ $mk_o }}" @if ($mk_f->value === $mk_o) selected @endif>{{ $mk_o }}</option>@endforeach</select>
+							@elseif ($mk_f->type === 'file')
+							<input type="file" name="{{ $mk_f->name }}" accept=".pdf,.jpg,.jpeg,.png,.webp" />@if ($mk_f->file_url !== '')<a href="{{ $mk_f->file_url }}" target="_blank" rel="noopener" class="mk-sub">{{ lang('commerce.af_file_view') }}</a>@endif
+							@else
+							<input type="{{ $mk_f->input === 'email' ? 'email' : 'text' }}" name="{{ $mk_f->name }}" maxlength="{{ $mk_f->max }}" value="{{ $mk_f->value }}" />
+							@endif
+						</label>
+						@endif
+						@endforeach
+					</div>
+					@endif
+					@endforeach
+					<div class="mk-edit-foot"><button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-primary">{{ lang('commerce.mk_save') }}</button></div>
+				</form>
+				<div class="mk-delete">
+					<h4>{{ lang('commerce.mk_delete_title') }}</h4>
+					@if ($s->usage['orders'] > 0 || $s->usage['settlements'] > 0 || $s->usage['carry'] > 0)
+					<p class="mk-sub">{{ sprintf(lang('commerce.mk_msg_delete_blocked'), number_format($s->usage['orders']), number_format($s->usage['settlements'])) }}</p>
+					@else
+					<p class="mk-sub">{{ sprintf(lang('commerce.mk_delete_desc'), number_format($s->usage['items'])) }}</p>
+					<form action="{{ getUrl('') }}" method="post" onsubmit="return confirm({{ json_encode(lang('commerce.mk_ask_delete')) }})">
+						<input type="hidden" name="module" value="admin" /><input type="hidden" name="act" value="procCommerceAdminDeleteSeller" />
+						<input type="hidden" name="seller_srl" value="{{ $s->seller_srl }}" />
+						<input type="text" name="confirm_name" required autocomplete="off" placeholder="{{ $s->shop_name }}" aria-label="{{ lang('commerce.mk_delete_type') }}" />
+						<button type="submit" class="rsva-btn rsva-btn-sm rsva-btn-danger">{{ lang('commerce.mk_do_delete') }}</button>
+					</form>
+					<p class="mk-sub" style="margin:6px 0 0">{{ lang('commerce.mk_delete_type') }}</p>
+					@endif
+				</div>
+			</details>
+			@endif
 		</div>
 		@endforeach
 	</div>

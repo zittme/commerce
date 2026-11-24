@@ -95,17 +95,13 @@
 	</div>
 	@endif
 
-	@if (!empty($item_seller))
+	@if (!empty($item_seller) && !empty($item_seller->info_show))
 	<div class="shp-section shp-seller-info">
 		<h2>{{ $lang->mk_seller_info }}</h2>
 		<dl>
-			<div><dt>{{ $lang->mk_f_biz_name }}</dt><dd>{{ $item_seller->biz_name ?: $item_seller->shop_name }}</dd></div>
-			<div><dt>{{ $lang->mk_f_ceo_name }}</dt><dd>{{ $item_seller->ceo_name }}</dd></div>
-			<div><dt>{{ $lang->mk_f_biz_no }}</dt><dd>{{ $item_seller->biz_no }}</dd></div>
-			<div><dt>{{ $lang->mk_f_mailorder_no }}</dt><dd>{{ $item_seller->mailorder_no }}</dd></div>
-			<div><dt>{{ $lang->mk_f_tel }}</dt><dd>{{ $item_seller->tel }}</dd></div>
-			@if ($item_seller->email !== '')<div><dt>{{ $lang->mk_f_email }}</dt><dd>{{ $item_seller->email }}</dd></div>@endif
-			@if ($item_seller->biz_address !== '')<div><dt>{{ $lang->mk_f_biz_address }}</dt><dd>{{ $item_seller->biz_address }}</dd></div>@endif
+			@foreach ($item_seller->info_rows as $shp_si)
+			<div><dt>{{ $shp_si->label }}</dt><dd>{{ $shp_si->value }}</dd></div>
+			@endforeach
 		</dl>
 		<p class="shp-seller-note">{{ sprintf($lang->mk_intermediary_note, $shop_config->biz_name ?: (Context::getSiteTitle() ?: parse_url(Context::getDefaultUrl(), PHP_URL_HOST))) }}</p>
 	</div>
@@ -578,7 +574,7 @@
 					optSel.selectedIndex = 0;
 				} else if (srl === '0') {
 					setMainRow('0', itemName, basePrice);
-				} else if (comboMode) {
+				} else {
 					var already = rowsEl.querySelector('.shp-select-row[data-opt="' + srl + '"]');
 					if (already) {
 						var qtyEl = already.querySelector('.shp-qty');
@@ -587,14 +583,12 @@
 						rowsEl.appendChild(makeRow(srl, label, basePrice + add, minQty, true));
 					}
 					optSel.selectedIndex = 0;
-				} else {
-					setMainRow(srl, itemName + ' - ' + label, basePrice + add);
 				}
 				render();
 			});
 		});
 
-		if (!baseSoldout && !comboMode) {
+		if (!baseSoldout && !comboMode && !hasBasic) {
 			setMainRow('0', itemName, basePrice);
 		}
 		render();

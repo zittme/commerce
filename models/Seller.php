@@ -501,8 +501,95 @@ class Seller
 				$oDB->query("UPDATE commerce_item SET hidden_by_suspend = 'N' WHERE seller_srl = ? AND hidden_by_suspend <> 'N'", [$seller_srl]);
 			}
 		}
+		if ($ok && $status === 'approved')
+		{
+			self::joinSellerGroup((int)$row->member_srl);
+		}
 		self::forget($seller_srl);
 		return $ok;
+	}
+
+	public static function usage(int $seller_srl): array
+	{
+		$oDB = \Zittme\Framework\DB::getInstance();
+		$count = function (string $table, string $where, array $args) use ($oDB): int {
+			if (!$oDB->isTableExists($table))
+			{
+				return 0;
+			}
+			$rows = $oDB->query('SELECT COUNT(*) AS c FROM ' . $table . ' WHERE ' . $where, $args)->fetchAll();
+			return (int)($rows[0]->c ?? 0);
+		};
+		$orders = max(
+			$count('commerce_order_seller', 'seller_srl = ?', [$seller_srl]),
+			$count('commerce_order_item', 'seller_srl = ?', [$seller_srl]),
+			$count('commerce_order_item', 'item_srl IN (SELECT item_srl FROM commerce_item WHERE seller_srl = ?)', [$seller_srl])
+		);
+		$settlements = $count('commerce_settlement', 'seller_srl = ?', [$seller_srl]) + $count('commerce_settlement_adjust', 'seller_srl = ?', [$seller_srl]);
+		return [
+			'orders' => $orders,
+			'settlements' => $settlements,
+			'carry' => Settlement::carryOf($seller_srl),
+			'items' => $count('commerce_item', 'seller_srl = ?', [$seller_srl]),
+		];
+	}
+
+	public static function remove(int $seller_srl): bool
+	{
+		$row = self::get($seller_srl);
+		if (!$row || self::isOperator($seller_srl))
+		{
+			return false;
+		}
+		$oDB = \Zittme\Framework\DB::getInstance();
+		$item_srls = array_map(function ($r) { return (int)$r->item_srl; }, $oDB->query('SELECT item_srl FROM commerce_item WHERE seller_srl = ?', [$seller_srl])->fetchAll());
+		$item_tables = ['commerce_item_option', 'commerce_item_price', 'commerce_item_tag', 'commerce_promotion_item', 'commerce_timesale_item', 'commerce_pin', 'commerce_recent_view', 'commerce_cart', 'commerce_inquiry', 'commerce_review', 'commerce_stock_log'];
+		foreach (array_chunk($item_srls, 200) as $chunk)
+		{
+			$marks = implode(',', array_fill(0, count($chunk), '?'));
+			foreach ($item_tables as $table)
+			{
+				if ($oDB->isTableExists($table))
+				{
+					$oDB->query('DELETE FROM ' . $table . ' WHERE item_srl IN (' . $marks . ')', $chunk);
+				}
+			}
+			$oDB->query('DELETE FROM commerce_item WHERE item_srl IN (' . $marks . ')', $chunk);
+		}
+		foreach (['commerce_seller_category', 'commerce_seller_shopid', 'commerce_seller_staff', 'commerce_shipfee'] as $table)
+		{
+			if ($oDB->isTableExists($table) && $oDB->isColumnExists($table, 'seller_srl'))
+			{
+				$oDB->query('DELETE FROM ' . $table . ' WHERE seller_srl = ?', [$seller_srl]);
+			}
+		}
+		foreach (ApplyForm::extraOf($row) as $value)
+		{
+			$name = basename((string)$value);
+			if (preg_match('/^[0-9]+_[a-f0-9]{32}\.[a-z]{3,4}$/', $name) && is_file(ApplyForm::fileDir() . $name))
+			{
+				@unlink(ApplyForm::fileDir() . $name);
+			}
+		}
+		$oDB->query('DELETE FROM commerce_seller WHERE seller_srl = ?', [$seller_srl]);
+		self::forget();
+		return true;
+	}
+
+	public static function joinSellerGroup(int $member_srl): bool
+	{
+		$group_srl = (int)(Base::config()->seller_group_srl ?? 0);
+		if ($member_srl <= 0 || $group_srl <= 0)
+		{
+			return false;
+		}
+		$groups = \MemberModel::getGroups() ?: [];
+		if (!isset($groups[$group_srl]) || ($groups[$group_srl]->is_admin ?? 'N') === 'Y')
+		{
+			return false;
+		}
+		$output = \MemberController::getInstance()->addMemberToGroup($member_srl, $group_srl);
+		return $output instanceof \BaseObject ? $output->toBool() : (bool)$output;
 	}
 
 	public static function hasSuspendUntil(): bool

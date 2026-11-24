@@ -105,6 +105,8 @@ class Staff
 		'dispCommerceAdminSellers' => '@sub',
 		'procCommerceAdminSellerStatus' => '@sub',
 		'procCommerceAdminSellerCommission' => '@sub',
+		'procCommerceAdminUpdateSeller' => '@root',
+		'procCommerceAdminDeleteSeller' => '@root',
 		'dispCommerceAdminExportSellers' => '@sub',
 		'dispCommerceAdminSettlements' => '@sub',
 		'procCommerceAdminCreateSettlement' => '@sub',

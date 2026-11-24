@@ -8,6 +8,8 @@ $af_formats = ['' => lang('commerce.af_fmt_none')];
 foreach (['clabe', 'swift', 'iban'] as $af_f) { $af_formats[$af_f] = lang('commerce.af_fmt_' . $af_f); }
 $af_presets = [];
 foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) { $af_presets[$af_pk] = $af_pv + ['label' => lang('commerce.af_preset_' . $af_pk), 'key' => $af_pk]; }
+$af_groups = [];
+foreach ((MemberModel::getGroups() ?: []) as $af_gk => $af_gv) { if (($af_gv->is_admin ?? 'N') !== 'Y') { $af_groups[(int)$af_gk] = Context::replaceUserLang((string)$af_gv->title); } }
 @endphp
 <style>
 .af-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -31,7 +33,7 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 	<input type="hidden" name="seller_form" value="1" />
 	<div class="af-wrap">
 		<table class="af-table">
-			<thead><tr><th>{{ lang('commerce.af_col_field') }}</th><th>{{ lang('commerce.af_col_section') }}</th><th class="af-c">{{ lang('commerce.af_col_on') }}</th><th class="af-c">{{ lang('commerce.af_col_req') }}</th><th>{{ lang('commerce.af_col_label') }}</th></tr></thead>
+			<thead><tr><th>{{ lang('commerce.af_col_field') }}</th><th>{{ lang('commerce.af_col_section') }}</th><th class="af-c">{{ lang('commerce.af_col_on') }}</th><th class="af-c">{{ lang('commerce.af_col_req') }}</th><th class="af-c">{{ lang('commerce.af_col_pub') }}</th><th>{{ lang('commerce.af_col_label') }}</th></tr></thead>
 			<tbody>
 				@foreach ($af_cfg['builtin'] as $af_key => $af_b)
 				<tr>
@@ -39,7 +41,9 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 					<td>{{ $af_sections[$af_b['section']] }}</td>
 					<td class="af-c"><input type="hidden" name="af_on[{{ $af_key }}]" value="{{ $af_b['locked'] ? 'Y' : 'N' }}" /><input type="checkbox" name="af_on[{{ $af_key }}]" value="Y" @if ($af_b['on']) checked @endif @if ($af_b['locked']) disabled @endif aria-label="{{ lang('commerce.af_col_on') }}" /></td>
 					<td class="af-c"><input type="hidden" name="af_req[{{ $af_key }}]" value="{{ $af_b['locked'] ? 'Y' : 'N' }}" /><input type="checkbox" name="af_req[{{ $af_key }}]" value="Y" @if ($af_b['req']) checked @endif @if ($af_b['locked']) disabled @endif aria-label="{{ lang('commerce.af_col_req') }}" /></td>
-					<td><input type="text" name="af_label[{{ $af_key }}]" maxlength="60" value="{{ $af_b['label'] }}" placeholder="{{ $af_key === 'shop_id' ? lang('commerce.sc_shop_id') : lang('commerce.mk_f_' . $af_key) }}" /></td>
+					<td class="af-c">@if (in_array($af_key, Zittme\Modules\Commerce\Models\ApplyForm::PUBLIC_ALLOWED, true))<input type="hidden" name="af_pub[{{ $af_key }}]" value="N" /><input type="checkbox" name="af_pub[{{ $af_key }}]" value="Y" @if ($af_b['pub']) checked @endif aria-label="{{ lang('commerce.af_col_pub') }}" />@else<span class="af-sub">-</span>@endif</td>
+					@php $af_blc = Zittme\Modules\Commerce\Models\Lang::codeOf($af_b['label_raw'] ?? ''); @endphp
+					<td><div class="zlf-row-wrap"><input type="text" name="af_label[{{ $af_key }}]" maxlength="60" value="{{ $af_b['label'] }}" placeholder="{{ $af_key === 'shop_id' ? lang('commerce.sc_shop_id') : lang('commerce.mk_f_' . $af_key) }}" /><input type="hidden" name="af_label_langcode[{{ $af_key }}]" value="{{ $af_blc }}" data-lf-code /><button type="button" class="zlf-btn" data-lf-open data-lf-display="{{ $af_blc !== '' ? Zittme\Modules\Commerce\Models\Lang::display($af_blc) : '' }}" title="{{ lang('commerce.adm_lang_link') }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.3 2.6 2.3 14.4 0 17"/><path d="M12 3.5c-2.3 2.6-2.3 14.4 0 17"/></svg></button></div></td>
 				</tr>
 				@endforeach
 			</tbody>
@@ -47,10 +51,10 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 	</div>
 
 	<h4 class="af-h4">{{ lang('commerce.af_custom_title') }}</h4>
-	<p style="margin:0 0 10px;font-size:13px;color:var(--zmc-sub, #7a7f8c)">{{ lang('commerce.af_custom_desc') }}</p>
+	<p style="margin:0 0 10px;font-size:13px;color:var(--zmc-sub, #7a7f8c)">{{ lang('commerce.af_custom_desc') }} {{ lang('commerce.af_req_hint') }}</p>
 	<div class="af-wrap">
 		<table class="af-table af-custom">
-			<thead><tr><th>{{ lang('commerce.af_col_label') }}</th><th>{{ lang('commerce.af_col_type') }}</th><th>{{ lang('commerce.af_col_section') }}</th><th>{{ lang('commerce.af_col_format') }}</th><th>{{ lang('commerce.af_col_options') }}</th><th class="af-c">{{ lang('commerce.af_col_req') }}</th><th class="af-del"></th></tr></thead>
+			<thead><tr><th>{{ lang('commerce.af_col_label') }}</th><th>{{ lang('commerce.af_col_type') }}</th><th>{{ lang('commerce.af_col_section') }}</th><th>{{ lang('commerce.af_col_format') }}</th><th>{{ lang('commerce.af_col_options') }}</th><th class="af-c">{{ lang('commerce.af_col_req') }}</th><th class="af-c">{{ lang('commerce.af_col_pub') }}</th><th class="af-del"></th></tr></thead>
 			<tbody id="afRows">
 				@foreach ($af_cfg['custom'] as $af_c)
 				<tr class="af-row">
@@ -61,6 +65,7 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 					<td><select name="xc_format[]">@foreach ($af_formats as $af_fk => $af_fl)<option value="{{ $af_fk }}" @if ($af_c['format'] === $af_fk) selected @endif>{{ $af_fl }}</option>@endforeach</select></td>
 					<td><input type="text" name="xc_options[]" maxlength="1000" value="{{ implode(', ', $af_c['options']) }}" placeholder="{{ lang('commerce.af_options_ph') }}" /></td>
 					<td class="af-c"><select name="xc_req[]" aria-label="{{ lang('commerce.af_col_req') }}"><option value="N">{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if ($af_c['req']) selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></td>
+					<td class="af-c"><select name="xc_pub[]" aria-label="{{ lang('commerce.af_col_pub') }}"><option value="N">{{ lang('commerce.admin_config_56') }}</option><option value="Y" @if ($af_c['pub']) selected @endif>{{ lang('commerce.admin_config_57') }}</option></select></td>
 					<td class="af-del"><button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger af-remove">{{ lang('commerce.sc_remove') }}</button></td>
 				</tr>
 				@endforeach
@@ -82,9 +87,25 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 			<td><select name="xc_format[]">@foreach ($af_formats as $af_fk => $af_fl)<option value="{{ $af_fk }}">{{ $af_fl }}</option>@endforeach</select></td>
 			<td><input type="text" name="xc_options[]" maxlength="1000" value="" placeholder="{{ lang('commerce.af_options_ph') }}" /></td>
 			<td class="af-c"><select name="xc_req[]" aria-label="{{ lang('commerce.af_col_req') }}"><option value="N">{{ lang('commerce.admin_config_56') }}</option><option value="Y">{{ lang('commerce.admin_config_57') }}</option></select></td>
+			<td class="af-c"><select name="xc_pub[]" aria-label="{{ lang('commerce.af_col_pub') }}"><option value="N">{{ lang('commerce.admin_config_56') }}</option><option value="Y">{{ lang('commerce.admin_config_57') }}</option></select></td>
 			<td class="af-del"><button type="button" class="rsva-btn rsva-btn-sm rsva-btn-danger af-remove">{{ lang('commerce.sc_remove') }}</button></td>
 		</tr>
 	</template>
+
+	<p style="margin:12px 0 0;font-size:13px;color:var(--zmc-sub, #7a7f8c)">{{ lang('commerce.af_pub_desc') }}</p>
+
+	<h4 class="af-h4">{{ lang('commerce.af_terms_title') }}</h4>
+	<p style="margin:0 0 10px;font-size:13px;color:var(--zmc-sub, #7a7f8c)">{{ lang('commerce.af_terms_desc') }}</p>
+	<div class="zlf-row-wrap"><textarea name="apply_terms" rows="6" style="width:100%;box-sizing:border-box">{{ $shop_config->apply_terms ?? '' }}</textarea>@include('_langfield', ['lf_name' => 'apply_terms', 'lf_value' => $shop_config->apply_terms_raw ?? ($shop_config->apply_terms ?? ''), 'lf_key' => 'cfgapplyterms'])</div>
+
+	<h4 class="af-h4">{{ lang('commerce.af_group_title') }}</h4>
+	<p style="margin:0 0 10px;font-size:13px;color:var(--zmc-sub, #7a7f8c)">{{ lang('commerce.af_group_desc') }}</p>
+	<select name="seller_group_srl" style="max-width:320px">
+		<option value="0">{{ lang('commerce.af_group_none') }}</option>
+		@foreach ($af_groups as $af_gsrl => $af_g)
+		<option value="{{ $af_gsrl }}" @if ((int)($shop_config->seller_group_srl ?? 0) === (int)$af_gsrl) selected @endif>{{ $af_g }}</option>
+		@endforeach
+	</select>
 </div>
 <script>
 (function () {
@@ -101,6 +122,7 @@ foreach (Zittme\Modules\Commerce\Models\ApplyForm::PRESETS as $af_pk => $af_pv) 
 			var type = tr.querySelector('[name="xc_type[]"]').value;
 			tr.querySelector('[name="xc_options[]"]').style.visibility = type === 'select' ? '' : 'hidden';
 			tr.querySelector('[name="xc_format[]"]').style.visibility = type === 'text' ? '' : 'hidden';
+			tr.querySelector('[name="xc_pub[]"]').style.visibility = type === 'file' ? 'hidden' : '';
 		});
 	}
 	document.querySelectorAll('[data-af-add]').forEach(function (btn) {

@@ -25,7 +25,7 @@ class Base extends \ModuleObject
 	public const SELLER_CANCELLED = 'cancelled';
 	public const SELLER_REFUNDED = 'refunded';
 
-	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note', 'ship_guide', 'claim_guide'];
+	protected const LANG_CONFIG_FIELDS = ['privacy_text', 'biz_name', 'biz_address', 'biz_note', 'ship_guide', 'claim_guide', 'apply_terms'];
 
 	protected static $_default_instance = null;
 

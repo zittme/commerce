@@ -209,6 +209,16 @@
 					})();
 					</script>
 					@endif
+					@if (!empty($ie_shop_cats))
+					<label for="ieShopCat" style="margin-top:10px">{{ lang('commerce.ie_shop_cat') }}</label>
+					<select name="seller_category_srl" id="ieShopCat" style="width:100%">
+						<option value="0">{{ lang('commerce.ie_shop_cat_none') }}</option>
+						@foreach ($ie_shop_cats as $ie_sc)
+						<option value="{{ $ie_sc->category_srl }}" @if ((int)($ie_form->seller_category_srl ?? 0) === (int)$ie_sc->category_srl) selected @endif>{{ $ie_sc->title }}</option>
+						@endforeach
+					</select>
+					<span class="ie-help">{{ lang('commerce.ie_shop_cat_help') }}</span>
+					@endif
 					@if (!$ie_seller)<span class="ie-help">{{ lang('commerce.admin_item_edit_13') }} <a href="{{ getUrl('', 'mid', '', 'p', '', 'module', 'admin', 'act', 'dispCommerceAdminCategories') }}" style="color:var(--zmc-brand, #2677e3)">{{ lang('commerce.admin_item_edit_14') }}</a>{{ lang('commerce.admin_item_edit_15') }}</span>@endif
 				</div>
 				<div>
@@ -644,7 +654,7 @@
 							</div>
 							@endif
 						</td>
-						<td><input type="number" name="price_add" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->price_add }}" style="width:110px" /></td>
+						<td><input type="number" name="price_add" form="optEdit{{ $opt->option_srl }}" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$opt->price_add) }}" style="width:110px" /></td>
 						<td><input type="number" name="stock" form="optEdit{{ $opt->option_srl }}" min="0" value="{{ $opt->stock }}" style="width:80px" /></td>
 						<td><input type="text" name="sku" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->sku }}" style="width:110px" /></td>
 						<td style="white-space:nowrap">
@@ -671,7 +681,7 @@
 				<input type="hidden" name="option_type" value="basic" />
 				<div class="rsva-inline">
 					<div style="min-width:240px"><label>{{ lang('commerce.admin_item_edit_128') }}</label><div class="zlf-row-wrap"><input type="text" name="option_label" required placeholder="{{ lang('commerce.admin_item_edit_149') }}" style="width:100%" />@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => '', 'lf_key' => 'optnewbasic'])</div></div>
-					<div><label>{{ lang('commerce.admin_item_edit_129') }}</label><input type="number" name="price_add" value="0" style="width:110px" /></div>
+					<div><label>{{ lang('commerce.admin_item_edit_129') }}</label><input type="number" name="price_add" step="any" value="0" style="width:110px" /></div>
 					<div><label>{{ lang('commerce.admin_item_edit_133') }}</label><input type="number" name="stock" min="0" value="0" style="width:90px" /></div>
 					<div><label>SKU</label><input type="text" name="sku" style="width:120px" /></div>
 					<div><button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_item_edit_134') }}</button></div>
@@ -693,7 +703,7 @@
 								@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => $opt->option_label_raw ?? $opt->option_label, 'lf_key' => 'opt' . $opt->option_srl, 'lf_form' => 'optEdit' . $opt->option_srl])
 							</div>
 						</td>
-						<td><input type="number" name="price_add" form="optEdit{{ $opt->option_srl }}" min="0" value="{{ $opt->price_add }}" style="width:110px" /></td>
+						<td><input type="number" name="price_add" form="optEdit{{ $opt->option_srl }}" min="0" step="any" value="{{ \Zittme\Modules\Commerce\Models\Money::minorToInput((int)$opt->price_add) }}" style="width:110px" /></td>
 						<td><input type="number" name="stock" form="optEdit{{ $opt->option_srl }}" min="0" value="{{ $opt->stock }}" style="width:80px" /></td>
 						<td><input type="text" name="sku" form="optEdit{{ $opt->option_srl }}" value="{{ $opt->sku }}" style="width:110px" /></td>
 						<td style="white-space:nowrap">
@@ -720,7 +730,7 @@
 				<input type="hidden" name="option_type" value="extra" />
 				<div class="rsva-inline">
 					<div style="min-width:240px"><label>{{ lang('commerce.admin_item_edit_128') }}</label><div class="zlf-row-wrap"><input type="text" name="option_label" required placeholder="{{ lang('commerce.admin_item_edit_150') }}" style="width:100%" />@include('_langfield', ['lf_name' => 'option_label', 'lf_value' => '', 'lf_key' => 'optnewextra'])</div></div>
-					<div><label>{{ lang('commerce.admin_item_edit_137') }}</label><input type="number" name="price_add" min="0" value="0" style="width:130px" /></div>
+					<div><label>{{ lang('commerce.admin_item_edit_137') }}</label><input type="number" name="price_add" min="0" step="any" value="0" style="width:130px" /></div>
 					<div><label>{{ lang('commerce.admin_item_edit_133') }}</label><input type="number" name="stock" min="0" value="0" style="width:90px" /></div>
 					<div><label>SKU</label><input type="text" name="sku" style="width:120px" /></div>
 					<div><button type="submit" class="rsva-btn rsva-btn-primary">{{ lang('commerce.admin_item_edit_138') }}</button></div>

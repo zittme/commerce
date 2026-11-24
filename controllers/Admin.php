@@ -45,7 +45,7 @@ class Admin extends Base
 		'enabled', 'market_mode', 'market_commission', 'market_apply', 'market_item_review', 'seller_item_in_store', 'seller_badge', 'adult_verify_button', 'code_prefix', 'allow_guest', 'pending_minutes',
 		'ship_fee_mode', 'default_ship_fee', 'free_ship_over', 'claim_days', 'ship_guide', 'claim_guide', 'item_sticky', 'currency_code_prefix', 'sweettracker_api_key', 'couriers',
 		'shop_main', 'category_layout', 'item_image_size', 'show_shop_nav', 'show_search', 'show_admin_fab', 'home_show_recommend', 'home_show_new',
-		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones', 'show_seller_on_card', 'short_shop_url', 'seller_form',
+		'home_show_popular', 'home_show_sale', 'home_count', 'home_banners', 'ship_extra_zones', 'show_seller_on_card', 'short_shop_url', 'seller_form', 'apply_terms', 'seller_group_srl',
 		'credit_rate', 'credit_min_use', 'review_credit_text', 'review_credit_photo',
 		'privacy_text', 'privacy_version', 'retention_days',
 		'biz_name', 'biz_ceo', 'biz_number', 'biz_address', 'biz_tel', 'biz_note', 'biz_logo',
@@ -69,6 +69,7 @@ class Admin extends Base
 		'retention_days' => [0, 3650],
 		'home_count' => [4, 24],
 		'ship_days_normal' => [1, 14],
+		'seller_group_srl' => [0, 2147483647],
 	];
 	protected const MONEY_FIELDS = [
 		'default_ship_fee' => [0, 100000000],
@@ -924,6 +925,8 @@ class Admin extends Base
 			SellerModel::claimDraft($editor_target_srl, (int)$edit_seller->seller_srl);
 		}
 		\Context::set('seller_mode', $edit_seller ? 'seller' : '');
+		$cat_seller_srl = $item ? (int)($item->seller_srl ?? 0) : ($edit_seller ? (int)$edit_seller->seller_srl : 0);
+		\Context::set('ie_shop_cats', $cat_seller_srl > 0 && SellerModel::schemaReady() && !SellerModel::isOperator($cat_seller_srl) ? \Zittme\Modules\Commerce\Models\Shop::categories($cat_seller_srl) : []);
 
 		\Context::set('content', $item->content ?? '');
 		$editor_option = new \stdClass;
@@ -2572,6 +2575,14 @@ class Admin extends Base
 		{
 			return $output;
 		}
+		if (\Context::get('seller_category_srl') !== null && SellerModel::schemaReady())
+		{
+			$saved_seller_srl = (int)(ItemModel::get($item_srl)->seller_srl ?? 0);
+			if ($saved_seller_srl > 0 && !SellerModel::isOperator($saved_seller_srl))
+			{
+				\Zittme\Modules\Commerce\Models\Shop::setItemCategory($saved_seller_srl, $item_srl, max(0, (int)\Context::get('seller_category_srl')));
+			}
+		}
 
 		$fx_currencies_on = MoneyModel::currencies();
 		if (count($fx_currencies_on) > 1)
@@ -3850,6 +3861,11 @@ class Admin extends Base
 			$row->store_full = (string)($row->shop_id ?? '') !== '' ? \Zittme\Modules\Commerce\Models\Shop::fullUrl((string)$row->shop_id) : '';
 			$row->extra_list = \Zittme\Modules\Commerce\Models\ApplyForm::customValues($row);
 			$row->staff_count = count(\Zittme\Modules\Commerce\Models\SellerStaff::listOf((int)$row->seller_srl));
+			if (StaffModel::isRoot())
+			{
+				$row->edit_fields = \Zittme\Modules\Commerce\Models\ApplyForm::fields($row, \Zittme\Modules\Commerce\Models\ApplyForm::SECTIONS, false);
+				$row->usage = SellerModel::usage((int)$row->seller_srl);
+			}
 			$sellers[] = $row;
 		}
 
@@ -3872,6 +3888,7 @@ class Admin extends Base
 		\Context::set('mk_conflicts', \Zittme\Modules\Commerce\Models\Shop::shortEnabled() ? \Zittme\Modules\Commerce\Models\Shop::midConflicts() : []);
 		\Context::set('mk_sellers', $sellers);
 		\Context::set('mk_can_until', SellerModel::hasSuspendUntil());
+		\Context::set('mk_is_root', StaffModel::isRoot());
 		\Context::set('mk_counts', $counts);
 		\Context::set('mk_status', $status);
 		\Context::set('mk_q', $keyword);
@@ -3984,6 +4001,68 @@ class Admin extends Base
 			return new \BaseObject(-1, 'msg_invalid_request');
 		}
 		$this->setMessage('success_updated');
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'sellers'));
+	}
+
+	public function procCommerceAdminUpdateSeller()
+	{
+		$seller_srl = (int)\Context::get('seller_srl');
+		$before = SellerModel::get($seller_srl);
+		if (!StaffModel::isRoot() || !SellerModel::isOpen() || !$before || SellerModel::isOperator($seller_srl))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$data = SellerModel::filterInput(false);
+		$save = new \stdClass;
+		foreach (array_keys(\Zittme\Modules\Commerce\Models\ApplyForm::BUILTIN) as $key)
+		{
+			if ($key === 'shop_id' || \Context::get($key) === null)
+			{
+				continue;
+			}
+			$save->{$key} = $data->{$key};
+		}
+		if (isset($save->shop_name) && $save->shop_name === '')
+		{
+			return new \BaseObject(-1, sprintf(lang('commerce.mk_msg_missing'), \Zittme\Modules\Commerce\Models\ApplyForm::builtinLabel('shop_name')));
+		}
+		if (($save->email ?? '') !== '' && !filter_var($save->email, \FILTER_VALIDATE_EMAIL))
+		{
+			return new \BaseObject(-1, sprintf(lang('commerce.mk_msg_missing'), \Zittme\Modules\Commerce\Models\ApplyForm::builtinLabel('email')));
+		}
+		$collected = \Zittme\Modules\Commerce\Models\ApplyForm::collect(\Zittme\Modules\Commerce\Models\ApplyForm::extraOf($before), (int)$before->member_srl);
+		if (isset($collected['error']))
+		{
+			return new \BaseObject(-1, $collected['error']);
+		}
+		if (count((array)$save))
+		{
+			SellerModel::update($seller_srl, $save);
+		}
+		\Zittme\Modules\Commerce\Models\ApplyForm::storeExtra($seller_srl, $collected['extra']);
+		$this->setMessage('success_updated');
+		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'sellers'));
+	}
+
+	public function procCommerceAdminDeleteSeller()
+	{
+		$seller_srl = (int)\Context::get('seller_srl');
+		$seller = SellerModel::get($seller_srl);
+		if (!StaffModel::isRoot() || !SellerModel::isOpen() || !$seller || SellerModel::isOperator($seller_srl))
+		{
+			return new \BaseObject(-1, 'msg_invalid_request');
+		}
+		$usage = SellerModel::usage($seller_srl);
+		if ($usage['orders'] > 0 || $usage['settlements'] > 0 || $usage['carry'] > 0)
+		{
+			return new \BaseObject(-1, sprintf(lang('commerce.mk_msg_delete_blocked'), number_format($usage['orders']), number_format($usage['settlements'])));
+		}
+		if (\Context::get('confirm_name') !== (string)$seller->shop_name)
+		{
+			return new \BaseObject(-1, lang('commerce.mk_msg_delete_name'));
+		}
+		SellerModel::remove($seller_srl);
+		$this->setMessage('success_deleted');
 		$this->setRedirectUrl(\Context::get('success_return_url') ?: getNotEncodedUrl('', 'act', 'dispCommerceConsole', 'p', 'sellers'));
 	}
 

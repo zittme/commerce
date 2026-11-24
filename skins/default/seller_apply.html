@@ -66,6 +66,12 @@ $shp_mk_status_label = $shp_mk_status !== '' ? lang('commerce.mk_st_' . $shp_mk_
 			</div>
 		</fieldset>
 		@endforeach
+		@if (!empty($apply_terms))
+		<fieldset class="shp-apply-terms">
+			<legend>{{ $lang->af_terms_legend }}</legend>
+			<div class="shp-apply-terms-body" tabindex="0">{!! nl2br(escape($apply_terms, false)) !!}</div>
+		</fieldset>
+		@endif
 		<label style="display:flex;gap:8px;align-items:flex-start;margin:0 0 16px;font-size:14px"><input type="checkbox" name="agree" value="Y" required /> <span>{{ sprintf($lang->mk_apply_agree, $shp_mk_rate) }}</span></label>
 		<button type="submit" class="shp-btn shp-btn-primary">{{ $lang->mk_do_apply }}</button>
 	</form>

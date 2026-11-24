@@ -37,6 +37,10 @@ class ApplyForm
 		'payee_address' => ['type' => 'text', 'section' => 'bank', 'format' => '', 'req' => false],
 	];
 
+	public const PUBLIC_DEFAULT = ['biz_name', 'ceo_name', 'biz_no', 'mailorder_no', 'tel', 'email', 'biz_address'];
+
+	public const PUBLIC_ALLOWED = ['shop_name', 'biz_name', 'ceo_name', 'biz_no', 'mailorder_no', 'tel', 'email', 'biz_address', 'intro'];
+
 	public const MAX_CUSTOM = 20;
 	public const FILE_EXTS = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
 	public const FILE_BYTES = 10485760;
@@ -59,7 +63,9 @@ class ApplyForm
 			$builtin[$key] = [
 				'on' => $locked ? true : (bool)($saved['on'] ?? true),
 				'req' => $locked ? true : (bool)($saved['req'] ?? $def['req']),
-				'label' => mb_substr(trim((string)($saved['label'] ?? '')), 0, 60),
+				'label' => Lang::text(mb_substr(trim((string)($saved['label'] ?? '')), 0, 60)),
+				'label_raw' => mb_substr(trim((string)($saved['label'] ?? '')), 0, 60),
+				'pub' => in_array($key, self::PUBLIC_ALLOWED, true) && (bool)($saved['pub'] ?? in_array($key, self::PUBLIC_DEFAULT, true)),
 				'locked' => $locked,
 			] + $def;
 		}
@@ -117,6 +123,7 @@ class ApplyForm
 			'options' => array_slice($options, 0, 50),
 			'format' => $type === 'text' && in_array($row['format'] ?? '', self::FORMATS, true) ? (string)$row['format'] : '',
 			'help' => mb_substr(trim(strip_tags((string)($row['help'] ?? ''))), 0, 200),
+			'pub' => $type !== 'file' && !empty($row['pub']) && $row['pub'] !== 'N',
 		];
 	}
 
@@ -125,13 +132,16 @@ class ApplyForm
 		$on = (array)\Context::get('af_on');
 		$req = (array)\Context::get('af_req');
 		$labels = (array)\Context::get('af_label');
+		$label_langs = (array)\Context::get('af_label_langcode');
+		$pub = (array)\Context::get('af_pub');
 		$b = [];
 		foreach (self::BUILTIN as $key => $def)
 		{
 			$b[$key] = [
 				'on' => in_array($key, self::LOCKED, true) || ($on[$key] ?? 'N') === 'Y',
 				'req' => in_array($key, self::LOCKED, true) || ($req[$key] ?? 'N') === 'Y',
-				'label' => mb_substr(trim(strip_tags((string)($labels[$key] ?? ''))), 0, 60),
+				'label' => Lang::filterCode((string)($label_langs[$key] ?? '')) !== '' ? Lang::toValue((string)$label_langs[$key]) : mb_substr(trim(strip_tags((string)($labels[$key] ?? ''))), 0, 60),
+				'pub' => in_array($key, self::PUBLIC_ALLOWED, true) && ($pub[$key] ?? 'N') === 'Y',
 			];
 		}
 		$c = [];
@@ -153,6 +163,7 @@ class ApplyForm
 				'options' => ((array)\Context::get('xc_options'))[$i] ?? '',
 				'format' => ((array)\Context::get('xc_format'))[$i] ?? '',
 				'help' => ((array)\Context::get('xc_help'))[$i] ?? '',
+				'pub' => (((array)\Context::get('xc_pub'))[$i] ?? 'N') === 'Y',
 			]);
 			if ($one && !isset($c[$one['key']]) && !isset(self::BUILTIN[$one['key']]))
 			{
@@ -277,6 +288,64 @@ class ApplyForm
 			];
 		}
 		return $rows;
+	}
+
+	public static function publicRows(?object $seller, bool $everything = false): array
+	{
+		if (!$seller)
+		{
+			return [];
+		}
+		$cfg = self::config();
+		$rows = [];
+		foreach (self::PUBLIC_ALLOWED as $key)
+		{
+			$b = $cfg['builtin'][$key] ?? null;
+			if (!$b || !($everything ? in_array($key, self::PUBLIC_DEFAULT, true) || $b['pub'] : $b['pub']))
+			{
+				continue;
+			}
+			$value = trim((string)($seller->{$key} ?? ''));
+			if ($key === 'biz_name' && $value === '')
+			{
+				$value = trim((string)($seller->shop_name ?? ''));
+			}
+			if ($value !== '')
+			{
+				$rows[] = (object)['key' => $key, 'label' => self::builtinLabel($key), 'value' => $value];
+			}
+		}
+		$extra = self::extraOf($seller);
+		foreach ($cfg['custom'] as $key => $c)
+		{
+			$value = trim((string)($extra[$key] ?? ''));
+			if ($c['pub'] && $c['type'] !== 'file' && $value !== '')
+			{
+				$rows[] = (object)['key' => $key, 'label' => $c['label'], 'value' => $value];
+			}
+		}
+		return $rows;
+	}
+
+	public static function filterPublic(?object $info, bool $is_admin = false): ?object
+	{
+		if (!$info || empty($info->seller_srl))
+		{
+			return $info;
+		}
+		$info->info_rows = self::publicRows(Seller::get((int)$info->seller_srl), $is_admin);
+		$info->info_show = count($info->info_rows) > 0;
+		if (!$is_admin)
+		{
+			foreach (['biz_name', 'ceo_name', 'biz_no', 'mailorder_no', 'tel', 'email', 'biz_address'] as $key)
+			{
+				if (!(self::config()['builtin'][$key]['pub'] ?? false))
+				{
+					$info->{$key} = '';
+				}
+			}
+		}
+		return $info;
 	}
 
 	public static function missing(object $data, array $extra, array $sections = self::SECTIONS, array $skip = []): string
